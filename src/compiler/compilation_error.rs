@@ -10,7 +10,7 @@ pub enum CompilationError {
     #[error("'{0}' is an invalid source")]
     InvalidSource(String),
 
-    #[error("failed during parsing elaboration")]
+    #[error("failed during elaboration")]
     ElaborationError,
 
     #[error("'{0}' is an invalid parameter")]

@@ -33,13 +33,13 @@ impl CompilationRule for ReferenceRule {
         &self.search_pattern
     }
 
-    fn standard_compile(&self, content: &str, _codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, content: &str, _codex: &Codex, compilation_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
         
-        let parsed_content = self.search_pattern_regex.replace_all(content, |capture: &Captures| {
+        let compilation_result = self.search_pattern_regex.replace_all(content, |capture: &Captures| {
 
             let reference_key = capture.get(1).unwrap().as_str();
 
-            if let Some(reference) = parsing_configuration.read().unwrap().references().get(reference_key) {
+            if let Some(reference) = compilation_configuration.read().unwrap().references().get(reference_key) {
                 return String::from(reference)
             } else {
                 log::error!("reference '{}' ('{}') not found: no replacement will be applied", reference_key, capture.get(0).unwrap().as_str());
@@ -47,7 +47,7 @@ impl CompilationRule for ReferenceRule {
             }
         });
 
-        Ok(CompilationResult::new_fixed(parsed_content.to_string()))
+        Ok(CompilationResult::new_fixed(compilation_result.to_string()))
     }
     
     fn search_pattern_regex(&self) -> &Regex {

@@ -7,17 +7,17 @@ use super::{compilation_configuration::{compilation_configuration_overlay::Compi
 
 pub trait Compilable {
 
-    /// Standard parse, using complete rules
+    /// Standard compilation, using complete rules
     fn standard_compile(&mut self, format: &OutputFormat, codex: Arc<Codex>, compilation_configuration: Arc<RwLock<CompilationConfiguration>>,
         compilation_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<(), CompilationError>;
 
-    /// Fast parse, reduce parsing time, but its result is incomplete
+    /// Fast compilation, reduce compilation time, but its result is incomplete
     fn fast_compile(&mut self, format: &OutputFormat, codex: Arc<Codex>, compilation_configuration: Arc<RwLock<CompilationConfiguration>>,
         compilation_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
             self.standard_compile(format, codex, compilation_configuration, compilation_configuration_overlay)
     }
 
-    /// `standard_parse` or `fast_parse` based on parsing configuration `fast_draft()` value
+    /// `standard_compile` or `fast_compile` based on configuration `fast_draft()` value
     fn compile(&mut self, format: &OutputFormat, codex: Arc<Codex>, compilation_configuration: Arc<RwLock<CompilationConfiguration>>,
         compilation_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
             

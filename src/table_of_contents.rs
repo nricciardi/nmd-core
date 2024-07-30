@@ -30,7 +30,7 @@ pub struct TableOfContents {
     headings: Vec<Heading>,
 
     #[getset(get = "pub", set = "pub")]
-    parsed_content: Option<CompilationResult>,
+    compilation_result: Option<CompilationResult>,
 }
 
 impl TableOfContents {
@@ -41,7 +41,7 @@ impl TableOfContents {
             plain,
             maximum_heading_level,
             headings,
-            parsed_content: None
+            compilation_result: None
         }
     }
 
@@ -61,13 +61,13 @@ impl TableOfContents {
         m
     }
 
-    fn standard_html_parse(&mut self, codex: Arc<Codex>, parsing_configuration: Arc<RwLock<CompilationConfiguration>>, parsing_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+    fn standard_html_compile(&mut self, codex: Arc<Codex>, compilation_configuration: Arc<RwLock<CompilationConfiguration>>, compilation_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
         
         let mut outcome = CompilationResult::new_empty();
 
         outcome.add_fixed_part(String::from(r#"<section class="toc">"#));
         outcome.add_fixed_part(String::from(r#"<div class="toc-title">"#));
-        outcome.append_compilation_result(&mut Compiler::compile_str(&*codex, &self.title, Arc::clone(&parsing_configuration), Arc::clone(&parsing_configuration_overlay))?);
+        outcome.append_compilation_result(&mut Compiler::compile_str(&*codex, &self.title, Arc::clone(&compilation_configuration), Arc::clone(&compilation_configuration_overlay))?);
         outcome.add_fixed_part(String::from(r#"</div>"#));
         outcome.add_fixed_part(String::from(r#"<ul class="toc-body">"#));
 
@@ -108,7 +108,7 @@ impl TableOfContents {
                 log::warn!("heading '{}' does not have a valid id", heading.title())
             }
 
-            outcome.append_compilation_result(&mut Compiler::compile_str(&*codex, &heading.title(), Arc::clone(&parsing_configuration), Arc::clone(&parsing_configuration_overlay))?);
+            outcome.append_compilation_result(&mut Compiler::compile_str(&*codex, &heading.title(), Arc::clone(&compilation_configuration), Arc::clone(&compilation_configuration_overlay))?);
 
             if let Some(_) = heading.resource_reference() {
 
@@ -124,16 +124,16 @@ impl TableOfContents {
         outcome.add_fixed_part(String::from(r#"</ul>"#));
         outcome.add_fixed_part(String::from(r#"</section>"#));
 
-        self.parsed_content = Some(outcome);
+        self.compilation_result = Some(outcome);
 
-        log::info!("parsed table of contents ({} lines, {} skipped)", total_li, self.headings.len() - total_li);
+        log::info!("compiled table of contents ({} lines, {} skipped)", total_li, self.headings.len() - total_li);
 
         Ok(())
     }
 }
 
 impl Compilable for TableOfContents {
-    fn standard_compile(&mut self, format: &OutputFormat, codex: Arc<Codex>, parsing_configuration: Arc<RwLock<CompilationConfiguration>>, parsing_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+    fn standard_compile(&mut self, format: &OutputFormat, codex: Arc<Codex>, compilation_configuration: Arc<RwLock<CompilationConfiguration>>, compilation_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
         
         if self.headings.is_empty() {
             
@@ -147,7 +147,7 @@ impl Compilable for TableOfContents {
         }
         
         match format {
-            OutputFormat::Html => self.standard_html_parse(Arc::clone(&codex), Arc::clone(&parsing_configuration), Arc::clone(&parsing_configuration_overlay)),
+            OutputFormat::Html => self.standard_html_compile(Arc::clone(&codex), Arc::clone(&compilation_configuration), Arc::clone(&compilation_configuration_overlay)),
         }
     }
 }

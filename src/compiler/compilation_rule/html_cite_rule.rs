@@ -33,13 +33,13 @@ impl CompilationRule for HtmlCiteRule {
         &self.search_pattern
     }
 
-    fn standard_compile(&self, content: &str, codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, content: &str, codex: &Codex, compilation_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
         
-        let parsed_content = self.search_pattern_regex.replace_all(content, |capture: &Captures| {
+        let compiled_content = self.search_pattern_regex.replace_all(content, |capture: &Captures| {
 
             let bib_key = capture.get(1).unwrap().as_str();
 
-            if let Some(bibliography) = parsing_configuration.read().unwrap().bibliography() {
+            if let Some(bibliography) = compilation_configuration.read().unwrap().bibliography() {
                 
                 if let Some(n) = bibliography.get_n_from_key(bib_key) {
                     if let Some(reference) = bibliography.get_reference_from_key(bib_key) {
@@ -59,7 +59,7 @@ impl CompilationRule for HtmlCiteRule {
             return String::from(content);
         });
 
-        Ok(CompilationResult::new_fixed(parsed_content.to_string()))
+        Ok(CompilationResult::new_fixed(compiled_content.to_string()))
     }
     
     fn search_pattern_regex(&self) -> &Regex {

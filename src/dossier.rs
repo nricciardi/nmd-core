@@ -79,7 +79,7 @@ impl Compilable for Dossier {
 
         let parallelization = compilation_configuration.read().unwrap().parallelization();
 
-        log::info!("parse dossier {} with ({} documents, parallelization: {})", self.name(), self.documents().len(), parallelization);
+        log::info!("standard compile dossier {} with ({} documents, parallelization: {})", self.name(), self.documents().len(), parallelization);
 
         compilation_configuration.write().unwrap().metadata_mut().set_dossier_name(Some(self.name().clone()));
 
@@ -93,12 +93,12 @@ impl Compilable for Dossier {
     
                         if let Some(pco) = pco.as_ref() {
     
-                            if let Some(subset) = pco.parse_only_documents() {
+                            if let Some(subset) = pco.compile_only_documents() {
 
                                 let skip = !subset.contains(document.name());
             
                                 if skip {
-                                    log::info!("document {} parsing is skipped", document.name());
+                                    log::info!("document {} compilation is skipped", document.name());
                                 }
 
                                 return !skip;
@@ -110,14 +110,14 @@ impl Compilable for Dossier {
                 })
                 .map(|document| {
 
-                    let parse_time = Instant::now();
+                    let now = Instant::now();
 
                     let new_compilation_configuration: Arc<RwLock<CompilationConfiguration>> = Arc::new(RwLock::new(compilation_configuration.read().unwrap().clone()));
 
                     // Arc::new because parallelization on (may be override during multi-thread operations)
                     let res = document.compile(format, Arc::clone(&codex), new_compilation_configuration, Arc::clone(&compilation_configuration_overlay));
 
-                    log::info!("document '{}' parsed in {} ms", document.name(), parse_time.elapsed().as_millis());
+                    log::info!("document '{}' compiled in {} ms", document.name(), now.elapsed().as_millis());
 
                     res
                 })
@@ -136,13 +136,13 @@ impl Compilable for Dossier {
 
                         if let Some(pco) = pco.as_ref() {
 
-                            if let Some(subset) = pco.parse_only_documents() {
+                            if let Some(subset) = pco.compile_only_documents() {
             
                                 
                                 let skip = !subset.contains(document.name());
             
                                 if skip {
-                                    log::info!("document {} parsing is skipped", document.name());
+                                    log::info!("document {} compilation is skipped", document.name());
                                 }
 
                                 return !skip;            
@@ -153,11 +153,11 @@ impl Compilable for Dossier {
                     true
                 })
                 .map(|document| {
-                    let parse_time = Instant::now();
+                    let now = Instant::now();
 
                     let res = document.compile(format, Arc::clone(&codex), Arc::clone(&compilation_configuration), Arc::clone(&compilation_configuration_overlay));
 
-                    log::info!("document '{}' parsed in {} ms", document.name(), parse_time.elapsed().as_millis());
+                    log::info!("document '{}' compiled in {} ms", document.name(), now.elapsed().as_millis());
 
                     res
                 })

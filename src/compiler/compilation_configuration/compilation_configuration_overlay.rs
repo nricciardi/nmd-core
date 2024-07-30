@@ -8,7 +8,7 @@ use getset::{Getters, Setters};
 pub struct CompilationConfigurationOverLay {
 
     #[getset(get = "pub", set = "pub")]
-    parse_only_documents: Option<HashSet<String>>,
+    compile_only_documents: Option<HashSet<String>>,
     
     #[getset(get = "pub", set = "pub")]
     additional_style: Option<String>

@@ -72,7 +72,7 @@ impl Compilable for Document {
 
         let parallelization = compilation_configuration.read().unwrap().parallelization();
 
-        log::info!("parsing {} chapters of document: '{}'", self.chapters().len(), self.name);
+        log::info!("compile {} chapters of document: '{}'", self.chapters().len(), self.name);
 
         compilation_configuration.write().unwrap().metadata_mut().set_document_name(Some(self.name().clone()));
 

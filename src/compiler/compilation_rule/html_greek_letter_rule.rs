@@ -114,15 +114,15 @@ impl CompilationRule for HtmlGreekLettersRule {
         &self.search_pattern
     }
 
-    fn standard_compile(&self, content: &str, codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, content: &str, codex: &Codex, compilation_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
         
-        let parsed_content = self.search_pattern_regex.replace_all(content, |capture: &Captures| {
+        let compiled_content = self.search_pattern_regex.replace_all(content, |capture: &Captures| {
 
             if let Some(greek_ref) = capture.get(1) {
 
                 let res = format!(r#"<span class="greek">${}$</span>"#, self.replace_with_greek_letters(greek_ref.as_str()));
 
-                log::debug!("parse '{}' into '{}'", content, res);
+                log::debug!("compile '{}' into '{}'", content, res);
 
                 return res;
             }
@@ -133,7 +133,7 @@ impl CompilationRule for HtmlGreekLettersRule {
         });
 
         
-        Ok(CompilationResult::new_fixed(parsed_content.to_string()))
+        Ok(CompilationResult::new_fixed(compiled_content.to_string()))
     }
     
     fn search_pattern_regex(&self) -> &Regex {

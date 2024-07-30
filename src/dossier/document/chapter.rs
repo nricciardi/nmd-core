@@ -3,9 +3,7 @@ pub mod heading;
 pub mod chapter_builder;
 pub mod chapter_tag;
 
-use std::fmt::Display;
 use std::sync::{Arc, RwLock};
-use std::thread;
 
 use chapter_tag::ChapterTag;
 use getset::{Getters, Setters};
@@ -54,7 +52,7 @@ impl Compilable for Chapter {
 
         self.heading.compile(format, Arc::clone(&codex), Arc::clone(&compilation_configuration), Arc::clone(&compilation_configuration_overlay))?;
 
-        log::debug!("parsing chapter:\n{:#?}", self);
+        log::debug!("compile chapter:\n{:#?}", self);
 
         if compilation_configuration.read().unwrap().parallelization() {
 

@@ -31,21 +31,21 @@ pub struct Compiler {
 impl Compiler {
 
     /// Compile a string
-    pub fn compile_str(codex: &Codex, content: &str, parsing_configuration: Arc<RwLock<CompilationConfiguration>>, parsing_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
+    pub fn compile_str(codex: &Codex, content: &str, compilation_configuration: Arc<RwLock<CompilationConfiguration>>, compilation_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
 
-        let excluded_modifiers = parsing_configuration.read().unwrap().excluded_modifiers().clone();
+        let excluded_modifiers = compilation_configuration.read().unwrap().excluded_modifiers().clone();
 
-        Self::compile_str_excluding_modifiers(codex, content, excluded_modifiers, Arc::clone(&parsing_configuration), parsing_configuration_overlay)
+        Self::compile_str_excluding_modifiers(codex, content, excluded_modifiers, Arc::clone(&compilation_configuration), compilation_configuration_overlay)
     }
 
     /// Compile a string excluding a set of modifiers
     pub fn compile_str_excluding_modifiers(codex: &Codex, content: &str, excluded_modifiers: ModifiersBucket, 
-        parsing_configuration: Arc<RwLock<CompilationConfiguration>>, _parsing_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
+        compilation_configuration: Arc<RwLock<CompilationConfiguration>>, _compilation_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
 
-        log::debug!("start to parse content:\n{}\nexcluding: {:?}", content, excluded_modifiers);
+        log::debug!("start to compile content:\n{}\nexcluding: {:?}", content, excluded_modifiers);
 
         if excluded_modifiers == ModifiersBucket::All {
-            log::debug!("parsing of content:\n{} is skipped are excluded all modifiers", content);
+            log::debug!("compilation of content:\n{} is skipped because are excluded all modifiers", content);
             
             return Ok(CompilationResult::new_fixed(content.to_string()))
         }
@@ -117,7 +117,7 @@ impl Compiler {
                     match segment {
                         Segment::Match(m) => {
                             
-                            let outcome = text_rule.compile(&m, codex, Arc::clone(&parsing_configuration))?;
+                            let outcome = text_rule.compile(&m, codex, Arc::clone(&compilation_configuration))?;
 
                             for part in Into::<Vec<CompilationResultPart>>::into(outcome) {
 
@@ -172,22 +172,22 @@ impl Compiler {
     /// Compile a `Paragraph`.
     /// 
     /// Only one paragraph rule can be applied on Paragraph.
-    pub fn compile_paragraph(codex: &Codex, paragraph: &Paragraph, parsing_configuration: Arc<RwLock<CompilationConfiguration>>, parsing_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
-        Self::compile_paragraph_excluding_modifiers(codex, paragraph, ModifiersBucket::None, parsing_configuration, parsing_configuration_overlay)
+    pub fn compile_paragraph(codex: &Codex, paragraph: &Paragraph, compilation_configuration: Arc<RwLock<CompilationConfiguration>>, compilation_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
+        Self::compile_paragraph_excluding_modifiers(codex, paragraph, ModifiersBucket::None, compilation_configuration, compilation_configuration_overlay)
     }
 
     /// Compile a `Paragraph` excluding a set of modifiers.
     /// 
     /// Only one paragraph rule can be applied on Paragraph.
-    pub fn compile_paragraph_excluding_modifiers(codex: &Codex, paragraph: &Paragraph, mut excluded_modifiers: ModifiersBucket, parsing_configuration: Arc<RwLock<CompilationConfiguration>>,
-        parsing_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
+    pub fn compile_paragraph_excluding_modifiers(codex: &Codex, paragraph: &Paragraph, mut excluded_modifiers: ModifiersBucket, compilation_configuration: Arc<RwLock<CompilationConfiguration>>,
+        compilation_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
 
-        log::debug!("start to parse paragraph ({:?}):\n{}\nexcluding: {:?}", paragraph.paragraph_type(), paragraph, excluded_modifiers);
+        log::debug!("start to compile paragraph ({:?}):\n{}\nexcluding: {:?}", paragraph.paragraph_type(), paragraph, excluded_modifiers);
 
         let mut outcome: CompilationResult = CompilationResult::new_fixed(paragraph.content().to_string());
 
         if excluded_modifiers == ModifiersBucket::All {
-            log::debug!("parsing of paragraph:\n{:#?} is skipped are excluded all modifiers", paragraph);
+            log::debug!("compilation of paragraph:\n{:#?} is skipped are excluded all modifiers", paragraph);
             
             return Ok(outcome)
         }
@@ -198,9 +198,9 @@ impl Compiler {
 
         if let Some(paragraph_rule) = paragraph_rule {
 
-            log::debug!("paragraph rule {:?} is found, it is about to be applied to parse paragraph", paragraph_rule);
+            log::debug!("paragraph rule {:?} is found, it is about to be applied to compile paragraph", paragraph_rule);
 
-            outcome = paragraph_rule.compile(&paragraph.content(), codex, Arc::clone(&parsing_configuration))?;
+            outcome = paragraph_rule.compile(&paragraph.content(), codex, Arc::clone(&compilation_configuration))?;
 
             excluded_modifiers = excluded_modifiers + paragraph_modifier.incompatible_modifiers().clone();
 
@@ -209,7 +209,7 @@ impl Compiler {
             log::warn!("there is NOT a paragraph rule for '{}' in codex", paragraph.paragraph_type());
         }
 
-        outcome.apply_compile_function_to_mutable_parts(|mutable_part| Self::compile_str_excluding_modifiers(codex, &mutable_part.content(), excluded_modifiers.clone(), Arc::clone(&parsing_configuration), Arc::clone(&parsing_configuration_overlay)))?;
+        outcome.apply_compile_function_to_mutable_parts(|mutable_part| Self::compile_str_excluding_modifiers(codex, &mutable_part.content(), excluded_modifiers.clone(), Arc::clone(&compilation_configuration), Arc::clone(&compilation_configuration_overlay)))?;
 
         Ok(outcome)
     }
@@ -230,10 +230,10 @@ mod test {
         let codex = Codex::of_html(CodexConfiguration::default());
 
         let content = "Text **bold text** `a **bold text** which must be not parsed`";
-        let parsing_configuration = CompilationConfiguration::default();
+        let compilation_configuration = CompilationConfiguration::default();
         let excluded_modifiers = ModifiersBucket::None;
 
-        let outcome = Compiler::compile_str_excluding_modifiers(&codex, content, excluded_modifiers, Arc::new(RwLock::new(parsing_configuration)), Arc::new(None)).unwrap();
+        let outcome = Compiler::compile_str_excluding_modifiers(&codex, content, excluded_modifiers, Arc::new(RwLock::new(compilation_configuration)), Arc::new(None)).unwrap();
 
         assert_eq!(outcome.content(), r#"Text <strong class="bold">bold text</strong> <code class="language-markup inline-code">a **bold text** which must be not parsed</code>"#)
     }

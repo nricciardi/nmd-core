@@ -23,7 +23,7 @@ pub enum CompilableResourceType {
 }
 
 
-/// Struct which contains all information about possible parsing options 
+/// Struct which contains all information about possible compilation options 
 #[derive(Debug, Getters, CopyGetters, MutGetters, Setters, Clone)]
 pub struct CompilationConfiguration {
 

@@ -235,8 +235,8 @@ impl Assembler for HtmlAssembler {
         let mut page = self.create_default_html_page(dossier.name(), &styles_references)?;
         
         if let Some(toc) = dossier.table_of_contents() {
-            if let Some(parsed_toc) = toc.parsed_content() {
-                page.add_raw(parsed_toc.content());
+            if let Some(compiled_toc) = toc.compilation_result() {
+                page.add_raw(compiled_toc.content());
             }
         }
 
@@ -272,8 +272,8 @@ impl Assembler for HtmlAssembler {
         }
 
         if let Some(bib) = dossier.bibliography() {
-            if let Some(parsed_bib) = bib.compilation_result() {
-                page.add_raw(parsed_bib.content());
+            if let Some(compiled_bib) = bib.compilation_result() {
+                page.add_raw(compiled_bib.content());
             }
         }
 
@@ -287,9 +287,9 @@ impl Assembler for HtmlAssembler {
 
         for paragraph in document.preamble() {
 
-            if let Some(parsed_content) = paragraph.compilation_result().as_ref() {
+            if let Some(compiled_content) = paragraph.compilation_result().as_ref() {
 
-                result.push_str(&parsed_content.content());
+                result.push_str(&compiled_content.content());
 
             } else {
                 return Err(AssemblerError::CompiledContentNotFound)
@@ -323,24 +323,24 @@ impl Assembler for HtmlAssembler {
             div_chapter = div_chapter.with_attributes(vec![("style", style.as_str())]);
             let mut div_chapter_content = String::new();
 
-            if let Some(parsed_content) = chapter.heading().compilation_result().as_ref() {
+            if let Some(compiled_content) = chapter.heading().compilation_result().as_ref() {
 
-                div_chapter_content.push_str(&parsed_content.content());
+                div_chapter_content.push_str(&compiled_content.content());
 
             } else {
                 return Err(AssemblerError::CompiledContentNotFound)
             }
 
             for paragraph in chapter.paragraphs() {
-                if let Some(parsed_content) = paragraph.compilation_result().as_ref() {
+                if let Some(compiled_content) = paragraph.compilation_result().as_ref() {
 
-                    let parsed_content = parsed_content.content();
+                    let compiled_content = compiled_content.content();
 
-                    if parsed_content.is_empty() {
+                    if compiled_content.is_empty() {
                         continue;
                     }
 
-                    div_chapter_content.push_str(&parsed_content);
+                    div_chapter_content.push_str(&compiled_content);
     
                 } else {
                     return Err(AssemblerError::CompiledContentNotFound)
@@ -357,16 +357,16 @@ impl Assembler for HtmlAssembler {
         let mut page = self.create_default_html_page(page_title, styles_references.unwrap_or(&Vec::new()))?;
 
         if let Some(toc) = toc {
-            if let Some(parsed_toc) = toc.parsed_content() {
-                page.add_raw(parsed_toc.content());
+            if let Some(compiled_toc) = toc.compilation_result() {
+                page.add_raw(compiled_toc.content());
             }
         }
 
         page.add_raw(Into::<String>::into(self.assemble_document(document)?));
 
         if let Some(bib) = bibliography {
-            if let Some(parsed_bib) = bib.compilation_result() {
-                page.add_raw(parsed_bib.content());
+            if let Some(compiled_bib) = bib.compilation_result() {
+                page.add_raw(compiled_bib.content());
             }
         }
 

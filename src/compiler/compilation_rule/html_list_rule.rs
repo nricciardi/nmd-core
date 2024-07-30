@@ -67,11 +67,11 @@ impl CompilationRule for HtmlListRule {
         &self.search_pattern
     }
 
-    fn standard_compile(&self, content: &str, _codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, content: &str, _codex: &Codex, compilation_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
         
-        let mut parsing_outcome = CompilationResult::new_empty();
+        let mut compilation_result = CompilationResult::new_empty();
 
-        parsing_outcome.add_fixed_part(r#"<ul class="list">"#.to_string());
+        compilation_result.add_fixed_part(r#"<ul class="list">"#.to_string());
 
         let mut items_found = 0;
 
@@ -98,17 +98,17 @@ impl CompilationRule for HtmlListRule {
                             indentation_level += 1;
                         }
 
-                        let bullet = Self::bullet_transform(bullet, indentation_level, parsing_configuration.read().unwrap().list_bullets_configuration());
+                        let bullet = Self::bullet_transform(bullet, indentation_level, compilation_configuration.read().unwrap().list_bullets_configuration());
 
                         let content = text_utility::replace(&content, &ESCAPE_HTML);
 
-                        parsing_outcome.add_fixed_part(r#"<li class="list-item">"#.to_string());
-                        parsing_outcome.add_fixed_part(LIST_ITEM_INDENTATION.repeat(indentation_level));
-                        parsing_outcome.add_fixed_part(r#"<span class="list-item-bullet">"#.to_string());
-                        parsing_outcome.add_fixed_part(bullet);
-                        parsing_outcome.add_fixed_part(r#"</span><span class="list-item-content">"#.to_string());
-                        parsing_outcome.add_mutable_part(content);
-                        parsing_outcome.add_fixed_part(r#"</span></li>"#.to_string());
+                        compilation_result.add_fixed_part(r#"<li class="list-item">"#.to_string());
+                        compilation_result.add_fixed_part(LIST_ITEM_INDENTATION.repeat(indentation_level));
+                        compilation_result.add_fixed_part(r#"<span class="list-item-bullet">"#.to_string());
+                        compilation_result.add_fixed_part(bullet);
+                        compilation_result.add_fixed_part(r#"</span><span class="list-item-content">"#.to_string());
+                        compilation_result.add_mutable_part(content);
+                        compilation_result.add_fixed_part(r#"</span></li>"#.to_string());
 
                     }
                 }
@@ -119,7 +119,7 @@ impl CompilationRule for HtmlListRule {
 
         if items_found != total_valid_lines {
 
-            if parsing_configuration.read().unwrap().strict_list_check() {
+            if compilation_configuration.read().unwrap().strict_list_check() {
                 log::error!("the following list has incorrect items (parsed {} on {}):\n{}\n-----\nparsed:\n{:#?}", items_found, total_valid_lines, content, parsed_lines);
                 panic!("incorrect list item(s)")
             } else {
@@ -127,9 +127,9 @@ impl CompilationRule for HtmlListRule {
             }
         }
 
-        parsing_outcome.add_fixed_part("</ul>".to_string());
+        compilation_result.add_fixed_part("</ul>".to_string());
         
-        Ok(parsing_outcome)
+        Ok(compilation_result)
     }
     
     fn search_pattern_regex(&self) -> &Regex {

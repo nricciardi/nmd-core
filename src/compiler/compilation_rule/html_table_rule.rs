@@ -135,7 +135,7 @@ impl HtmlTableRule {
         cells
     }
 
-    fn load_html_row(html_row: &mut HtmlTableRow, cells: &Vec<TableCell>, codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<(), CompilationError> {
+    fn load_html_row(html_row: &mut HtmlTableRow, cells: &Vec<TableCell>, codex: &Codex, compilation_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<(), CompilationError> {
 
         for cell in cells {
             match cell {
@@ -158,7 +158,7 @@ impl HtmlTableRule {
                         TableCellAlignment::Right => String::from("table-right-cell"),
                     };
 
-                    let content = Compiler::compile_str(codex, content, Arc::clone(&parsing_configuration), Arc::new(None))?.content();
+                    let content = Compiler::compile_str(codex, content, Arc::clone(&compilation_configuration), Arc::new(None))?.content();
 
                     let content = text_utility::replace(&content, &ESCAPE_HTML);
 
@@ -206,7 +206,7 @@ impl HtmlTableRule {
         (caption, id, style)
     }
 
-    fn build_html_table(caption: Option<String>, id: Option<String>, style: Option<String>, table: Table, codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> String {
+    fn build_html_table(caption: Option<String>, id: Option<String>, style: Option<String>, table: Table, codex: &Codex, compilation_configuration: Arc<RwLock<CompilationConfiguration>>) -> String {
 
         let mut html_table_attrs: Vec<(String, String)> = vec![(String::from("class"), String::from("table"))];
 
@@ -235,7 +235,7 @@ impl HtmlTableRule {
                                                         ("class", "table-header-row")
                                                     ]);
             
-            Self::load_html_row(&mut html_table_header, header_cells, codex, Arc::clone(&parsing_configuration)).unwrap();
+            Self::load_html_row(&mut html_table_header, header_cells, codex, Arc::clone(&compilation_configuration)).unwrap();
 
             html_table.add_custom_header_row(html_table_header);
         }
@@ -252,7 +252,7 @@ impl HtmlTableRule {
                                                                 ("class", "table-body-row")
                                                             ]);
 
-            Self::load_html_row(&mut html_body_row, row, codex, Arc::clone(&parsing_configuration)).unwrap();
+            Self::load_html_row(&mut html_body_row, row, codex, Arc::clone(&compilation_configuration)).unwrap();
 
             html_table.add_custom_body_row(html_body_row);
         }
@@ -269,7 +269,7 @@ impl HtmlTableRule {
                                                     ("class", "table-footer-row")
                                                 ]);
 
-            Self::load_html_row(&mut html_table_footer, footer_cells, codex, Arc::clone(&parsing_configuration)).unwrap();
+            Self::load_html_row(&mut html_table_footer, footer_cells, codex, Arc::clone(&compilation_configuration)).unwrap();
 
             html_table.add_custom_footer_row(html_table_footer);
         }
@@ -300,7 +300,7 @@ impl CompilationRule for HtmlTableRule {
         &self.search_pattern
     }
 
-    fn standard_compile(&self, content: &str, codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, content: &str, codex: &Codex, compilation_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
 
         let mut table: Table = Table::new();
         let mut alignments: Option<Vec<TableCellAlignment>> = None;
@@ -320,7 +320,7 @@ impl CompilationRule for HtmlTableRule {
             let trim_line = line.trim_start();
             if trim_line.starts_with("[") || trim_line.starts_with("{") || trim_line.starts_with("#") {
 
-                if let Ok(pc) = parsing_configuration.read() {
+                if let Ok(pc) = compilation_configuration.read() {
 
                     let document_name = pc.metadata().document_name().as_ref().unwrap();
                     
@@ -380,7 +380,7 @@ impl CompilationRule for HtmlTableRule {
         }
 
         
-        Ok(CompilationResult::new_fixed(Self::build_html_table(caption, id, style, table, codex, Arc::clone(&parsing_configuration))))
+        Ok(CompilationResult::new_fixed(Self::build_html_table(caption, id, style, table, codex, Arc::clone(&compilation_configuration))))
     }
     
     fn search_pattern_regex(&self) -> &Regex {
@@ -410,9 +410,9 @@ mod test {
 
         let rule = HtmlTableRule::new();
         let codex = Codex::of_html(CodexConfiguration::default());
-        let parsing_configuration = Arc::new(RwLock::new(CompilationConfiguration::default()));
+        let compilation_configuration = Arc::new(RwLock::new(CompilationConfiguration::default()));
 
-        let outcome = rule.compile(nmd_table, &codex, parsing_configuration).unwrap().content();
+        let outcome = rule.compile(nmd_table, &codex, compilation_configuration).unwrap().content();
 
         assert!(outcome.contains("<thead"));
         assert!(outcome.contains("<tbody"));

@@ -30,7 +30,7 @@ impl CompilationRule for HtmlExtendedBlockQuoteRule {
     fn search_pattern(&self) -> &String {
         &self.search_pattern
     }
-    fn standard_compile(&self, content: &str, codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, content: &str, codex: &Codex, compilation_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
 
         let content = content.trim();
         let mut lines: Vec<&str> = content.lines().collect();
@@ -49,7 +49,7 @@ impl CompilationRule for HtmlExtendedBlockQuoteRule {
 
         for line in lines {
             if !line.starts_with(">") {
-                if parsing_configuration.read().unwrap().strict_focus_block_check() {
+                if compilation_configuration.read().unwrap().strict_focus_block_check() {
                     log::warn!("invalid line in focus (quote) block: {}", line);
                     continue;
                 } else {

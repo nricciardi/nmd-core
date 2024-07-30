@@ -33,20 +33,20 @@ pub trait CompilationRule: Send + Sync + Debug {
     }
 
     /// Compile string
-    fn standard_compile(&self, content: &str, codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError>;
+    fn standard_compile(&self, content: &str, codex: &Codex, compilation_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError>;
 
     /// Compile string avoid time consuming operations (incomplete compilation)
-    fn fast_compile(&self, content: &str, codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
-        self.standard_compile(content, codex, parsing_configuration)
+    fn fast_compile(&self, content: &str, codex: &Codex, compilation_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+        self.standard_compile(content, codex, compilation_configuration)
     }
 
     /// Standard or fast compilation based on `CompilationConfiguration` `fast_draft()`
-    fn compile(&self, content: &str, codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
-        if parsing_configuration.read().unwrap().fast_draft() {
-            return self.fast_compile(content, codex, parsing_configuration)
+    fn compile(&self, content: &str, codex: &Codex, compilation_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+        if compilation_configuration.read().unwrap().fast_draft() {
+            return self.fast_compile(content, codex, compilation_configuration)
         }
 
-        self.standard_compile(content, codex, parsing_configuration)
+        self.standard_compile(content, codex, compilation_configuration)
     }
 
 
