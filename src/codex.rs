@@ -19,7 +19,7 @@ use super::compiler::compilation_rule::html_list_rule::HtmlListRule;
 use super::compiler::compilation_rule::html_table_rule::HtmlTableRule;
 use super::compiler::compilation_rule::reference_rule::ReferenceRule;
 use super::compiler::compilation_rule::replacement_rule::{ReplacementRule, ReplacementRuleReplacerPart};
-use super::compiler::compilation_rule::ParsingRule;
+use super::compiler::compilation_rule::CompilationRule;
 
 
 /// Ordered collection of rules
@@ -31,16 +31,16 @@ pub struct Codex {
     configuration: CodexConfiguration,
 
     #[getset(get = "pub", set = "pub")]
-    text_rules: HashMap<ModifierIdentifier, Box<dyn ParsingRule>>,
+    text_rules: HashMap<ModifierIdentifier, Box<dyn CompilationRule>>,
 
     #[getset(get = "pub", set = "pub")]
-    paragraph_rules: HashMap<ModifierIdentifier, Box<dyn ParsingRule>>,
+    paragraph_rules: HashMap<ModifierIdentifier, Box<dyn CompilationRule>>,
 
     #[getset(get = "pub", set = "pub")]
-    chapter_rules: HashMap<ModifierIdentifier, Box<dyn ParsingRule>>,
+    chapter_rules: HashMap<ModifierIdentifier, Box<dyn CompilationRule>>,
 
     #[getset(get = "pub", set = "pub")]
-    document_rules: HashMap<ModifierIdentifier, Box<dyn ParsingRule>>,
+    document_rules: HashMap<ModifierIdentifier, Box<dyn CompilationRule>>,
     
 }
 
@@ -52,7 +52,7 @@ impl Codex {
         }
     }
 
-    fn new(configuration: CodexConfiguration, text_rules: HashMap<ModifierIdentifier, Box<dyn ParsingRule>>, paragraph_rules: HashMap<ModifierIdentifier, Box<dyn ParsingRule>>, chapter_rules: HashMap<ModifierIdentifier, Box<dyn ParsingRule>>, document_rules: HashMap<ModifierIdentifier, Box<dyn ParsingRule>>) -> Codex {
+    fn new(configuration: CodexConfiguration, text_rules: HashMap<ModifierIdentifier, Box<dyn CompilationRule>>, paragraph_rules: HashMap<ModifierIdentifier, Box<dyn CompilationRule>>, chapter_rules: HashMap<ModifierIdentifier, Box<dyn CompilationRule>>, document_rules: HashMap<ModifierIdentifier, Box<dyn CompilationRule>>) -> Codex {
 
         // TODO: check if there are all necessary rules based on theirs type
 
@@ -68,14 +68,14 @@ impl Codex {
     /// Standard HTML `Codex`
     pub fn of_html(configuration: CodexConfiguration) -> Self {
 
-        let text_rules: HashMap<ModifierIdentifier, Box<dyn ParsingRule>> = HashMap::from([
+        let text_rules: HashMap<ModifierIdentifier, Box<dyn CompilationRule>> = HashMap::from([
             (
                 StandardTextModifier::Todo.identifier().clone(),
                 Box::new(ReplacementRule::new(StandardTextModifier::Todo.modifier_pattern().clone(), vec![
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="todo"><div class="todo-title"></div><div class="todo-description">"#)),
                     ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div></div>"#)),
-                ])) as Box<dyn ParsingRule>,
+                ])) as Box<dyn CompilationRule>,
             ),
             (
                 StandardTextModifier::BookmarkWithId.identifier().clone(),
@@ -266,7 +266,7 @@ impl Codex {
                 StandardTextModifier::Checkbox.identifier().clone(),
                 Box::new(ReplacementRule::new(StandardTextModifier::Checkbox.modifier_pattern().clone(), vec![
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="checkbox checkbox-unchecked"></div>"#)),
-                ])) as Box<dyn ParsingRule>,
+                ])) as Box<dyn CompilationRule>,
             ),
             (
                 StandardTextModifier::CheckboxChecked.identifier().clone(),
@@ -296,12 +296,12 @@ impl Codex {
             ),
         ]);
 
-        let paragraph_rules: HashMap<ModifierIdentifier, Box<dyn ParsingRule>> = HashMap::from([
+        let paragraph_rules: HashMap<ModifierIdentifier, Box<dyn CompilationRule>> = HashMap::from([
             (
                 StandardParagraphModifier::PageBreak.identifier().clone(),
                 Box::new(ReplacementRule::new(StandardParagraphModifier::PageBreak.modifier_pattern().clone(), vec![
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="page-break"></div>"#)),
-                ])) as Box<dyn ParsingRule>
+                ])) as Box<dyn CompilationRule>
             ),
             (
                 StandardParagraphModifier::EmbeddedParagraphStyleWithId.identifier().clone(),
@@ -433,7 +433,7 @@ impl Codex {
             ),
         ]);
 
-        let chapter_rules: HashMap<ModifierIdentifier, Box<dyn ParsingRule>> = HashMap::new();
+        let chapter_rules: HashMap<ModifierIdentifier, Box<dyn CompilationRule>> = HashMap::new();
 
         Self::new(configuration, text_rules, paragraph_rules, chapter_rules, HashMap::new())
     }
@@ -454,18 +454,18 @@ mod test {
 
         let nmd_text = "This is a simple **nmd** text for test";
         let expected_result = r#"This is a simple <strong class="bold">nmd</strong> text for test"#;
-        let parsing_configuration = Arc::new(RwLock::new(CompilationConfiguration::default()));
+        let compilation_configuration = Arc::new(RwLock::new(CompilationConfiguration::default()));
 
-        let outcome = Compiler::compile_str(&codex, &nmd_text, Arc::clone(&parsing_configuration), Arc::new(None)).unwrap();
+        let outcome = Compiler::compile_str(&codex, &nmd_text, Arc::clone(&compilation_configuration), Arc::new(None)).unwrap();
 
-        assert_eq!(outcome.parsed_content(), expected_result);
+        assert_eq!(outcome.content(), expected_result);
 
         let nmd_text = "This is a simple *nmd* text for test";
         let expected_result = r#"This is a simple <em class="italic">nmd</em> text for test"#;
 
-        let outcome = Compiler::compile_str(&codex, &nmd_text, Arc::clone(&parsing_configuration), Arc::new(None)).unwrap();
+        let outcome = Compiler::compile_str(&codex, &nmd_text, Arc::clone(&compilation_configuration), Arc::new(None)).unwrap();
 
-        assert_eq!(outcome.parsed_content(), expected_result);
+        assert_eq!(outcome.content(), expected_result);
     }
 
 

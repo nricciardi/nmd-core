@@ -4,7 +4,7 @@ use std::{collections::BTreeMap, sync::{Arc, RwLock}};
 
 use bibliography_record::BibliographyRecord;
 use getset::{Getters, Setters};
-use crate::{codex::Codex, compiler::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, Compiler}, dossier::dossier_configuration::dossier_configuration_bibliography::DossierConfigurationBibliography, output_format::OutputFormat, resource::resource_reference::{ResourceReference, ResourceReferenceError}};
+use crate::{codex::Codex, compiler::{compilable::{compilation_result_accessor::CompilationResultAccessor, Compilable}, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, Compiler}, dossier::dossier_configuration::dossier_configuration_bibliography::DossierConfigurationBibliography, output_format::OutputFormat, resource::resource_reference::{ResourceReference, ResourceReferenceError}};
 
 pub const BIBLIOGRAPHY_FICTITIOUS_DOCUMENT: &str = "bibliography";
 
@@ -19,8 +19,7 @@ pub struct Bibliography {
     #[getset(get = "pub", set = "pub")]
     content: BTreeMap<String, BibliographyRecord>,
 
-    #[getset(get = "pub", set = "pub")]
-    parsed_content: Option<CompilationResult>,
+    compilation_result: Option<CompilationResult>,
 }
 
 impl Bibliography {
@@ -28,7 +27,7 @@ impl Bibliography {
         Self {
             title,
             content,
-            parsed_content: None,
+            compilation_result: None,
         }
     }
 
@@ -52,15 +51,15 @@ impl Bibliography {
 }
 
 impl Compilable for Bibliography {
-    fn standard_compile(&mut self, _format: &OutputFormat, codex: Arc<Codex>, parsing_configuration: Arc<RwLock<CompilationConfiguration>>, parsing_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+    fn standard_compile(&mut self, _format: &OutputFormat, codex: Arc<Codex>, compilation_configuration: Arc<RwLock<CompilationConfiguration>>, compilation_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
         
-        log::info!("parsing bibliography...");
+        log::info!("compiling bibliography...");
 
         let mut outcome = CompilationResult::new_empty();
 
         outcome.add_fixed_part(String::from(r#"<section class="bibliography">"#));
         outcome.add_fixed_part(String::from(r#"<div class="bibliography-title">"#));
-        outcome.append_parsing_outcome(&mut Compiler::compile_str(&*codex, &self.title, Arc::clone(&parsing_configuration), Arc::clone(&parsing_configuration_overlay))?);
+        outcome.append_compilation_result(&mut Compiler::compile_str(&*codex, &self.title, Arc::clone(&compilation_configuration), Arc::clone(&compilation_configuration_overlay))?);
         outcome.add_fixed_part(String::from(r#"</div>"#));
         outcome.add_fixed_part(String::from(r#"<ul class="bibliography-body">"#));
 
@@ -106,9 +105,9 @@ impl Compilable for Bibliography {
         outcome.add_fixed_part(String::from(r#"</ul>"#));
         outcome.add_fixed_part(String::from(r#"</section>"#));
 
-        self.parsed_content = Some(outcome);
+        self.compilation_result = Some(outcome);
 
-        log::info!("bibliography parsed");
+        log::info!("bibliography compiled");
 
         Ok(())
     }
@@ -119,7 +118,13 @@ impl From<&DossierConfigurationBibliography> for Bibliography {
         Self {
             title: dcb.title().clone(),
             content: dcb.records().clone(),
-            parsed_content: None
+            compilation_result: None
         }
+    }
+}
+
+impl CompilationResultAccessor for Bibliography {
+    fn compilation_result(&self) -> &Option<CompilationResult> {
+        &self.compilation_result
     }
 }

@@ -75,21 +75,21 @@ impl Dossier {
 
 impl Compilable for Dossier {
 
-    fn standard_compile(&mut self, format: &OutputFormat, codex: Arc<Codex>, parsing_configuration: Arc<RwLock<CompilationConfiguration>>, parsing_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+    fn standard_compile(&mut self, format: &OutputFormat, codex: Arc<Codex>, compilation_configuration: Arc<RwLock<CompilationConfiguration>>, compilation_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
 
-        let parallelization = parsing_configuration.read().unwrap().parallelization();
+        let parallelization = compilation_configuration.read().unwrap().parallelization();
 
         log::info!("parse dossier {} with ({} documents, parallelization: {})", self.name(), self.documents().len(), parallelization);
 
-        parsing_configuration.write().unwrap().metadata_mut().set_dossier_name(Some(self.name().clone()));
+        compilation_configuration.write().unwrap().metadata_mut().set_dossier_name(Some(self.name().clone()));
 
         if parallelization {
 
             let maybe_fails = self.documents.par_iter_mut()
                 .filter(|document| {
 
-                    if parsing_configuration.read().unwrap().fast_draft() {
-                        let pco = parsing_configuration_overlay.clone();
+                    if compilation_configuration.read().unwrap().fast_draft() {
+                        let pco = compilation_configuration_overlay.clone();
     
                         if let Some(pco) = pco.as_ref() {
     
@@ -112,10 +112,10 @@ impl Compilable for Dossier {
 
                     let parse_time = Instant::now();
 
-                    let new_parsing_configuration: Arc<RwLock<CompilationConfiguration>> = Arc::new(RwLock::new(parsing_configuration.read().unwrap().clone()));
+                    let new_compilation_configuration: Arc<RwLock<CompilationConfiguration>> = Arc::new(RwLock::new(compilation_configuration.read().unwrap().clone()));
 
                     // Arc::new because parallelization on (may be override during multi-thread operations)
-                    let res = document.compile(format, Arc::clone(&codex), new_parsing_configuration, Arc::clone(&parsing_configuration_overlay));
+                    let res = document.compile(format, Arc::clone(&codex), new_compilation_configuration, Arc::clone(&compilation_configuration_overlay));
 
                     log::info!("document '{}' parsed in {} ms", document.name(), parse_time.elapsed().as_millis());
 
@@ -131,8 +131,8 @@ impl Compilable for Dossier {
             let maybe_fails = self.documents.iter_mut()
                 .filter(|document| {
 
-                    if parsing_configuration.read().unwrap().fast_draft() {
-                        let pco = parsing_configuration_overlay.clone();
+                    if compilation_configuration.read().unwrap().fast_draft() {
+                        let pco = compilation_configuration_overlay.clone();
 
                         if let Some(pco) = pco.as_ref() {
 
@@ -155,7 +155,7 @@ impl Compilable for Dossier {
                 .map(|document| {
                     let parse_time = Instant::now();
 
-                    let res = document.compile(format, Arc::clone(&codex), Arc::clone(&parsing_configuration), Arc::clone(&parsing_configuration_overlay));
+                    let res = document.compile(format, Arc::clone(&codex), Arc::clone(&compilation_configuration), Arc::clone(&compilation_configuration_overlay));
 
                     log::info!("document '{}' parsed in {} ms", document.name(), parse_time.elapsed().as_millis());
 
@@ -188,7 +188,7 @@ impl Compilable for Dossier {
                 headings
             );
 
-            table_of_contents.compile(format, Arc::clone(&codex), Arc::clone(&parsing_configuration), Arc::clone(&parsing_configuration_overlay))?;
+            table_of_contents.compile(format, Arc::clone(&codex), Arc::clone(&compilation_configuration), Arc::clone(&compilation_configuration_overlay))?;
         
             self.table_of_contents = Some(table_of_contents);
         }
@@ -199,7 +199,7 @@ impl Compilable for Dossier {
                 self.configuration.bibliography().records().clone()
             );
 
-            bibliography.compile(format, Arc::clone(&codex), Arc::clone(&parsing_configuration), Arc::clone(&parsing_configuration_overlay))?;
+            bibliography.compile(format, Arc::clone(&codex), Arc::clone(&compilation_configuration), Arc::clone(&compilation_configuration_overlay))?;
         
             self.bibliography = Some(bibliography);
         }

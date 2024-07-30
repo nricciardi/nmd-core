@@ -4,7 +4,7 @@ use regex::{Captures, Regex};
 
 use crate::{codex::{modifier::standard_text_modifier::StandardTextModifier, Codex}, compiler::{compilation_configuration::CompilationConfiguration, compilation_error::CompilationError, compilation_result::CompilationResult}};
 
-use super::ParsingRule;
+use super::CompilationRule;
 
 
 pub struct HtmlGreekLettersRule {
@@ -109,12 +109,12 @@ impl Debug for HtmlGreekLettersRule {
     }
 }
 
-impl ParsingRule for HtmlGreekLettersRule {
+impl CompilationRule for HtmlGreekLettersRule {
     fn search_pattern(&self) -> &String {
         &self.search_pattern
     }
 
-    fn standard_parse(&self, content: &str, codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, content: &str, codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
         
         let parsed_content = self.search_pattern_regex.replace_all(content, |capture: &Captures| {
 

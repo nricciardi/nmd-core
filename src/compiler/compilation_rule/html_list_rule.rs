@@ -5,7 +5,7 @@ use regex::Regex;
 
 use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, compiler::{compilation_configuration::{list_bullet_configuration_record::{self, ListBulletConfigurationRecord}, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult}, utility::text_utility};
 
-use super::{constants::{ESCAPE_HTML, SPACE_TAB_EQUIVALENCE}, ParsingRule};
+use super::{constants::{ESCAPE_HTML, SPACE_TAB_EQUIVALENCE}, CompilationRule};
 
 static SEARCH_LIST_ITEM_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&StandardParagraphModifier::ListItem.modifier_pattern()).unwrap());
 
@@ -62,12 +62,12 @@ impl HtmlListRule {
     }
 }
 
-impl ParsingRule for HtmlListRule {
+impl CompilationRule for HtmlListRule {
     fn search_pattern(&self) -> &String {
         &self.search_pattern
     }
 
-    fn standard_parse(&self, content: &str, _codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, content: &str, _codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
         
         let mut parsing_outcome = CompilationResult::new_empty();
 
@@ -163,7 +163,7 @@ mod test {
 
        let codex = Codex::of_html(CodexConfiguration::default());
 
-       let _ = rule.parse(nmd_text, &codex, Arc::new(RwLock::new(CompilationConfiguration::default()))).unwrap();
+       let _ = rule.compile(nmd_text, &codex, Arc::new(RwLock::new(CompilationConfiguration::default()))).unwrap();
 
     }
 }

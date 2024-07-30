@@ -68,20 +68,20 @@ impl Document {
 
 impl Compilable for Document {
 
-    fn standard_compile(&mut self, format: &OutputFormat, codex: Arc<Codex>, parsing_configuration: Arc<RwLock<CompilationConfiguration>>, parsing_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+    fn standard_compile(&mut self, format: &OutputFormat, codex: Arc<Codex>, compilation_configuration: Arc<RwLock<CompilationConfiguration>>, compilation_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
 
-        let parallelization = parsing_configuration.read().unwrap().parallelization();
+        let parallelization = compilation_configuration.read().unwrap().parallelization();
 
         log::info!("parsing {} chapters of document: '{}'", self.chapters().len(), self.name);
 
-        parsing_configuration.write().unwrap().metadata_mut().set_document_name(Some(self.name().clone()));
+        compilation_configuration.write().unwrap().metadata_mut().set_document_name(Some(self.name().clone()));
 
         if parallelization {
 
             let maybe_one_failed: Option<Result<(), CompilationError>> = self.preamble.par_iter_mut()
                 .map(|paragraph| {
 
-                    paragraph.compile(format, Arc::clone(&codex), Arc::clone(&parsing_configuration), Arc::clone(&parsing_configuration_overlay))
+                    paragraph.compile(format, Arc::clone(&codex), Arc::clone(&compilation_configuration), Arc::clone(&compilation_configuration_overlay))
                 
                 }).find_any(|result| result.is_err());
 
@@ -92,7 +92,7 @@ impl Compilable for Document {
             let maybe_one_failed: Option<Result<(), CompilationError>> = self.chapters.par_iter_mut()
                 .map(|chapter| {
 
-                    chapter.compile(format, Arc::clone(&codex), Arc::clone(&parsing_configuration), Arc::clone(&parsing_configuration_overlay))
+                    chapter.compile(format, Arc::clone(&codex), Arc::clone(&compilation_configuration), Arc::clone(&compilation_configuration_overlay))
                 
                 }).find_any(|result| result.is_err());
 
@@ -105,7 +105,7 @@ impl Compilable for Document {
             let maybe_one_failed: Option<Result<(), CompilationError>> = self.preamble.iter_mut()
                 .map(|paragraph| {
 
-                    paragraph.compile(format, Arc::clone(&codex), Arc::clone(&parsing_configuration), Arc::clone(&parsing_configuration_overlay))
+                    paragraph.compile(format, Arc::clone(&codex), Arc::clone(&compilation_configuration), Arc::clone(&compilation_configuration_overlay))
                 
                 }).find(|result| result.is_err());
 
@@ -116,7 +116,7 @@ impl Compilable for Document {
             let maybe_one_failed: Option<Result<(), CompilationError>> = self.chapters.iter_mut()
                 .map(|chapter| {
 
-                    chapter.compile(format, Arc::clone(&codex), Arc::clone(&parsing_configuration), Arc::clone(&parsing_configuration_overlay))
+                    chapter.compile(format, Arc::clone(&codex), Arc::clone(&compilation_configuration), Arc::clone(&compilation_configuration_overlay))
                 
                 }).find(|result| result.is_err());
 

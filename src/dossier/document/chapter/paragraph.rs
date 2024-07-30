@@ -3,7 +3,7 @@ use std::{fmt::Display, sync::{Arc, RwLock}};
 use getset::{Getters, Setters};
 use thiserror::Error;
 
-use crate::{codex::{modifier::ModifierIdentifier, Codex}, compiler::{compilable::{compiled_content_accessor::CompiledContentAccessor, Compilable}, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, Compiler}, output_format::OutputFormat};
+use crate::{codex::{modifier::ModifierIdentifier, Codex}, compiler::{compilable::{compilation_result_accessor::CompilationResultAccessor, Compilable}, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, Compiler}, output_format::OutputFormat};
 
 
 #[derive(Error, Debug)]
@@ -23,8 +23,7 @@ pub struct Paragraph {
     #[getset(get = "pub", set = "pub")]
     content: String,
 
-    #[getset(get = "pub", set = "pub")]
-    parsed_content: Option<CompilationResult>,
+    compilation_result: Option<CompilationResult>,
 
     #[getset(get = "pub", set = "pub")]
     paragraph_type: ParagraphType,
@@ -36,7 +35,7 @@ impl Paragraph {
         Self {
             content,
             paragraph_type,
-            parsed_content: None
+            compilation_result: None
         }
     }
 
@@ -46,23 +45,23 @@ impl Paragraph {
 }
 
 impl Compilable for Paragraph {
-    fn standard_compile(&mut self, format: &OutputFormat, codex: Arc<Codex>, parsing_configuration: Arc<RwLock<CompilationConfiguration>>, parsing_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+    fn standard_compile(&mut self, format: &OutputFormat, codex: Arc<Codex>, compilation_configuration: Arc<RwLock<CompilationConfiguration>>, compilation_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
 
         let codex = codex.clone();
 
-        let parsing_outcome = Compiler::compile_paragraph(&*codex, self, Arc::clone(&parsing_configuration), parsing_configuration_overlay)?;
+        let compilation_result = Compiler::compile_paragraph(&*codex, self, Arc::clone(&compilation_configuration), compilation_configuration_overlay)?;
 
-        log::debug!("end to parse paragraph:\n{:#?}", parsing_outcome);
+        log::debug!("end to parse paragraph:\n{:#?}", compilation_result);
 
-        self.parsed_content = Some(parsing_outcome);
+        self.compilation_result = Some(compilation_result);
 
         Ok(())
     }
 }
 
-impl CompiledContentAccessor for Paragraph {
-    fn parsed_content(&self) -> &Option<CompilationResult> {
-        &self.parsed_content
+impl CompilationResultAccessor for Paragraph {
+    fn compilation_result(&self) -> &Option<CompilationResult> {
+        &self.compilation_result
     }
 }
 

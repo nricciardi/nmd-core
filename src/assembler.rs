@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::{compiler::compilation_error::CompilationError, resource::ResourceError};
+use crate::{compiler::{compilable::compilation_result_accessor::CompilationResultAccessor, compilation_error::CompilationError}, resource::ResourceError};
 
 use self::{html_assembler::HtmlAssembler, assembler_configuration::AssemblerConfiguration};
 
@@ -21,8 +21,8 @@ pub enum AssemblerError {
     #[error(transparent)]
     CompilationError(#[from] CompilationError),
 
-    #[error("expected parsed content not found")]
-    ParsedContentNotFound,
+    #[error("compiled content not found")]
+    CompiledContentNotFound,
 
     #[error(transparent)]
     ResourceError(#[from] ResourceError),
@@ -42,35 +42,35 @@ pub trait Assembler {
 
         for paragraph in document.preamble() {
 
-            if let Some(parsed_content) = paragraph.parsed_content().as_ref() {
+            if let Some(r) = paragraph.compilation_result().as_ref() {
 
-                result.push_str(&parsed_content.parsed_content());
+                result.push_str(&r.content());
 
             } else {
 
-                return Err(AssemblerError::ParsedContentNotFound)
+                return Err(AssemblerError::CompiledContentNotFound)
             }
         }
 
         for chapter in document.chapters() {
 
-            if let Some(parsed_content) = chapter.heading().parsed_content().as_ref() {
+            if let Some(r) = chapter.heading().compilation_result().as_ref() {
 
-                result.push_str(&parsed_content.parsed_content());
+                result.push_str(&r.content());
 
             } else {
 
-                return Err(AssemblerError::ParsedContentNotFound)
+                return Err(AssemblerError::CompiledContentNotFound)
             }
 
             for paragraph in chapter.paragraphs() {
-                if let Some(parsed_content) = paragraph.parsed_content().as_ref() {
+                if let Some(r) = paragraph.compilation_result().as_ref() {
 
-                    result.push_str(&parsed_content.parsed_content());
+                    result.push_str(&r.content());
     
                 } else {
 
-                    return Err(AssemblerError::ParsedContentNotFound)
+                    return Err(AssemblerError::CompiledContentNotFound)
                 }
             }
         }

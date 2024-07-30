@@ -3,7 +3,7 @@ use std::str::FromStr;
 use build_html::{HtmlPage, HtmlContainer, Html, Container};
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
-use crate::{artifact::Artifact, bibliography::Bibliography, dossier::{document::chapter::chapter_tag::ChapterTagKey, Document, Dossier}, resource::{dynamic_resource::DynamicResource, Resource, ResourceError}, table_of_contents::TableOfContents, theme::Theme};
+use crate::{artifact::Artifact, bibliography::Bibliography, compiler::compilable::compilation_result_accessor::CompilationResultAccessor, dossier::{document::chapter::chapter_tag::ChapterTagKey, Document, Dossier}, resource::{dynamic_resource::DynamicResource, Resource, ResourceError}, table_of_contents::TableOfContents, theme::Theme};
 
 use super::{Assembler, AssemblerError, assembler_configuration::AssemblerConfiguration};
 
@@ -236,7 +236,7 @@ impl Assembler for HtmlAssembler {
         
         if let Some(toc) = dossier.table_of_contents() {
             if let Some(parsed_toc) = toc.parsed_content() {
-                page.add_raw(parsed_toc.parsed_content());
+                page.add_raw(parsed_toc.content());
             }
         }
 
@@ -272,8 +272,8 @@ impl Assembler for HtmlAssembler {
         }
 
         if let Some(bib) = dossier.bibliography() {
-            if let Some(parsed_bib) = bib.parsed_content() {
-                page.add_raw(parsed_bib.parsed_content());
+            if let Some(parsed_bib) = bib.compilation_result() {
+                page.add_raw(parsed_bib.content());
             }
         }
 
@@ -287,12 +287,12 @@ impl Assembler for HtmlAssembler {
 
         for paragraph in document.preamble() {
 
-            if let Some(parsed_content) = paragraph.parsed_content().as_ref() {
+            if let Some(parsed_content) = paragraph.compilation_result().as_ref() {
 
-                result.push_str(&parsed_content.parsed_content());
+                result.push_str(&parsed_content.content());
 
             } else {
-                return Err(AssemblerError::ParsedContentNotFound)
+                return Err(AssemblerError::CompiledContentNotFound)
             }
         }
 
@@ -323,18 +323,18 @@ impl Assembler for HtmlAssembler {
             div_chapter = div_chapter.with_attributes(vec![("style", style.as_str())]);
             let mut div_chapter_content = String::new();
 
-            if let Some(parsed_content) = chapter.heading().parsed_content().as_ref() {
+            if let Some(parsed_content) = chapter.heading().compilation_result().as_ref() {
 
-                div_chapter_content.push_str(&parsed_content.parsed_content());
+                div_chapter_content.push_str(&parsed_content.content());
 
             } else {
-                return Err(AssemblerError::ParsedContentNotFound)
+                return Err(AssemblerError::CompiledContentNotFound)
             }
 
             for paragraph in chapter.paragraphs() {
-                if let Some(parsed_content) = paragraph.parsed_content().as_ref() {
+                if let Some(parsed_content) = paragraph.compilation_result().as_ref() {
 
-                    let parsed_content = parsed_content.parsed_content();
+                    let parsed_content = parsed_content.content();
 
                     if parsed_content.is_empty() {
                         continue;
@@ -343,7 +343,7 @@ impl Assembler for HtmlAssembler {
                     div_chapter_content.push_str(&parsed_content);
     
                 } else {
-                    return Err(AssemblerError::ParsedContentNotFound)
+                    return Err(AssemblerError::CompiledContentNotFound)
                 }
             }
 
@@ -358,15 +358,15 @@ impl Assembler for HtmlAssembler {
 
         if let Some(toc) = toc {
             if let Some(parsed_toc) = toc.parsed_content() {
-                page.add_raw(parsed_toc.parsed_content());
+                page.add_raw(parsed_toc.content());
             }
         }
 
         page.add_raw(Into::<String>::into(self.assemble_document(document)?));
 
         if let Some(bib) = bibliography {
-            if let Some(parsed_bib) = bib.parsed_content() {
-                page.add_raw(parsed_bib.parsed_content());
+            if let Some(parsed_bib) = bib.compilation_result() {
+                page.add_raw(parsed_bib.content());
             }
         }
 

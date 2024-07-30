@@ -117,7 +117,7 @@ impl Compiler {
                     match segment {
                         Segment::Match(m) => {
                             
-                            let outcome = text_rule.parse(&m, codex, Arc::clone(&parsing_configuration))?;
+                            let outcome = text_rule.compile(&m, codex, Arc::clone(&parsing_configuration))?;
 
                             for part in Into::<Vec<CompilationResultPart>>::into(outcome) {
 
@@ -200,7 +200,7 @@ impl Compiler {
 
             log::debug!("paragraph rule {:?} is found, it is about to be applied to parse paragraph", paragraph_rule);
 
-            outcome = paragraph_rule.parse(&paragraph.content(), codex, Arc::clone(&parsing_configuration))?;
+            outcome = paragraph_rule.compile(&paragraph.content(), codex, Arc::clone(&parsing_configuration))?;
 
             excluded_modifiers = excluded_modifiers + paragraph_modifier.incompatible_modifiers().clone();
 
@@ -209,7 +209,7 @@ impl Compiler {
             log::warn!("there is NOT a paragraph rule for '{}' in codex", paragraph.paragraph_type());
         }
 
-        outcome.apply_parsing_function_to_mutable_parts(|mutable_part| Self::compile_str_excluding_modifiers(codex, &mutable_part.content(), excluded_modifiers.clone(), Arc::clone(&parsing_configuration), Arc::clone(&parsing_configuration_overlay)))?;
+        outcome.apply_compile_function_to_mutable_parts(|mutable_part| Self::compile_str_excluding_modifiers(codex, &mutable_part.content(), excluded_modifiers.clone(), Arc::clone(&parsing_configuration), Arc::clone(&parsing_configuration_overlay)))?;
 
         Ok(outcome)
     }
@@ -235,6 +235,6 @@ mod test {
 
         let outcome = Compiler::compile_str_excluding_modifiers(&codex, content, excluded_modifiers, Arc::new(RwLock::new(parsing_configuration)), Arc::new(None)).unwrap();
 
-        assert_eq!(outcome.parsed_content(), r#"Text <strong class="bold">bold text</strong> <code class="language-markup inline-code">a **bold text** which must be not parsed</code>"#)
+        assert_eq!(outcome.content(), r#"Text <strong class="bold">bold text</strong> <code class="language-markup inline-code">a **bold text** which must be not parsed</code>"#)
     }
 }

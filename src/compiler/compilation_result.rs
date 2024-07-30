@@ -42,17 +42,17 @@ impl CompilationResult {
         Self::new(vec![CompilationResultPart::Mutable { content }])
     }
 
-    pub fn parsed_content(&self) -> String {
-        let mut parsed_content = String::new();
+    pub fn content(&self) -> String {
+        let mut c = String::new();
 
         for part in &self.parts {
             match part {
-                CompilationResultPart::Fixed { content } => parsed_content.push_str(content),
-                CompilationResultPart::Mutable { content } => parsed_content.push_str(content),
+                CompilationResultPart::Fixed { content } => c.push_str(content),
+                CompilationResultPart::Mutable { content } => c.push_str(content),
             }
         }
 
-        parsed_content
+        c
     }
 
     pub fn add_fixed_part(&mut self, content: String) {
@@ -71,7 +71,7 @@ impl CompilationResult {
         &mut self.parts
     }
 
-    pub fn apply_parsing_function_to_mutable_parts<F, E>(&mut self, f: F) -> Result<(), E>
+    pub fn apply_compile_function_to_mutable_parts<F, E>(&mut self, f: F) -> Result<(), E>
         where F: Fn(&CompilationResultPart) -> Result<CompilationResult, E> {
 
         let mut new_parts: Vec<CompilationResultPart> = Vec::new();
@@ -91,14 +91,14 @@ impl CompilationResult {
         Ok(())
     }
 
-    pub fn append_parsing_outcome(&mut self, ext_outcome: &mut Self) {
-        self.parts.append(ext_outcome.parts_mut());
+    pub fn append_compilation_result(&mut self, ext_res: &mut Self) {
+        self.parts.append(ext_res.parts_mut());
     }
 }
 
 impl Into<String> for CompilationResult {
     fn into(self) -> String {
-        self.parsed_content()
+        self.content()
     }
 }
 

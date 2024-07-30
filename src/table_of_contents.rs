@@ -67,7 +67,7 @@ impl TableOfContents {
 
         outcome.add_fixed_part(String::from(r#"<section class="toc">"#));
         outcome.add_fixed_part(String::from(r#"<div class="toc-title">"#));
-        outcome.append_parsing_outcome(&mut Compiler::compile_str(&*codex, &self.title, Arc::clone(&parsing_configuration), Arc::clone(&parsing_configuration_overlay))?);
+        outcome.append_compilation_result(&mut Compiler::compile_str(&*codex, &self.title, Arc::clone(&parsing_configuration), Arc::clone(&parsing_configuration_overlay))?);
         outcome.add_fixed_part(String::from(r#"</div>"#));
         outcome.add_fixed_part(String::from(r#"<ul class="toc-body">"#));
 
@@ -108,7 +108,7 @@ impl TableOfContents {
                 log::warn!("heading '{}' does not have a valid id", heading.title())
             }
 
-            outcome.append_parsing_outcome(&mut Compiler::compile_str(&*codex, &heading.title(), Arc::clone(&parsing_configuration), Arc::clone(&parsing_configuration_overlay))?);
+            outcome.append_compilation_result(&mut Compiler::compile_str(&*codex, &heading.title(), Arc::clone(&parsing_configuration), Arc::clone(&parsing_configuration_overlay))?);
 
             if let Some(_) = heading.resource_reference() {
 

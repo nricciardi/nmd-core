@@ -5,7 +5,7 @@ use regex::Regex;
 
 use crate::{codex::{modifier::{constants::NEW_LINE, standard_paragraph_modifier::StandardParagraphModifier}, Codex}, compiler::{compilation_configuration::CompilationConfiguration, compilation_error::CompilationError, compilation_result::{CompilationResult, CompilationResultPart}}, utility::text_utility};
 
-use super::{constants::{DOUBLE_NEW_LINE_REGEX, ESCAPE_HTML}, ParsingRule};
+use super::{constants::{DOUBLE_NEW_LINE_REGEX, ESCAPE_HTML}, CompilationRule};
 
 static CHECK_EXTENDED_BLOCK_QUOTE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?:^(?m:^> \[!(.*)\]))").unwrap());
 
@@ -25,12 +25,12 @@ impl HtmlExtendedBlockQuoteRule {
     }
 }
 
-impl ParsingRule for HtmlExtendedBlockQuoteRule {
+impl CompilationRule for HtmlExtendedBlockQuoteRule {
 
     fn search_pattern(&self) -> &String {
         &self.search_pattern
     }
-    fn standard_parse(&self, content: &str, codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, content: &str, codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
 
         let content = content.trim();
         let mut lines: Vec<&str> = content.lines().collect();

@@ -3,8 +3,6 @@ use std::path::PathBuf;
 use getset::{Getters, Setters};
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 
-use crate::{_compiler::dumpable::{DumpError, Dumpable}, resource::{cached_disk_resource::CachedDiskResource, Resource}};
-
 use super::{artifact_assets::ArtifactAssets, Artifact, ArtifactError};
 
 

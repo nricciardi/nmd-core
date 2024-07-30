@@ -3,7 +3,7 @@ use getset::{Getters, Setters};
 
 
 #[derive(Clone, Debug, Default, Getters, Setters)]
-pub struct ParsingMetadata {
+pub struct CompilationMetadata {
 
     #[getset(get = "pub", set = "pub")]
     dossier_name: Option<String>,
@@ -12,7 +12,7 @@ pub struct ParsingMetadata {
     document_name: Option<String>
 }
 
-impl ParsingMetadata {
+impl CompilationMetadata {
     pub fn new() -> Self {
         Self {
             document_name: None,

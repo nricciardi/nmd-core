@@ -19,7 +19,7 @@ use crate::resource::resource_reference::ResourceReference;
 use crate::resource::{image_resource::ImageResource, remote_resource::RemoteResource};
 use crate::utility::text_utility;
 
-use super::ParsingRule;
+use super::CompilationRule;
 
 static ALIGN_ITEM_PATTERN_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(ALIGN_ITEM_PATTERN).unwrap());
 
@@ -222,7 +222,7 @@ impl HtmlImageRule {
 
                         let id = ResourceReference::of_internal_from_without_sharp(id.as_str(), Some(document_name)).unwrap();
 
-                        let mut image: ImageResource = ImageResource::new(PathBuf::from(src.as_str()), Some(parsed_label.parsed_content()), Some(label.as_str().to_string()))
+                        let mut image: ImageResource = ImageResource::new(PathBuf::from(src.as_str()), Some(parsed_label.content()), Some(label.as_str().to_string()))
                                                                         .elaborating_relative_path_as_dossier_assets(parsing_configuration.input_location())
                                                                         .inferring_mime_type()
                                                                         .unwrap();
@@ -233,7 +233,7 @@ impl HtmlImageRule {
 
                         let id = ResourceReference::of(label.as_str(), Some(document_name)).unwrap();
 
-                        let image = ImageResource::new(PathBuf::from(src.as_str()), Some(parsed_label.parsed_content()), Some(label.as_str().to_string()))
+                        let image = ImageResource::new(PathBuf::from(src.as_str()), Some(parsed_label.content()), Some(label.as_str().to_string()))
                                                             .elaborating_relative_path_as_dossier_assets(parsing_configuration.input_location())
                                                             .inferring_mime_type();
                         
@@ -346,7 +346,7 @@ impl HtmlImageRule {
                     let parse_res = Self::parse_image_from_identifier(&modifier.identifier(), &Regex::new(&modifier.modifier_pattern()).unwrap(), raw_image_line, codex, Arc::clone(&parsing_configuration));
 
                     if let Ok(result) = parse_res {
-                        image_container = image_container.with_raw(result.parsed_content());
+                        image_container = image_container.with_raw(result.content());
                     }
                 }
 
@@ -381,18 +381,18 @@ impl HtmlImageRule {
     }
 }
 
-impl ParsingRule for HtmlImageRule {
+impl CompilationRule for HtmlImageRule {
 
     fn search_pattern(&self) -> &String {
         &self.search_pattern
     }
 
-    fn standard_parse(&self, content: &str, codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, content: &str, codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
 
         Self::parse_image_from_identifier(&self.image_modifier_identifier, &self.search_pattern_regex, content, codex, Arc::clone(&parsing_configuration))
     }
 
-    fn fast_parse(&self, content: &str, _codex: &Codex, _parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+    fn fast_compile(&self, content: &str, _codex: &Codex, _parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
         Ok(CompilationResult::new_fixed(format!(r#"<img alt="{}" />"#, content)))
     }
     
@@ -423,7 +423,7 @@ mod test {
 
         pc.metadata_mut().set_document_name(Some(String::from("test")));
 
-        let parsed_content = image_rule.parse(nmd_text.as_str(), &codex, Arc::new(RwLock::new(pc))).unwrap();
+        let parsed_content = image_rule.compile(nmd_text.as_str(), &codex, Arc::new(RwLock::new(pc))).unwrap();
         
         assert!(parsed_content.parts().len() > 0)
     }

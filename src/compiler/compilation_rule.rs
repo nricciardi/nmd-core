@@ -17,7 +17,7 @@ use crate::codex::Codex;
 use super::{compilation_configuration::CompilationConfiguration, compilation_error::CompilationError, compilation_result::CompilationResult};
 
 
-pub trait ParsingRule: Send + Sync + Debug {
+pub trait CompilationRule: Send + Sync + Debug {
 
     fn search_pattern(&self) -> &String;
 
@@ -32,21 +32,21 @@ pub trait ParsingRule: Send + Sync + Debug {
         self.search_pattern_regex().find_iter(content).collect()
     }
 
-    /// Parse content based on `Codex` and `ParsingConfiguration`
-    fn standard_parse(&self, content: &str, codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError>;
+    /// Compile string
+    fn standard_compile(&self, content: &str, codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError>;
 
-    /// Parse content based on `Codex` and `ParsingConfiguration` avoid time consuming operations. This is an incomplete parsing
-    fn fast_parse(&self, content: &str, codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
-        self.standard_parse(content, codex, parsing_configuration)
+    /// Compile string avoid time consuming operations (incomplete compilation)
+    fn fast_compile(&self, content: &str, codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+        self.standard_compile(content, codex, parsing_configuration)
     }
 
-    /// Standard or fast parse based on `ParsingConfiguration` `fast_draft()`
-    fn parse(&self, content: &str, codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+    /// Standard or fast compilation based on `CompilationConfiguration` `fast_draft()`
+    fn compile(&self, content: &str, codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
         if parsing_configuration.read().unwrap().fast_draft() {
-            return self.fast_parse(content, codex, parsing_configuration)
+            return self.fast_compile(content, codex, parsing_configuration)
         }
 
-        self.standard_parse(content, codex, parsing_configuration)
+        self.standard_compile(content, codex, parsing_configuration)
     }
 
 

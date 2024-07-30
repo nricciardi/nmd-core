@@ -8,7 +8,7 @@ use regex::Regex;
 
 use crate::{codex::{modifier::constants::IDENTIFIER_PATTERN, Codex, modifier::standard_paragraph_modifier::StandardParagraphModifier}, compiler::{compilation_configuration::{list_bullet_configuration_record::ListBulletConfigurationRecord, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, Compiler}, resource::{resource_reference::ResourceReference, table::{Table, TableCell, TableCellAlignment}}, utility::text_utility};
 
-use super::{constants::ESCAPE_HTML, ParsingRule};
+use super::{constants::ESCAPE_HTML, CompilationRule};
 
 
 /// (caption, id, style)
@@ -158,7 +158,7 @@ impl HtmlTableRule {
                         TableCellAlignment::Right => String::from("table-right-cell"),
                     };
 
-                    let content = Compiler::compile_str(codex, content, Arc::clone(&parsing_configuration), Arc::new(None))?.parsed_content();
+                    let content = Compiler::compile_str(codex, content, Arc::clone(&parsing_configuration), Arc::new(None))?.content();
 
                     let content = text_utility::replace(&content, &ESCAPE_HTML);
 
@@ -295,12 +295,12 @@ impl Debug for HtmlTableRule {
     }
 }
 
-impl ParsingRule for HtmlTableRule {
+impl CompilationRule for HtmlTableRule {
     fn search_pattern(&self) -> &String {
         &self.search_pattern
     }
 
-    fn standard_parse(&self, content: &str, codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, content: &str, codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
 
         let mut table: Table = Table::new();
         let mut alignments: Option<Vec<TableCellAlignment>> = None;
@@ -393,7 +393,7 @@ impl ParsingRule for HtmlTableRule {
 mod test {
     use std::sync::{Arc, RwLock};
 
-    use crate::{codex::{codex_configuration::CodexConfiguration, Codex}, compiler::{compilation_configuration::CompilationConfiguration, compilation_rule::ParsingRule}};
+    use crate::{codex::{codex_configuration::CodexConfiguration, Codex}, compiler::{compilation_configuration::CompilationConfiguration, compilation_rule::CompilationRule}};
 
     use super::HtmlTableRule;
 
@@ -412,7 +412,7 @@ mod test {
         let codex = Codex::of_html(CodexConfiguration::default());
         let parsing_configuration = Arc::new(RwLock::new(CompilationConfiguration::default()));
 
-        let outcome = rule.parse(nmd_table, &codex, parsing_configuration).unwrap().parsed_content();
+        let outcome = rule.compile(nmd_table, &codex, parsing_configuration).unwrap().content();
 
         assert!(outcome.contains("<thead"));
         assert!(outcome.contains("<tbody"));

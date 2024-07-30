@@ -50,17 +50,17 @@ impl Chapter {
 
 
 impl Compilable for Chapter {
-    fn standard_compile(&mut self, format: &OutputFormat, codex: Arc<Codex>, parsing_configuration: Arc<RwLock<CompilationConfiguration>>, parsing_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+    fn standard_compile(&mut self, format: &OutputFormat, codex: Arc<Codex>, compilation_configuration: Arc<RwLock<CompilationConfiguration>>, compilation_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
 
-        self.heading.compile(format, Arc::clone(&codex), Arc::clone(&parsing_configuration), Arc::clone(&parsing_configuration_overlay))?;
+        self.heading.compile(format, Arc::clone(&codex), Arc::clone(&compilation_configuration), Arc::clone(&compilation_configuration_overlay))?;
 
         log::debug!("parsing chapter:\n{:#?}", self);
 
-        if parsing_configuration.read().unwrap().parallelization() {
+        if compilation_configuration.read().unwrap().parallelization() {
 
             let maybe_failed = self.paragraphs.par_iter_mut()
                 .map(|paragraph| {
-                    paragraph.compile(format, Arc::clone(&codex), Arc::clone(&parsing_configuration), Arc::clone(&parsing_configuration_overlay))
+                    paragraph.compile(format, Arc::clone(&codex), Arc::clone(&compilation_configuration), Arc::clone(&compilation_configuration_overlay))
                 })
                 .find_any(|result| result.is_err());
     
@@ -72,7 +72,7 @@ impl Compilable for Chapter {
             
             let maybe_failed = self.paragraphs.iter_mut()
                 .map(|paragraph| {
-                    paragraph.compile(format, Arc::clone(&codex), Arc::clone(&parsing_configuration), Arc::clone(&parsing_configuration_overlay))
+                    paragraph.compile(format, Arc::clone(&codex), Arc::clone(&compilation_configuration), Arc::clone(&compilation_configuration_overlay))
                 })
                 .find(|result| result.is_err());
     

@@ -13,7 +13,7 @@ use crate::compiler::compilation_rule::constants::DOUBLE_NEW_LINE_REGEX;
 use crate::resource::resource_reference::ResourceReference;
 use crate::utility::text_utility;
 
-use super::ParsingRule;
+use super::CompilationRule;
 
 
 #[derive(Debug, Clone, Getters, CopyGetters, MutGetters, Setters)]
@@ -116,10 +116,10 @@ impl Debug for ReplacementRule<String> {
     }
 }
 
-impl ParsingRule for ReplacementRule<String> {
+impl CompilationRule for ReplacementRule<String> {
 
     /// Parse the content using internal search and replacement pattern
-    fn standard_parse(&self, content: &str, _codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, content: &str, _codex: &Codex, parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
 
         log::debug!("parsing:\n{}\nusing '{}'->'{:?}'", content, self.search_pattern(), self.replacer_parts);
 
@@ -217,11 +217,11 @@ where F: 'static + Sync + Send + Fn(&Captures) -> String {
     }
 }
 
-impl<F> ParsingRule for ReplacementRule<F>
+impl<F> CompilationRule for ReplacementRule<F>
 where F: 'static + Sync + Send + Fn(&Captures) -> String {
 
     /// Parse the content using internal search and replacement pattern
-    fn standard_parse(&self, content: &str, _codex: &Codex, _parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, content: &str, _codex: &Codex, _parsing_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
 
         log::debug!("parsing:\n{}\nusing '{}'", content, self.search_pattern());
 
@@ -292,16 +292,16 @@ mod test {
         let text_to_parse = r"A piece of **bold text** and **bold text2**";
         let parsing_configuration = Arc::new(RwLock::new(CompilationConfiguration::default()));
 
-        let parsed_text = parsing_rule.parse(text_to_parse, &codex, Arc::clone(&parsing_configuration)).unwrap();
+        let parsed_text = parsing_rule.compile(text_to_parse, &codex, Arc::clone(&parsing_configuration)).unwrap();
 
-        assert_eq!(parsed_text.parsed_content(), r"A piece of <strong>bold text</strong> and <strong>bold text2</strong>");
+        assert_eq!(parsed_text.content(), r"A piece of <strong>bold text</strong> and <strong>bold text2</strong>");
 
         // without text modifier
         let text_to_parse = r"A piece of text without bold text";
 
-        let parsed_text = parsing_rule.parse(text_to_parse, &codex, Arc::clone(&parsing_configuration)).unwrap();
+        let parsed_text = parsing_rule.compile(text_to_parse, &codex, Arc::clone(&parsing_configuration)).unwrap();
 
-        assert_eq!(parsed_text.parsed_content(), r"A piece of text without bold text");
+        assert_eq!(parsed_text.content(), r"A piece of text without bold text");
 
 
     }
@@ -321,9 +321,9 @@ mod test {
 
         let text_to_parse = r"###### title 6";
 
-        let parsed_text = parsing_rule.parse(text_to_parse, &codex, Arc::clone(&parsing_configuration)).unwrap();
+        let parsed_text = parsing_rule.compile(text_to_parse, &codex, Arc::clone(&parsing_configuration)).unwrap();
 
-        assert_eq!(parsed_text.parsed_content(), r"<h6>title 6</h6>");
+        assert_eq!(parsed_text.content(), r"<h6>title 6</h6>");
     }
 
     #[test]
@@ -345,9 +345,9 @@ mod test {
                                             "p3a\np3b\np3c\n\n"
                                         );
 
-        let parsed_text = parsing_rule.parse(text_to_parse, &codex, Arc::clone(&parsing_configuration)).unwrap();
+        let parsed_text = parsing_rule.compile(text_to_parse, &codex, Arc::clone(&parsing_configuration)).unwrap();
 
-        assert_eq!(parsed_text.parsed_content(), "<p>p1</p><p>p2</p><p>p3a\np3b\np3c</p>");
+        assert_eq!(parsed_text.content(), "<p>p1</p><p>p2</p><p>p3a\np3b\np3c</p>");
     }
 
     #[test]
@@ -370,9 +370,9 @@ mod test {
             "\n\n```\n\n"
         );
 
-        let parsed_text = parsing_rule.parse(text_to_parse, &codex, Arc::clone(&parsing_configuration)).unwrap();
+        let parsed_text = parsing_rule.compile(text_to_parse, &codex, Arc::clone(&parsing_configuration)).unwrap();
 
-        assert_eq!(parsed_text.parsed_content(), "<pre><code class=\"language-python codeblock\">print(\"hello world\")</code></pre>");
+        assert_eq!(parsed_text.content(), "<pre><code class=\"language-python codeblock\">print(\"hello world\")</code></pre>");
     }
 
     #[test]
@@ -394,8 +394,8 @@ mod test {
             "\n",
         );
 
-        let parsed_text = parsing_rule.parse(text_to_parse, &codex, Arc::clone(&parsing_configuration)).unwrap();
-        let parsed_text = parsed_text.parsed_content();
+        let parsed_text = parsing_rule.compile(text_to_parse, &codex, Arc::clone(&parsing_configuration)).unwrap();
+        let parsed_text = parsed_text.content();
 
         assert_ne!(parsed_text, text_to_parse);
      
