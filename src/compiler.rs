@@ -1,17 +1,19 @@
-pub mod compilable;
 pub mod compilation_rule;
 pub mod compilation_error;
 pub mod compilation_result;
 pub mod compilation_configuration;
-pub mod compilation_metadata;
+pub mod compilation_result_accessor;
 
-use std::sync::{Arc, RwLock};
+
+use std::{sync::{Arc, RwLock}, time::Instant};
 
 
 use compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration};
 use compilation_error::CompilationError;
 use compilation_result::{CompilationResult, CompilationResultPart};
-use getset::{Getters, Setters};
+use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
+
+use crate::{bibliography::{Bibliography, BIBLIOGRAPHY_FICTITIOUS_DOCUMENT}, dossier::{document::{chapter::heading::Heading, Chapter}, Document, Dossier}, output_format::OutputFormat, resource::resource_reference::ResourceReference, table_of_contents::{TableOfContents, TOC_INDENTATION}};
 
 use super::{codex::{modifier::modifiers_bucket::ModifiersBucket, Codex}, dossier::document::Paragraph};
 
@@ -23,24 +25,504 @@ enum Segment {
     NonMatch(String),
 }
 
+// TODO: riportare codex, compilation_configuration e format nei singoli metodi e togliere &self
 
-#[derive(Debug, Getters, Setters)]
+#[derive(Debug)]
 pub struct Compiler {
 }
 
 impl Compiler {
 
+    /// Compile a dossier
+    pub fn compile_dossier(&self, dossier: &mut Dossier, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+
+        log::info!("compile dossier {} with ({} documents, parallelization: {})", dossier.name(), dossier.documents().len(), compilation_configuration.parallelization());
+
+        compilation_configuration_overlay.write().unwrap().set_dossier_name(Some(dossier.name().clone()));
+
+        let fast_draft = compilation_configuration.fast_draft();
+
+        if compilation_configuration.parallelization() {
+
+            let compilation_configuration_overlay = Arc::clone(&compilation_configuration_overlay);
+
+            let maybe_fails = dossier.documents_mut().par_iter_mut()
+                .filter(|document| {
+                    if fast_draft {
+    
+                        if let Some(subset) = compilation_configuration_overlay.read().unwrap().compile_only_documents() {
+
+                            let skip = !subset.contains(document.name());
+        
+                            if skip {
+                                log::info!("document {} compilation is skipped", document.name());
+                            }
+
+                            return !skip;
+                        }
+                    }
+
+                    true
+                })
+                .map(|document| {
+
+                    let now = Instant::now();
+
+                    let res = Self::compile_document(document, format, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay));
+
+                    log::info!("document '{}' compiled in {} ms", document.name(), now.elapsed().as_millis());
+
+                    res
+                })
+                .find_any(|result| result.is_err());
+
+                if let Some(Err(fail)) = maybe_fails {
+                    return Err(fail)
+                }
+            
+        } else {
+            let maybe_fails = dossier.documents_mut().iter_mut()
+                .filter(|document| {
+
+                    if fast_draft {
+
+                        if let Some(subset) = compilation_configuration_overlay.read().unwrap().compile_only_documents() {
+
+                            let skip = !subset.contains(document.name());
+        
+                            if skip {
+                                log::info!("document {} compilation is skipped", document.name());
+                            }
+
+                            return !skip;
+                        }
+                    }
+
+                    true
+                })
+                .map(|document| {
+                    let now = Instant::now();
+
+                    let res = Self::compile_document(document, format, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay));
+
+                    log::info!("document '{}' compiled in {} ms", document.name(), now.elapsed().as_millis());
+
+                    res
+                })
+                .find(|result| result.is_err());
+
+                if let Some(Err(fail)) = maybe_fails {
+                    return Err(fail)
+                }
+        }
+
+        if dossier.configuration().table_of_contents_configuration().include_in_output() {
+
+            log::info!("dossier table of contents will be included in output");
+
+            let mut headings: Vec<Heading> = Vec::new();
+
+            for document in dossier.documents() {
+                for chapter in document.chapters() {
+                    headings.push(chapter.heading().clone());
+                }
+            }
+
+            let mut table_of_contents = TableOfContents::new(
+                dossier.configuration().table_of_contents_configuration().title().clone(),
+                dossier.configuration().table_of_contents_configuration().page_numbers(),
+                dossier.configuration().table_of_contents_configuration().plain(),
+                dossier.configuration().table_of_contents_configuration().maximum_heading_level(),
+                headings
+            );
+
+            Self::compile_table_of_contents(&mut table_of_contents, format, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay))?;
+        
+            dossier.set_table_of_contents(Some(table_of_contents));
+        }
+
+        if dossier.configuration().bibliography().include_in_output() {
+            let mut bibliography = Bibliography::new(
+                dossier.configuration().bibliography().title().clone(),
+                dossier.configuration().bibliography().records().clone()
+            );
+
+            Self::compile_bibliography(&mut bibliography, format, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay))?;
+        
+            dossier.set_bibliography(Some(bibliography));
+        }
+
+        Ok(())
+    }
+
+    /// Compile document
+    pub fn compile_document(document: &mut Document, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+
+        let parallelization = compilation_configuration.parallelization();
+
+        log::info!("compile {} chapters of document: '{}'", document.chapters().len(), document.name());
+
+        compilation_configuration_overlay.write().unwrap().set_document_name(Some(document.name().clone()));
+
+        if parallelization {
+
+            let maybe_one_failed: Option<Result<(), CompilationError>> = document.preamble_mut().par_iter_mut()
+                .map(|paragraph| {
+
+                    Self::compile_paragraph(paragraph, format, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay))
+                
+                }).find_any(|result| result.is_err());
+
+            if let Some(result) = maybe_one_failed {
+                return result;
+            }
+
+            let maybe_one_failed: Option<Result<(), CompilationError>> = document.chapters_mut().par_iter_mut()
+                .map(|chapter| {
+
+                    Self::compile_chapter(chapter, format, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay))
+                
+                }).find_any(|result| result.is_err());
+
+            if let Some(result) = maybe_one_failed {
+                return result;
+            }
+        
+        } else {
+
+            let maybe_one_failed: Option<Result<(), CompilationError>> = document.preamble_mut().iter_mut()
+                .map(|paragraph| {
+
+                    Self::compile_paragraph(paragraph, format, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay))
+                
+                }).find(|result| result.is_err());
+
+            if let Some(result) = maybe_one_failed {
+                return result;
+            }
+            
+            let maybe_one_failed: Option<Result<(), CompilationError>> = document.chapters_mut().iter_mut()
+                .map(|chapter| {
+
+                    Self::compile_chapter(chapter, format, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay))
+                
+                }).find(|result| result.is_err());
+
+            if let Some(result) = maybe_one_failed {
+                return result;
+            }
+        }
+
+        Ok(())
+
+    }
+
+    /// Compile chapter
+    pub fn compile_chapter(chapter: &mut Chapter, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+
+        Self::compile_heading(chapter.heading_mut(), format, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay))?;
+
+        log::debug!("compile chapter:\n{:#?}", chapter);
+
+        if compilation_configuration.parallelization() {
+
+            let maybe_failed = chapter.paragraphs_mut().par_iter_mut()
+                .map(|paragraph| {
+                    Self::compile_paragraph(paragraph, format, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay))
+                })
+                .find_any(|result| result.is_err());
+    
+            if let Some(result) = maybe_failed {
+                return result
+            }
+
+        } else {
+
+            let compilation_configuration_overlay = compilation_configuration_overlay.clone();
+            
+            let maybe_failed = chapter.paragraphs_mut().iter_mut()
+                .map({
+                    let compilation_configuration_overlay = compilation_configuration_overlay.clone();
+
+                    move |paragraph| {
+                        Self::compile_paragraph(paragraph, format, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay))
+                    }
+                })
+                .find(|result| result.is_err());
+    
+            if let Some(result) = maybe_failed {
+                return result
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Compile heading
+    pub fn compile_heading(heading: &mut Heading, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+
+        let cco = compilation_configuration_overlay.write().unwrap();
+        let document_name = cco.document_name().as_ref();
+
+        if document_name.is_none() {
+            return Err(CompilationError::DocumentNameNotFound)
+        }
+
+        let document_name = document_name.unwrap();
+
+        let id: ResourceReference = ResourceReference::of_internal_from_without_sharp(heading.title(), Some(&document_name))?;
+
+        let parsed_title = Self::compile_str(heading.title(), format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
+
+        let outcome = CompilationResult::new(vec![
+            CompilationResultPart::Fixed { content: format!(r#"<h{} class="heading-{}" id="{}">"#, heading.level(), heading.level(), id.build_without_internal_sharp()) },
+            CompilationResultPart::Mutable { content: parsed_title.content() },
+            CompilationResultPart::Fixed { content: format!(r#"</h{}>"#, heading.level()) },
+        ]);
+        
+        heading.set_compilation_result(Some(outcome));
+        heading.set_resource_reference(Some(id));
+
+        Ok(())
+    }
+
+    /// Return minimum header level (if exists)
+    fn min_headers_lv(headings: &Vec<Heading>) -> Option<u32> {
+        let mut m: Option<u32> = None;
+
+        for h in headings {
+            
+            if m.is_none() {
+                m = Some(h.level());
+                continue;
+            }
+            
+            m = Some(m.unwrap().min(h.level()));
+        }
+
+        m
+    }
+
+    /// Compile table of contents
+    pub fn compile_table_of_contents(table_of_contents: &mut TableOfContents, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+        
+        if table_of_contents.headings().is_empty() {
+            
+            return Ok(());
+        }
+
+        if table_of_contents.page_numbers() {
+            log::error!("table of contents with page numbers not already usable...");
+
+            unimplemented!("table of contents with page numbers not already usable...");
+        }
+        
+        match format {
+            OutputFormat::Html => {
+                let mut outcome = CompilationResult::new_empty();
+
+                outcome.add_fixed_part(String::from(r#"<section class="toc">"#));
+                outcome.add_fixed_part(String::from(r#"<div class="toc-title">"#));
+                outcome.append_compilation_result(&mut Self::compile_str(table_of_contents.title(), format, codex, compilation_configuration, compilation_configuration_overlay.clone())?);
+                outcome.add_fixed_part(String::from(r#"</div>"#));
+                outcome.add_fixed_part(String::from(r#"<ul class="toc-body">"#));
+
+                let mut total_li = 0;
+
+                for heading in table_of_contents.headings() {
+
+                    let heading_lv: u32 = heading.level();
+
+                    if heading_lv > table_of_contents.maximum_heading_level() as u32 {
+                        continue;
+                    }
+
+                    outcome.add_fixed_part(String::from(r#"<li class="toc-item">"#));
+
+                    if !table_of_contents.plain() {
+
+                        let min_heading_lv = Self::min_headers_lv(table_of_contents.headings());
+
+                        if let Some(m) = min_heading_lv {
+
+                            outcome.add_fixed_part(TOC_INDENTATION.repeat((heading_lv - m) as usize));
+
+                        } else {
+                            outcome.add_fixed_part(TOC_INDENTATION.repeat(heading_lv as usize));
+
+                        }
+                    }
+
+                    outcome.add_fixed_part(r#"<span class="toc-item-bullet">"#.to_string());
+                    outcome.add_fixed_part(r#"</span><span class="toc-item-content">"#.to_string());
+
+                    if let Some(id) = heading.resource_reference() {
+
+                        outcome.add_fixed_part(format!(r#"<a href="{}" class="link">"#, id.build()));
+                    
+                    } else {
+                        log::warn!("heading '{}' does not have a valid id", heading.title())
+                    }
+
+                    let compilation_configuration_overlay = compilation_configuration_overlay.clone();
+
+                    outcome.append_compilation_result(&mut Self::compile_str(
+                                    &heading.title(),
+                                    format,
+                                    codex,
+                                    compilation_configuration,
+                                    Arc::clone(&compilation_configuration_overlay)
+                                )?);
+
+                    if let Some(_) = heading.resource_reference() {
+
+                        outcome.add_fixed_part(String::from(r#"</a>"#));
+                    }
+
+                    outcome.add_fixed_part(String::from(r#"</span></li>"#));
+
+                    total_li += 1;
+                        
+                }
+
+                outcome.add_fixed_part(String::from(r#"</ul>"#));
+                outcome.add_fixed_part(String::from(r#"</section>"#));
+
+                table_of_contents.set_compilation_result(Some(outcome));
+
+                log::info!("compiled table of contents ({} lines, {} skipped)", total_li, table_of_contents.headings().len() - total_li);
+
+                Ok(())
+            },
+        }
+    }
+
+    /// Compile bibliography
+    pub fn compile_bibliography(bibliography: &mut Bibliography, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+        
+        log::info!("compiling bibliography...");
+
+        match format {
+            OutputFormat::Html => {
+                let mut compilation_result = CompilationResult::new_empty();
+
+                compilation_result.add_fixed_part(String::from(r#"<section class="bibliography">"#));
+                compilation_result.add_fixed_part(String::from(r#"<div class="bibliography-title">"#));
+                compilation_result.append_compilation_result(&mut Self::compile_str(bibliography.title(), format, codex, compilation_configuration, compilation_configuration_overlay)?);
+                compilation_result.add_fixed_part(String::from(r#"</div>"#));
+                compilation_result.add_fixed_part(String::from(r#"<ul class="bibliography-body">"#));
+        
+                for (bib_key, bib_record) in bibliography.content().iter() {
+                    compilation_result.add_fixed_part(format!(r#"<div class="bibliography-item" id="{}">"#, ResourceReference::of_internal_from_without_sharp(bib_key, Some(BIBLIOGRAPHY_FICTITIOUS_DOCUMENT))?.build_without_internal_sharp()));
+                    compilation_result.add_fixed_part(String::from(r#"<div class="bibliography-item-title">"#));
+        
+                    compilation_result.add_fixed_part(bib_record.title().to_string());
+        
+                    compilation_result.add_fixed_part(String::from(r#"</div>"#));
+        
+                    if let Some(authors) = bib_record.authors() {
+        
+                        compilation_result.add_fixed_part(String::from(r#"<div class="bibliography-item-authors">"#));
+                        compilation_result.add_fixed_part(String::from(authors.join(", ")));
+                        compilation_result.add_fixed_part(String::from(r#"</div>"#));
+                    }
+        
+                    if let Some(year) = bib_record.year() {
+        
+                        compilation_result.add_fixed_part(String::from(r#"<div class="bibliography-item-year">"#));
+                        compilation_result.add_fixed_part(String::from(year.to_string()));
+                        compilation_result.add_fixed_part(String::from(r#"</div>"#));
+                    }
+        
+                    if let Some(url) = bib_record.url() {
+        
+                        compilation_result.add_fixed_part(String::from(r#"<div class="bibliography-item-url">"#));
+                        compilation_result.add_fixed_part(String::from(url.to_string()));
+                        compilation_result.add_fixed_part(String::from(r#"</div>"#));
+                    }
+        
+                    if let Some(description) = bib_record.description() {
+        
+                        compilation_result.add_fixed_part(String::from(r#"<div class="bibliography-item-description">"#));
+                        compilation_result.add_fixed_part(String::from(description.to_string()));
+                        compilation_result.add_fixed_part(String::from(r#"</div>"#));
+                    }
+        
+                    compilation_result.add_fixed_part(String::from(r#"</div>"#));
+                }
+        
+                compilation_result.add_fixed_part(String::from(r#"</ul>"#));
+                compilation_result.add_fixed_part(String::from(r#"</section>"#));
+        
+                bibliography.set_compilation_result(Some(compilation_result));
+        
+                log::info!("bibliography compiled");
+        
+                Ok(())
+            },
+        }
+    }
+
+    /// Compile a `Paragraph`.
+    /// 
+    /// Only one paragraph rule can be applied on Paragraph.
+    pub fn compile_paragraph(paragraph: &mut Paragraph, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+        Self::compile_paragraph_excluding_modifiers(paragraph, ModifiersBucket::None, format, codex, compilation_configuration, compilation_configuration_overlay)
+    }
+
+    /// Compile a `Paragraph` excluding a set of modifiers.
+    /// 
+    /// Only one paragraph rule can be applied on Paragraph.
+    pub fn compile_paragraph_excluding_modifiers(paragraph: &mut Paragraph, mut excluded_modifiers: ModifiersBucket, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+
+        log::debug!("start to compile paragraph ({:?}):\n{}\nexcluding: {:?}", paragraph.paragraph_type(), paragraph, excluded_modifiers);
+
+        let mut compilation_result: CompilationResult = CompilationResult::new_fixed(paragraph.content().to_string());
+
+        if excluded_modifiers == ModifiersBucket::All {
+            log::debug!("compilation of paragraph:\n{:#?} is skipped are excluded all modifiers", paragraph);
+
+            paragraph.set_compilation_result(Some(compilation_result));
+            
+            return Ok(())
+        }
+
+        let paragraph_modifier = codex.configuration().paragraph_modifier(paragraph.paragraph_type()).unwrap();
+
+        let paragraph_rule = codex.paragraph_rules().get(paragraph_modifier.identifier());
+
+        if let Some(paragraph_rule) = paragraph_rule {
+
+            log::debug!("paragraph rule {:?} is found, it is about to be applied to compile paragraph", paragraph_rule);
+
+            compilation_result = paragraph_rule.compile(&paragraph.content(), format, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay))?;
+
+            excluded_modifiers = excluded_modifiers + paragraph_modifier.incompatible_modifiers().clone();
+
+        } else {
+
+            log::warn!("there is NOT a paragraph rule for '{}' in codex", paragraph.paragraph_type());
+        }
+
+        compilation_result.apply_compile_function_to_mutable_parts(|mutable_part| Self::compile_str_excluding_modifiers(&mutable_part.content(), excluded_modifiers.clone(), format, codex, compilation_configuration, compilation_configuration_overlay.clone()))?;
+
+        paragraph.set_compilation_result(Some(compilation_result));
+            
+        Ok(())
+    }
+
+
+
     /// Compile a string
-    pub fn compile_str(codex: &Codex, content: &str, compilation_configuration: Arc<RwLock<CompilationConfiguration>>, compilation_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
+    pub fn compile_str(content: &str, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
 
-        let excluded_modifiers = compilation_configuration.read().unwrap().excluded_modifiers().clone();
+        let excluded_modifiers = compilation_configuration.excluded_modifiers().clone();
 
-        Self::compile_str_excluding_modifiers(codex, content, excluded_modifiers, Arc::clone(&compilation_configuration), compilation_configuration_overlay)
+        Self::compile_str_excluding_modifiers(content, excluded_modifiers, format, codex, compilation_configuration, compilation_configuration_overlay)
     }
 
     /// Compile a string excluding a set of modifiers
-    pub fn compile_str_excluding_modifiers(codex: &Codex, content: &str, excluded_modifiers: ModifiersBucket, 
-        compilation_configuration: Arc<RwLock<CompilationConfiguration>>, _compilation_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
+    pub fn compile_str_excluding_modifiers(content: &str, excluded_modifiers: ModifiersBucket, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
 
         log::debug!("start to compile content:\n{}\nexcluding: {:?}", content, excluded_modifiers);
 
@@ -117,7 +599,7 @@ impl Compiler {
                     match segment {
                         Segment::Match(m) => {
                             
-                            let outcome = text_rule.compile(&m, codex, Arc::clone(&compilation_configuration))?;
+                            let outcome = text_rule.compile(&m, format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
 
                             for part in Into::<Vec<CompilationResultPart>>::into(outcome) {
 
@@ -169,57 +651,13 @@ impl Compiler {
         Ok(CompilationResult::new(content_parts))
     }
 
-    /// Compile a `Paragraph`.
-    /// 
-    /// Only one paragraph rule can be applied on Paragraph.
-    pub fn compile_paragraph(codex: &Codex, paragraph: &Paragraph, compilation_configuration: Arc<RwLock<CompilationConfiguration>>, compilation_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
-        Self::compile_paragraph_excluding_modifiers(codex, paragraph, ModifiersBucket::None, compilation_configuration, compilation_configuration_overlay)
-    }
-
-    /// Compile a `Paragraph` excluding a set of modifiers.
-    /// 
-    /// Only one paragraph rule can be applied on Paragraph.
-    pub fn compile_paragraph_excluding_modifiers(codex: &Codex, paragraph: &Paragraph, mut excluded_modifiers: ModifiersBucket, compilation_configuration: Arc<RwLock<CompilationConfiguration>>,
-        compilation_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
-
-        log::debug!("start to compile paragraph ({:?}):\n{}\nexcluding: {:?}", paragraph.paragraph_type(), paragraph, excluded_modifiers);
-
-        let mut outcome: CompilationResult = CompilationResult::new_fixed(paragraph.content().to_string());
-
-        if excluded_modifiers == ModifiersBucket::All {
-            log::debug!("compilation of paragraph:\n{:#?} is skipped are excluded all modifiers", paragraph);
-            
-            return Ok(outcome)
-        }
-
-        let paragraph_modifier = codex.configuration().paragraph_modifier(paragraph.paragraph_type()).unwrap();
-
-        let paragraph_rule = codex.paragraph_rules().get(paragraph_modifier.identifier());
-
-        if let Some(paragraph_rule) = paragraph_rule {
-
-            log::debug!("paragraph rule {:?} is found, it is about to be applied to compile paragraph", paragraph_rule);
-
-            outcome = paragraph_rule.compile(&paragraph.content(), codex, Arc::clone(&compilation_configuration))?;
-
-            excluded_modifiers = excluded_modifiers + paragraph_modifier.incompatible_modifiers().clone();
-
-        } else {
-
-            log::warn!("there is NOT a paragraph rule for '{}' in codex", paragraph.paragraph_type());
-        }
-
-        outcome.apply_compile_function_to_mutable_parts(|mutable_part| Self::compile_str_excluding_modifiers(codex, &mutable_part.content(), excluded_modifiers.clone(), Arc::clone(&compilation_configuration), Arc::clone(&compilation_configuration_overlay)))?;
-
-        Ok(outcome)
-    }
 }
 
 #[cfg(test)]
 mod test {
     use std::sync::{Arc, RwLock};
 
-    use crate::{codex::{codex_configuration::CodexConfiguration, modifier::modifiers_bucket::ModifiersBucket, Codex}, compiler::compilation_configuration::CompilationConfiguration};
+    use crate::{codex::{codex_configuration::CodexConfiguration, modifier::modifiers_bucket::ModifiersBucket, Codex}, compiler::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, output_format::OutputFormat};
 
     use super::Compiler;
 
@@ -228,12 +666,12 @@ mod test {
     fn parse_text() {
 
         let codex = Codex::of_html(CodexConfiguration::default());
+        let compilation_configuration = CompilationConfiguration::default();
 
         let content = "Text **bold text** `a **bold text** which must be not parsed`";
-        let compilation_configuration = CompilationConfiguration::default();
         let excluded_modifiers = ModifiersBucket::None;
 
-        let outcome = Compiler::compile_str_excluding_modifiers(&codex, content, excluded_modifiers, Arc::new(RwLock::new(compilation_configuration)), Arc::new(None)).unwrap();
+        let outcome = Compiler::compile_str_excluding_modifiers(content, excluded_modifiers, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
 
         assert_eq!(outcome.content(), r#"Text <strong class="bold">bold text</strong> <code class="language-markup inline-code">a **bold text** which must be not parsed</code>"#)
     }

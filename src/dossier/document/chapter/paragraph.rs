@@ -1,9 +1,7 @@
-use std::{fmt::Display, sync::{Arc, RwLock}};
-
+use std::fmt::Display;
 use getset::{Getters, Setters};
 use thiserror::Error;
-
-use crate::{codex::{modifier::ModifierIdentifier, Codex}, compiler::{compilable::{compilation_result_accessor::CompilationResultAccessor, Compilable}, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, Compiler}, output_format::OutputFormat};
+use crate::{codex::modifier::ModifierIdentifier, compiler::{compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor}};
 
 
 #[derive(Error, Debug)]
@@ -23,6 +21,7 @@ pub struct Paragraph {
     #[getset(get = "pub", set = "pub")]
     content: String,
 
+    #[getset(set = "pub")]
     compilation_result: Option<CompilationResult>,
 
     #[getset(get = "pub", set = "pub")]
@@ -41,21 +40,6 @@ impl Paragraph {
 
     pub fn contains_only_newlines(&self) -> bool {
         self.content.chars().all(|c| c == '\n' || c == '\r')
-    }
-}
-
-impl Compilable for Paragraph {
-    fn standard_compile(&mut self, format: &OutputFormat, codex: Arc<Codex>, compilation_configuration: Arc<RwLock<CompilationConfiguration>>, compilation_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
-
-        let codex = codex.clone();
-
-        let compilation_result = Compiler::compile_paragraph(&*codex, self, Arc::clone(&compilation_configuration), compilation_configuration_overlay)?;
-
-        log::debug!("end to parse paragraph:\n{:#?}", compilation_result);
-
-        self.compilation_result = Some(compilation_result);
-
-        Ok(())
     }
 }
 

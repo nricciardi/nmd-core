@@ -11,5 +11,11 @@ pub struct CompilationConfigurationOverLay {
     compile_only_documents: Option<HashSet<String>>,
     
     #[getset(get = "pub", set = "pub")]
-    additional_style: Option<String>
+    additional_style: Option<String>,
+
+    #[getset(get = "pub", set = "pub")]
+    dossier_name: Option<String>,
+
+    #[getset(get = "pub", set = "pub")]
+    document_name: Option<String>,
 }

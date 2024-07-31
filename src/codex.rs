@@ -444,7 +444,7 @@ mod test {
 
     use std::sync::{Arc, RwLock};
 
-    use crate::{compiler::{compilation_configuration::CompilationConfiguration, Compiler}, loader::Loader};
+    use crate::{compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, Compiler}, loader::{loader_configuration::LoaderConfiguration, Loader}};
 
     use super::*;
 
@@ -454,16 +454,15 @@ mod test {
 
         let nmd_text = "This is a simple **nmd** text for test";
         let expected_result = r#"This is a simple <strong class="bold">nmd</strong> text for test"#;
-        let compilation_configuration = Arc::new(RwLock::new(CompilationConfiguration::default()));
 
-        let outcome = Compiler::compile_str(&codex, &nmd_text, Arc::clone(&compilation_configuration), Arc::new(None)).unwrap();
+        let outcome = Compiler::compile_str(&nmd_text, &OutputFormat::Html, &codex, &CompilationConfiguration::default(), Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
 
         assert_eq!(outcome.content(), expected_result);
 
         let nmd_text = "This is a simple *nmd* text for test";
         let expected_result = r#"This is a simple <em class="italic">nmd</em> text for test"#;
 
-        let outcome = Compiler::compile_str(&codex, &nmd_text, Arc::clone(&compilation_configuration), Arc::new(None)).unwrap();
+        let outcome = Compiler::compile_str(&nmd_text, &OutputFormat::Html, &codex, &CompilationConfiguration::default(), Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
 
         assert_eq!(outcome.content(), expected_result);
     }
@@ -484,7 +483,7 @@ print("hello world")
 `print("hello world)`
 "#.trim();
 
-        let paragraphs = Loader::new(codex).load_paragraphs_from_str(nmd_text).unwrap();
+        let paragraphs = Loader::load_paragraphs_from_str(nmd_text, &codex, &LoaderConfiguration::default()).unwrap();
 
         assert_eq!(paragraphs.len(), 2)
     }

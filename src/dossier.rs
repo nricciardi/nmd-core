@@ -1,19 +1,15 @@
 pub mod document;
 pub mod dossier_configuration;
 
-use std::{sync::{Arc, RwLock}, time::Instant};
-
-use document::chapter::heading::Heading;
 pub use document::{Document, DocumentError};
-use getset::{Getters, Setters};
-use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
+use getset::{Getters, MutGetters, Setters};
 use thiserror::Error;
 
-use crate::{compiler::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError}, resource::ResourceError};
+use crate::resource::ResourceError;
 
 use self::dossier_configuration::DossierConfiguration;
 
-use super::{bibliography::Bibliography, codex::Codex, output_format::OutputFormat, table_of_contents::TableOfContents};
+use super::{bibliography::Bibliography, table_of_contents::TableOfContents};
 
 
 pub const ASSETS_DIR: &str = "assets";
@@ -30,7 +26,7 @@ pub enum DossierError {
 
 
 /// NMD Dossier struct. It has own documents list
-#[derive(Debug, Getters, Setters)]
+#[derive(Debug, Getters, MutGetters, Setters)]
 pub struct Dossier {
 
     #[getset(get = "pub", set = "pub")]
@@ -39,7 +35,7 @@ pub struct Dossier {
     #[getset(get = "pub", set = "pub")]
     table_of_contents: Option<TableOfContents>,
 
-    #[getset(get = "pub", set = "pub")]
+    #[getset(get = "pub", set = "pub", get_mut = "pub")]
     documents: Vec<Document>,
 
     #[getset(get = "pub", set = "pub")]
@@ -69,141 +65,5 @@ impl Dossier {
         if let Some(index) = index {
             self.documents[index] = new_document;
         }
-    }
-}
-
-
-impl Compilable for Dossier {
-
-    fn standard_compile(&mut self, format: &OutputFormat, codex: Arc<Codex>, compilation_configuration: Arc<RwLock<CompilationConfiguration>>, compilation_configuration_overlay: Arc<Option<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
-
-        let parallelization = compilation_configuration.read().unwrap().parallelization();
-
-        log::info!("standard compile dossier {} with ({} documents, parallelization: {})", self.name(), self.documents().len(), parallelization);
-
-        compilation_configuration.write().unwrap().metadata_mut().set_dossier_name(Some(self.name().clone()));
-
-        if parallelization {
-
-            let maybe_fails = self.documents.par_iter_mut()
-                .filter(|document| {
-
-                    if compilation_configuration.read().unwrap().fast_draft() {
-                        let pco = compilation_configuration_overlay.clone();
-    
-                        if let Some(pco) = pco.as_ref() {
-    
-                            if let Some(subset) = pco.compile_only_documents() {
-
-                                let skip = !subset.contains(document.name());
-            
-                                if skip {
-                                    log::info!("document {} compilation is skipped", document.name());
-                                }
-
-                                return !skip;
-                            }
-                        }
-                    }
-
-                    true
-                })
-                .map(|document| {
-
-                    let now = Instant::now();
-
-                    let new_compilation_configuration: Arc<RwLock<CompilationConfiguration>> = Arc::new(RwLock::new(compilation_configuration.read().unwrap().clone()));
-
-                    // Arc::new because parallelization on (may be override during multi-thread operations)
-                    let res = document.compile(format, Arc::clone(&codex), new_compilation_configuration, Arc::clone(&compilation_configuration_overlay));
-
-                    log::info!("document '{}' compiled in {} ms", document.name(), now.elapsed().as_millis());
-
-                    res
-                })
-                .find_any(|result| result.is_err());
-
-                if let Some(Err(fail)) = maybe_fails {
-                    return Err(fail)
-                }
-            
-        } else {
-            let maybe_fails = self.documents.iter_mut()
-                .filter(|document| {
-
-                    if compilation_configuration.read().unwrap().fast_draft() {
-                        let pco = compilation_configuration_overlay.clone();
-
-                        if let Some(pco) = pco.as_ref() {
-
-                            if let Some(subset) = pco.compile_only_documents() {
-            
-                                
-                                let skip = !subset.contains(document.name());
-            
-                                if skip {
-                                    log::info!("document {} compilation is skipped", document.name());
-                                }
-
-                                return !skip;            
-                            }
-                        }
-                    }
-
-                    true
-                })
-                .map(|document| {
-                    let now = Instant::now();
-
-                    let res = document.compile(format, Arc::clone(&codex), Arc::clone(&compilation_configuration), Arc::clone(&compilation_configuration_overlay));
-
-                    log::info!("document '{}' compiled in {} ms", document.name(), now.elapsed().as_millis());
-
-                    res
-                })
-                .find(|result| result.is_err());
-
-                if let Some(Err(fail)) = maybe_fails {
-                    return Err(fail)
-                }
-        }
-
-        if self.configuration.table_of_contents_configuration().include_in_output() {
-
-            log::info!("dossier table of contents will be included in output");
-
-            let mut headings: Vec<Heading> = Vec::new();
-
-            for document in self.documents() {
-                for chapter in document.chapters() {
-                    headings.push(chapter.heading().clone());
-                }
-            }
-
-            let mut table_of_contents = TableOfContents::new(
-                self.configuration.table_of_contents_configuration().title().clone(),
-                self.configuration.table_of_contents_configuration().page_numbers(),
-                self.configuration.table_of_contents_configuration().plain(),
-                self.configuration.table_of_contents_configuration().maximum_heading_level(),
-                headings
-            );
-
-            table_of_contents.compile(format, Arc::clone(&codex), Arc::clone(&compilation_configuration), Arc::clone(&compilation_configuration_overlay))?;
-        
-            self.table_of_contents = Some(table_of_contents);
-        }
-
-        if self.configuration.bibliography().include_in_output() {
-            let mut bibliography = Bibliography::new(
-                self.configuration.bibliography().title().clone(),
-                self.configuration.bibliography().records().clone()
-            );
-
-            bibliography.compile(format, Arc::clone(&codex), Arc::clone(&compilation_configuration), Arc::clone(&compilation_configuration_overlay))?;
-        
-            self.bibliography = Some(bibliography);
-        }
-
-        Ok(())
     }
 }

@@ -13,6 +13,9 @@ pub enum CompilationError {
     #[error("failed during elaboration")]
     ElaborationError,
 
+    #[error("document name not found")]
+    DocumentNameNotFound,
+
     #[error("'{0}' is an invalid parameter")]
     InvalidParameter(String),
 

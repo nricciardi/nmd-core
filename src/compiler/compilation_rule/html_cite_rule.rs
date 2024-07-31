@@ -2,7 +2,7 @@ use std::{fmt::Debug, sync::{Arc, RwLock}};
 
 use regex::{Captures, Regex};
 
-use crate::{codex::{modifier::standard_text_modifier::StandardTextModifier, Codex}, compiler::{compilation_configuration::CompilationConfiguration, compilation_error::CompilationError, compilation_result::CompilationResult}};
+use crate::{codex::{modifier::standard_text_modifier::StandardTextModifier, Codex}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult}, output_format::OutputFormat};
 
 use super::CompilationRule;
 
@@ -33,13 +33,13 @@ impl CompilationRule for HtmlCiteRule {
         &self.search_pattern
     }
 
-    fn standard_compile(&self, content: &str, codex: &Codex, compilation_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, content: &str, _format: &OutputFormat, _codex: &Codex, compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
         
         let compiled_content = self.search_pattern_regex.replace_all(content, |capture: &Captures| {
 
             let bib_key = capture.get(1).unwrap().as_str();
 
-            if let Some(bibliography) = compilation_configuration.read().unwrap().bibliography() {
+            if let Some(bibliography) = compilation_configuration.bibliography() {
                 
                 if let Some(n) = bibliography.get_n_from_key(bib_key) {
                     if let Some(reference) = bibliography.get_reference_from_key(bib_key) {

@@ -56,22 +56,9 @@ impl Clone for LoadError {
 
 #[derive(Debug, Getters, Setters)]
 pub struct Loader {
-
-    #[getset(get = "pub", set = "pub")]
-    codex: Codex,
-
-    #[getset(get = "pub", set = "pub")]
-    configuration: LoaderConfiguration,
 }
 
 impl Loader {
-
-    pub fn new(codex: Codex) -> Self {
-        Self {
-            codex,
-            configuration: LoaderConfiguration::default(),
-        }
-    }
 
     /// Count number of newlines at string start.
     /// It counts number of '\n' characters
@@ -86,7 +73,7 @@ impl Loader {
     }
 
     /// Load a document from a raw string, so `document_name` must be provided
-    pub fn load_document_from_str(&self, document_name: &str, content: &str) -> Result<Document, LoadError> {
+    pub fn load_document_from_str(document_name: &str, content: &str, codex: &Codex, configuration: &LoaderConfiguration) -> Result<Document, LoadError> {
 
         log::info!("loading document '{}' from its content...", document_name);
 
@@ -109,7 +96,7 @@ impl Loader {
         // String: chapter heading + options found
         let mut chapter_borders: Vec<(usize, usize, String)> = Vec::new();
 
-        for chapter_modifier in self.codex.configuration().ordered_chapter_modifier() {
+        for chapter_modifier in codex.configuration().ordered_chapter_modifier() {
             
             let modifier_pattern = chapter_modifier.modifier_pattern();
 
@@ -174,7 +161,7 @@ impl Loader {
             let end = chapter_borders[index].1;
             let raw_content = &chapter_borders[index].2;
 
-            let (heading, tags) = self.load_chapter_heading_and_tags_from_str(raw_content, last_heading_level);
+            let (heading, tags) = Self::load_chapter_heading_and_tags_from_str(raw_content, last_heading_level, codex, configuration);
 
             if heading.is_none() {
                 return Err(LoadError::ResourceError(ResourceError::ResourceNotFound("heading".to_string())))
@@ -192,7 +179,7 @@ impl Loader {
 
             let sub_content = content.get(end..next_start).unwrap();     // exclude heading
 
-            let paragraphs = self.load_paragraphs_from_str(sub_content)?;
+            let paragraphs = Self::load_paragraphs_from_str(sub_content, codex, configuration)?;
 
             document_chapters.push(Chapter::new(heading, tags, paragraphs));
         }
@@ -211,7 +198,7 @@ impl Loader {
 
             let s = String::from(content.get(0..preamble_end).unwrap());
 
-            preamble = self.load_paragraphs_from_str(&s)?;
+            preamble = Self::load_paragraphs_from_str(&s, codex, configuration)?;
         
         } else {
 
@@ -227,7 +214,7 @@ impl Loader {
     }
 
     /// Load a document from its path (`PathBuf`). The document have to exist.
-    pub fn load_document_from_path(&self, path_buf: &PathBuf) -> Result<Document, LoadError> {
+    pub fn load_document_from_path(path_buf: &PathBuf, codex: &Codex, configuration: &LoaderConfiguration) -> Result<Document, LoadError> {
 
         if !path_buf.exists() {
             return Err(LoadError::ResourceError(ResourceError::InvalidResourceVerbose(format!("{} not exists", path_buf.to_string_lossy())))) 
@@ -239,7 +226,7 @@ impl Loader {
 
         let document_name = resource.name();
 
-        match self.load_document_from_str(document_name, &content) {
+        match Self::load_document_from_str(document_name, &content, codex, configuration) {
             Ok(document) => {
                 return Ok(document)
             },
@@ -248,7 +235,7 @@ impl Loader {
     }
 
     /// Split a string in the corresponding vector of paragraphs
-    pub fn load_paragraphs_from_str(&self, content: &str) -> Result<Vec<Paragraph>, LoadError> {
+    pub fn load_paragraphs_from_str(content: &str, codex: &Codex, _configuration: &LoaderConfiguration) -> Result<Vec<Paragraph>, LoadError> {
 
         if content.trim().is_empty() {
             log::debug!("skip paragraphs loading: empty content");
@@ -271,7 +258,7 @@ impl Loader {
             content.push_str(NEW_LINE);
         }
 
-        for paragraph_modifier in self.codex.configuration().ordered_paragraph_modifiers() {
+        for paragraph_modifier in codex.configuration().ordered_paragraph_modifiers() {
 
             let search_pattern = paragraph_modifier.modifier_pattern();
 
@@ -328,7 +315,7 @@ impl Loader {
 
 
     /// Load chapter tags (e.g. `author`) from string. This method returns empty `Vec` if there are no tags.
-    fn load_chapter_tags_from_str(content: &str) -> Vec<ChapterTag> {
+    fn load_chapter_tags_from_str(content: &str, _codex: &Codex, _configuration: &LoaderConfiguration) -> Vec<ChapterTag> {
         
         let mut tags: Vec<ChapterTag> = Vec::new();
         
@@ -347,7 +334,7 @@ impl Loader {
     }
 
     /// Load the chapter style from string
-    fn load_chapter_style_from_str(&self, content: &str) -> Option<String> {
+    fn load_chapter_style_from_str(content: &str, _codex: &Codex, _configuration: &LoaderConfiguration) -> Option<String> {
         
         let mut style: Option<String> = None;
 
@@ -361,11 +348,11 @@ impl Loader {
     }
 
     /// Load the chapter heading and metadata from string. This method returns a tuple with optional heading and a chapter tags vector.
-    fn load_chapter_heading_and_tags_from_str(&self, content: &str, last_heading_level: HeadingLevel) -> (Option<Heading>, Vec<ChapterTag>) {
+    fn load_chapter_heading_and_tags_from_str(content: &str, last_heading_level: HeadingLevel, codex: &Codex, configuration: &LoaderConfiguration) -> (Option<Heading>, Vec<ChapterTag>) {
 
         log::debug!("load chapter metadata from (last heading level: {}):\n{}", last_heading_level, content);
 
-        let chapter_modifiers = self.codex.configuration().ordered_chapter_modifier();
+        let chapter_modifiers = codex.configuration().ordered_chapter_modifier();
 
         for chapter_modifier in chapter_modifiers {
 
@@ -391,7 +378,7 @@ impl Loader {
                 let title = matched.get(1).unwrap().as_str();
 
 
-                let tags = Self::load_chapter_tags_from_str(content);
+                let tags = Self::load_chapter_tags_from_str(content, codex, configuration);
 
                 return (Some(Heading::new(level, String::from(title))), tags);
             }
@@ -409,7 +396,7 @@ impl Loader {
 
                 let title = matched.get(1).unwrap().as_str();
 
-                let tags = Self::load_chapter_tags_from_str(content);
+                let tags = Self::load_chapter_tags_from_str(content, codex, configuration);
 
                 return (Some(Heading::new(level, String::from(title))), tags);
             }
@@ -430,7 +417,7 @@ impl Loader {
                 
                 let title = matched.get(1).unwrap().as_str();
 
-                let tags = Self::load_chapter_tags_from_str(content);
+                let tags = Self::load_chapter_tags_from_str(content, codex, configuration);
 
                 return (Some(Heading::new(level, String::from(title))), tags);
             }
@@ -444,7 +431,7 @@ impl Loader {
 
                 let title = matched.get(1).unwrap().as_str();
 
-                let tags = Self::load_chapter_tags_from_str(content);
+                let tags = Self::load_chapter_tags_from_str(content, codex, configuration);
 
                 return (Some(Heading::new(level, String::from(title))), tags);
             }
@@ -456,7 +443,7 @@ impl Loader {
                 let level: HeadingLevel = matched.get(1).unwrap().as_str().parse().unwrap();
                 let title = matched.get(2).unwrap().as_str();
 
-                let tags = Self::load_chapter_tags_from_str(content);
+                let tags = Self::load_chapter_tags_from_str(content, codex, configuration);
 
                 return (Some(Heading::new(level, String::from(title))), tags);
             }
@@ -467,14 +454,14 @@ impl Loader {
     }
 
     /// Load dossier from its filesystem path
-    pub fn load_dossier_from_path_buf(&self, path_buf: &PathBuf) -> Result<Dossier, LoadError> {
+    pub fn load_dossier_from_path_buf(path_buf: &PathBuf, codex: &Codex, configuration: &LoaderConfiguration) -> Result<Dossier, LoadError> {
         let dossier_configuration = DossierConfiguration::try_from(path_buf)?;
 
-        self.load_dossier_from_dossier_configuration(&dossier_configuration)
+        Self::load_dossier_from_dossier_configuration(&dossier_configuration, codex, configuration)
     }
 
     /// Load dossier from its filesystem path considering only a subset of documents
-    pub fn load_dossier_from_path_buf_only_documents(&self, path_buf: &PathBuf, only_documents: &HashSet<String>) -> Result<Dossier, LoadError> {
+    pub fn load_dossier_from_path_buf_only_documents(path_buf: &PathBuf, only_documents: &HashSet<String>, codex: &Codex, configuration: &LoaderConfiguration) -> Result<Dossier, LoadError> {
         let mut dossier_configuration = DossierConfiguration::try_from(path_buf)?;
 
         let d: Vec<String> = dossier_configuration.raw_documents_paths().iter()
@@ -489,11 +476,11 @@ impl Loader {
 
         dossier_configuration.set_raw_documents_paths(d);
 
-        self.load_dossier_from_dossier_configuration(&dossier_configuration)
+        Self::load_dossier_from_dossier_configuration(&dossier_configuration, codex, configuration)
     }
 
     /// Load dossier from its dossier configuration
-    pub fn load_dossier_from_dossier_configuration(&self, dossier_configuration: &DossierConfiguration) -> Result<Dossier, LoadError> {
+    pub fn load_dossier_from_dossier_configuration(dossier_configuration: &DossierConfiguration, codex: &Codex, configuration: &LoaderConfiguration) -> Result<Dossier, LoadError> {
 
         // TODO: are really mandatory?
         if dossier_configuration.documents_paths().is_empty() {
@@ -511,7 +498,7 @@ impl Loader {
 
             dossier_configuration.documents_paths().par_iter()
             .map(|document_path| {
-                self.load_document_from_path(&PathBuf::from(document_path))
+                Self::load_document_from_path(&PathBuf::from(document_path), codex, configuration)
             }).collect_into_vec(&mut documents_res);
             
             let error = documents_res.par_iter().find_any(|result| result.is_err());
@@ -532,7 +519,7 @@ impl Loader {
 
             for document_path in dossier_configuration.documents_paths() {
     
-                let document = self.load_document_from_path(&PathBuf::from(document_path))?;
+                let document = Self::load_document_from_path(&PathBuf::from(document_path), codex, configuration)?;
     
                 documents.push(document)
             }
@@ -571,9 +558,7 @@ paragraph 2a
 paragraph 1b
 "#.trim().to_string();
 
-        let loader = Loader::new(codex);
-
-        let document = loader.load_document_from_str("test", &content).unwrap();
+        let document = Loader::load_document_from_str("test", &content, &codex, &LoaderConfiguration::default()).unwrap();
 
         assert_eq!(document.preamble().len(), 0);
 
@@ -595,9 +580,7 @@ paragraph 1b
 
         let codex = Codex::of_html(CodexConfiguration::default());
 
-        let loader = Loader::new(codex);
-
-        let paragraphs = loader.load_paragraphs_from_str(content).unwrap();
+        let paragraphs = Loader::load_paragraphs_from_str(content, &codex, &LoaderConfiguration::default()).unwrap();
 
         assert_eq!(paragraphs.len(), 3)
     }

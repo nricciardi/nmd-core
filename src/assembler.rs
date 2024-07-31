@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::{compiler::{compilable::compilation_result_accessor::CompilationResultAccessor, compilation_error::CompilationError}, resource::ResourceError};
+use crate::{compiler::{compilation_result_accessor::CompilationResultAccessor, compilation_error::CompilationError}, resource::ResourceError};
 
 use self::{html_assembler::HtmlAssembler, assembler_configuration::AssemblerConfiguration};
 
@@ -79,7 +79,7 @@ pub trait Assembler {
 
     }
 
-    fn assemble_document_standalone(&self, page_title: &String, styles_references: Option<&Vec<String>>, toc: Option<&TableOfContents>, bibliography: Option<&Bibliography>, document: &Document) -> Result<Artifact, AssemblerError> {
+    fn assemble_document_standalone(&self, _page_title: &String, _styles_references: Option<&Vec<String>>, toc: Option<&TableOfContents>, bibliography: Option<&Bibliography>, document: &Document) -> Result<Artifact, AssemblerError> {
         self.assemble_document(document)
     }
 }

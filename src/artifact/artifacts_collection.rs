@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 
 use getset::{Getters, Setters};
-use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 
 use super::{artifact_assets::ArtifactAssets, Artifact, ArtifactError};
 

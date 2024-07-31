@@ -6,10 +6,12 @@ use log;
 use regex::{Captures, Regex, Replacer};
 
 use crate::codex::Codex;
+use crate::compiler::compilation_configuration::compilation_configuration_overlay::CompilationConfigurationOverLay;
 use crate::compiler::compilation_configuration::CompilationConfiguration;
 use crate::compiler::compilation_error::CompilationError;
 use crate::compiler::compilation_result::{CompilationResult, CompilationResultPart};
 use crate::compiler::compilation_rule::constants::DOUBLE_NEW_LINE_REGEX;
+use crate::output_format::OutputFormat;
 use crate::resource::resource_reference::ResourceReference;
 use crate::utility::text_utility;
 
@@ -119,7 +121,7 @@ impl Debug for ReplacementRule<String> {
 impl CompilationRule for ReplacementRule<String> {
 
     /// Compile the content using internal search and replacement pattern
-    fn standard_compile(&self, content: &str, _codex: &Codex, compilation_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, content: &str, _format: &OutputFormat, _codex: &Codex, _compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
 
         log::debug!("compile:\n{}\nusing '{}'->'{:?}'", content, self.search_pattern(), self.replacer_parts);
 
@@ -137,7 +139,7 @@ impl CompilationRule for ReplacementRule<String> {
 
                     let reference = captures.get(reference_at.clone()).unwrap().as_str();
 
-                    let reference = ResourceReference::of(reference, Some(compilation_configuration.read().unwrap().metadata().document_name().as_ref().unwrap()))?;
+                    let reference = ResourceReference::of(reference, Some(compilation_configuration_overlay.read().unwrap().document_name().as_ref().unwrap()))?;
     
                     let reference = reference.build();
 
@@ -221,7 +223,7 @@ impl<F> CompilationRule for ReplacementRule<F>
 where F: 'static + Sync + Send + Fn(&Captures) -> String {
 
     /// Compile the content using internal search and replacement pattern
-    fn standard_compile(&self, content: &str, _codex: &Codex, _compilation_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, content: &str, _format: &OutputFormat, _codex: &Codex, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
 
         log::debug!("compile:\n{}\nusing '{}'", content, self.search_pattern());
 
@@ -290,16 +292,16 @@ mod test {
         ]);
 
         let text_to_parse = r"A piece of **bold text** and **bold text2**";
-        let compilation_configuration = Arc::new(RwLock::new(CompilationConfiguration::default()));
+        let compilation_configuration = CompilationConfiguration::default();
 
-        let parsed_text = parsing_rule.compile(text_to_parse, &codex, Arc::clone(&compilation_configuration)).unwrap();
+        let parsed_text = parsing_rule.compile(text_to_parse, &OutputFormat::Html,&codex, &compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
 
         assert_eq!(parsed_text.content(), r"A piece of <strong>bold text</strong> and <strong>bold text2</strong>");
 
         // without text modifier
         let text_to_parse = r"A piece of text without bold text";
 
-        let parsed_text = parsing_rule.compile(text_to_parse, &codex, Arc::clone(&compilation_configuration)).unwrap();
+        let parsed_text = parsing_rule.compile(text_to_parse, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
 
         assert_eq!(parsed_text.content(), r"A piece of text without bold text");
 
@@ -311,7 +313,7 @@ mod test {
 
         let codex = Codex::of_html(CodexConfiguration::default());
 
-        let compilation_configuration = Arc::new(RwLock::new(CompilationConfiguration::default()));
+        let compilation_configuration = CompilationConfiguration::default();
 
         let parsing_rule = ReplacementRule::new(StandardChapterModifier::HeadingGeneralExtendedVersion(6).modifier_pattern().clone(), vec![
             ReplacementRuleReplacerPart::new_fixed(String::from("<h6>")),
@@ -321,7 +323,7 @@ mod test {
 
         let text_to_parse = r"###### title 6";
 
-        let parsed_text = parsing_rule.compile(text_to_parse, &codex, Arc::clone(&compilation_configuration)).unwrap();
+        let parsed_text = parsing_rule.compile(text_to_parse, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
 
         assert_eq!(parsed_text.content(), r"<h6>title 6</h6>");
     }
@@ -331,7 +333,7 @@ mod test {
 
         let codex = Codex::of_html(CodexConfiguration::default());
 
-        let compilation_configuration = Arc::new(RwLock::new(CompilationConfiguration::default()));
+        let compilation_configuration = CompilationConfiguration::default();
 
         let parsing_rule = ReplacementRule::new(StandardParagraphModifier::CommonParagraph.modifier_pattern_with_paragraph_separator().clone(), vec![
             ReplacementRuleReplacerPart::new_fixed(String::from("<p>")),
@@ -345,7 +347,7 @@ mod test {
                                             "p3a\np3b\np3c\n\n"
                                         );
 
-        let parsed_text = parsing_rule.compile(text_to_parse, &codex, Arc::clone(&compilation_configuration)).unwrap();
+        let parsed_text = parsing_rule.compile(text_to_parse, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
 
         assert_eq!(parsed_text.content(), "<p>p1</p><p>p2</p><p>p3a\np3b\np3c</p>");
     }
@@ -355,7 +357,7 @@ mod test {
 
         let codex = Codex::of_html(CodexConfiguration::default());
 
-        let compilation_configuration = Arc::new(RwLock::new(CompilationConfiguration::default()));
+        let compilation_configuration = CompilationConfiguration::default();
 
         let parsing_rule = ReplacementRule::new(StandardParagraphModifier::CodeBlock.modifier_pattern_with_paragraph_separator().clone(), vec![
             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<pre><code class="language-$1 codeblock">"#)),
@@ -370,7 +372,7 @@ mod test {
             "\n\n```\n\n"
         );
 
-        let parsed_text = parsing_rule.compile(text_to_parse, &codex, Arc::clone(&compilation_configuration)).unwrap();
+        let parsed_text = parsing_rule.compile(text_to_parse, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
 
         assert_eq!(parsed_text.content(), "<pre><code class=\"language-python codeblock\">print(\"hello world\")</code></pre>");
     }
@@ -380,7 +382,7 @@ mod test {
 
         let codex = Codex::of_html(CodexConfiguration::default());
         
-        let compilation_configuration = Arc::new(RwLock::new(CompilationConfiguration::default()));
+        let compilation_configuration = CompilationConfiguration::default();
 
         let parsing_rule = ReplacementRule::new(StandardParagraphModifier::FocusBlock.modifier_pattern_with_paragraph_separator().clone(), vec![
             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="focus-block focus-block-$1">$2</div>"#)),
@@ -394,7 +396,7 @@ mod test {
             "\n",
         );
 
-        let parsed_text = parsing_rule.compile(text_to_parse, &codex, Arc::clone(&compilation_configuration)).unwrap();
+        let parsed_text = parsing_rule.compile(text_to_parse, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
         let parsed_text = parsed_text.content();
 
         assert_ne!(parsed_text, text_to_parse);

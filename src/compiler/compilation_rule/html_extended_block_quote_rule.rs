@@ -3,7 +3,7 @@ use std::sync::{Arc, RwLock};
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-use crate::{codex::{modifier::{constants::NEW_LINE, standard_paragraph_modifier::StandardParagraphModifier}, Codex}, compiler::{compilation_configuration::CompilationConfiguration, compilation_error::CompilationError, compilation_result::{CompilationResult, CompilationResultPart}}, utility::text_utility};
+use crate::{codex::{modifier::{constants::NEW_LINE, standard_paragraph_modifier::StandardParagraphModifier}, Codex}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::{CompilationResult, CompilationResultPart}}, output_format::OutputFormat, utility::text_utility};
 
 use super::{constants::{DOUBLE_NEW_LINE_REGEX, ESCAPE_HTML}, CompilationRule};
 
@@ -30,7 +30,7 @@ impl CompilationRule for HtmlExtendedBlockQuoteRule {
     fn search_pattern(&self) -> &String {
         &self.search_pattern
     }
-    fn standard_compile(&self, content: &str, codex: &Codex, compilation_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, content: &str, _format: &OutputFormat, _codex: &Codex, compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
 
         let content = content.trim();
         let mut lines: Vec<&str> = content.lines().collect();
@@ -49,7 +49,7 @@ impl CompilationRule for HtmlExtendedBlockQuoteRule {
 
         for line in lines {
             if !line.starts_with(">") {
-                if compilation_configuration.read().unwrap().strict_focus_block_check() {
+                if compilation_configuration.strict_focus_block_check() {
                     log::warn!("invalid line in focus (quote) block: {}", line);
                     continue;
                 } else {

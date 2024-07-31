@@ -3,7 +3,7 @@ use std::sync::{Arc, RwLock};
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, compiler::{compilation_configuration::{list_bullet_configuration_record::{self, ListBulletConfigurationRecord}, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult}, utility::text_utility};
+use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, list_bullet_configuration_record::{self, ListBulletConfigurationRecord}, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult}, output_format::OutputFormat, utility::text_utility};
 
 use super::{constants::{ESCAPE_HTML, SPACE_TAB_EQUIVALENCE}, CompilationRule};
 
@@ -67,7 +67,7 @@ impl CompilationRule for HtmlListRule {
         &self.search_pattern
     }
 
-    fn standard_compile(&self, content: &str, _codex: &Codex, compilation_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, content: &str, _format: &OutputFormat, _codex: &Codex, compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
         
         let mut compilation_result = CompilationResult::new_empty();
 
@@ -98,7 +98,7 @@ impl CompilationRule for HtmlListRule {
                             indentation_level += 1;
                         }
 
-                        let bullet = Self::bullet_transform(bullet, indentation_level, compilation_configuration.read().unwrap().list_bullets_configuration());
+                        let bullet = Self::bullet_transform(bullet, indentation_level, compilation_configuration.list_bullets_configuration());
 
                         let content = text_utility::replace(&content, &ESCAPE_HTML);
 
@@ -119,7 +119,7 @@ impl CompilationRule for HtmlListRule {
 
         if items_found != total_valid_lines {
 
-            if compilation_configuration.read().unwrap().strict_list_check() {
+            if compilation_configuration.strict_list_check() {
                 log::error!("the following list has incorrect items (parsed {} on {}):\n{}\n-----\nparsed:\n{:#?}", items_found, total_valid_lines, content, parsed_lines);
                 panic!("incorrect list item(s)")
             } else {
@@ -163,7 +163,7 @@ mod test {
 
        let codex = Codex::of_html(CodexConfiguration::default());
 
-       let _ = rule.compile(nmd_text, &codex, Arc::new(RwLock::new(CompilationConfiguration::default()))).unwrap();
+       let _ = rule.compile(nmd_text, &OutputFormat::Html, &codex, &CompilationConfiguration::default(), Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
 
     }
 }

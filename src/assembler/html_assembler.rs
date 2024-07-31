@@ -3,7 +3,7 @@ use std::str::FromStr;
 use build_html::{HtmlPage, HtmlContainer, Html, Container};
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
-use crate::{artifact::Artifact, bibliography::Bibliography, compiler::compilable::compilation_result_accessor::CompilationResultAccessor, dossier::{document::chapter::chapter_tag::ChapterTagKey, Document, Dossier}, resource::{dynamic_resource::DynamicResource, Resource, ResourceError}, table_of_contents::TableOfContents, theme::Theme};
+use crate::{artifact::Artifact, bibliography::Bibliography, compiler::compilation_result_accessor::CompilationResultAccessor, dossier::{document::chapter::chapter_tag::ChapterTagKey, Document, Dossier}, resource::{dynamic_resource::DynamicResource, Resource, ResourceError}, table_of_contents::TableOfContents, theme::Theme};
 
 use super::{Assembler, AssemblerError, assembler_configuration::AssemblerConfiguration};
 

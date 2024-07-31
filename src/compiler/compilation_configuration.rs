@@ -2,16 +2,12 @@ pub mod list_bullet_configuration_record;
 pub mod compilation_configuration_overlay;
 
 use std::{collections::HashMap, path::PathBuf};
-
 use getset::{CopyGetters, Getters, MutGetters, Setters};
-
 use crate::{{bibliography::Bibliography, theme::Theme}, resource::text_reference::TextReferenceMap};
-
 use self::list_bullet_configuration_record::ListBulletConfigurationRecord;
-
 use crate::codex::modifier::modifiers_bucket::ModifiersBucket;
 
-use super::compilation_metadata::CompilationMetadata;
+
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub enum CompilableResourceType {
@@ -44,9 +40,6 @@ pub struct CompilationConfiguration {
 
     #[getset(get_copy = "pub", set = "pub")]
     strict_image_src_check: bool,
-
-    #[getset(get = "pub", get_mut = "pub", set = "pub")]
-    metadata: CompilationMetadata,
 
     #[getset(get = "pub", set = "pub")]
     excluded_modifiers: ModifiersBucket,
@@ -88,7 +81,7 @@ pub struct CompilationConfiguration {
 impl CompilationConfiguration {
 
     pub fn new(input_location: PathBuf, output_location: PathBuf, embed_local_image: bool, embed_remote_image: bool, 
-                compress_embed_image: bool, strict_image_src_check: bool, metadata: CompilationMetadata, excluded_modifiers: ModifiersBucket, 
+                compress_embed_image: bool, strict_image_src_check: bool, excluded_modifiers: ModifiersBucket, 
                 parallelization: bool, list_bullets_configuration: Vec<ListBulletConfigurationRecord>, strict_list_check: bool, 
                 strict_focus_block_check: bool, references: TextReferenceMap, fast_draft: bool, bibliography: Option<Bibliography>,
                 theme: Theme, resource_type: CompilableResourceType, preview: bool, watching: bool,) -> Self {
@@ -100,7 +93,6 @@ impl CompilationConfiguration {
             embed_remote_image,
             compress_embed_image,
             strict_image_src_check,
-            metadata,
             excluded_modifiers,
             parallelization,
             list_bullets_configuration,
@@ -126,7 +118,6 @@ impl Default for CompilationConfiguration {
             embed_remote_image: false,
             compress_embed_image: false,
             strict_image_src_check: false,
-            metadata: CompilationMetadata::default(),
             excluded_modifiers: ModifiersBucket::None,
             parallelization: false,
             list_bullets_configuration: list_bullet_configuration_record::default_bullets_configuration(),

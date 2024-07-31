@@ -1,5 +1,5 @@
 use std::fs;
-use std::sync::{RwLock, RwLockReadGuard};
+use std::sync::RwLock;
 use std::{path::PathBuf, sync::Arc};
 
 use build_html::{Container, Html, HtmlContainer};
@@ -10,11 +10,13 @@ use url::Url;
 use crate::codex::modifier::ModifierIdentifier;
 use crate::codex::Codex;
 use crate::codex::modifier::standard_paragraph_modifier::StandardParagraphModifier;
+use crate::compiler::compilation_configuration::compilation_configuration_overlay::CompilationConfigurationOverLay;
 use crate::compiler::compilation_configuration::CompilationConfiguration;
 use crate::compiler::compilation_error::CompilationError;
 use crate::compiler::compilation_result::CompilationResult;
 use crate::compiler::compilation_rule::constants::ESCAPE_HTML;
 use crate::compiler::Compiler;
+use crate::output_format::OutputFormat;
 use crate::resource::resource_reference::ResourceReference;
 use crate::resource::{image_resource::ImageResource, remote_resource::RemoteResource};
 use crate::utility::text_utility;
@@ -113,17 +115,17 @@ impl HtmlImageRule {
                 </figure>"#, id_attr, src, html_alt, img_classes.join(" "), style_attr, html_caption)
     }
 
-    fn build_not_embed_remote_img(image: &mut ImageResource, id: Option<ResourceReference>, img_classes: Vec<&str>, figure_style: Option<String>, compilation_configuration: &RwLockReadGuard<CompilationConfiguration>) -> Result<String, CompilationError> {
+    fn build_not_embed_remote_img(image: &mut ImageResource, id: Option<ResourceReference>, img_classes: Vec<&str>, figure_style: Option<String>, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<String, CompilationError> {
         let src = Url::parse(image.src().to_str().unwrap()).unwrap();
 
-        return Ok(Self::build_html_img(&image.src().to_string_lossy().to_string(), image.label().as_ref(), image.caption().as_ref(), id, img_classes, figure_style))
+        return Ok(Self::build_html_img(&src.to_string(), image.label().as_ref(), image.caption().as_ref(), id, img_classes, figure_style))
     }
 
-    fn build_embed_remote_img(image: &mut ImageResource, id: Option<ResourceReference>, img_classes: Vec<&str>, figure_style: Option<String>, compilation_configuration: &RwLockReadGuard<CompilationConfiguration>) -> Result<String, CompilationError> {
+    fn build_embed_remote_img(_image: &mut ImageResource, _id: Option<ResourceReference>, _img_classes: Vec<&str>, _figure_style: Option<String>, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<String, CompilationError> {
         unimplemented!("embed remote image will be added in a next version")
     }
 
-    fn build_embed_local_img(image: &mut ImageResource, id: Option<ResourceReference>, img_classes: Vec<&str>, figure_style: Option<String>, compilation_configuration: &RwLockReadGuard<CompilationConfiguration>) -> Result<String, CompilationError> {
+    fn build_embed_local_img(image: &mut ImageResource, id: Option<ResourceReference>, img_classes: Vec<&str>, figure_style: Option<String>, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<String, CompilationError> {
         let base64_image = image.to_base64(compilation_configuration.compress_embed_image());
 
         if let Some(mt) = image.mime_type().as_ref() {
@@ -139,29 +141,29 @@ impl HtmlImageRule {
 
                 log::warn!("{:?} will be compiled as local NOT embed image due to an error", image.src());
 
-                return Ok(Self::build_not_embed_local_img(image, id, img_classes, figure_style, compilation_configuration).unwrap());
+                return Ok(Self::build_not_embed_local_img(image, id, img_classes, figure_style, compilation_configuration, Arc::clone(&compilation_configuration_overlay)).unwrap());
             }
         }
     }
 
-    fn build_not_embed_local_img(image: &mut ImageResource, id: Option<ResourceReference>, img_classes: Vec<&str>, figure_style: Option<String>, compilation_configuration: &RwLockReadGuard<CompilationConfiguration>) -> Result<String, CompilationError> {
+    fn build_not_embed_local_img(image: &mut ImageResource, id: Option<ResourceReference>, img_classes: Vec<&str>, figure_style: Option<String>, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<String, CompilationError> {
         let local_not_embed_src = fs::canonicalize(image.src()).unwrap();
 
         return Ok(Self::build_html_img(&local_not_embed_src.to_string_lossy().to_string(), image.label().as_ref(), image.caption().as_ref(), id.clone(), img_classes.clone(), figure_style.clone()));
     }
 
 
-    fn build_img_from_compilation_configuration(image: &mut ImageResource, id: Option<ResourceReference>, img_classes: Vec<&str>, figure_style: Option<String>, compilation_configuration: &RwLockReadGuard<CompilationConfiguration>) -> Result<String, CompilationError> {
+    fn build_img_from_compilation_configuration(image: &mut ImageResource, id: Option<ResourceReference>, img_classes: Vec<&str>, figure_style: Option<String>,  compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<String, CompilationError> {
 
         if RemoteResource::is_valid_remote_resource(image.src().to_str().unwrap()) {          // remote image (e.g. URL)
 
             if compilation_configuration.embed_remote_image() {
 
-                return Self::build_embed_remote_img(image, id, img_classes, figure_style, compilation_configuration);
+                return Self::build_embed_remote_img(image, id, img_classes, figure_style, compilation_configuration, Arc::clone(&compilation_configuration_overlay));
 
             } else {
                 
-                return Self::build_not_embed_remote_img(image, id, img_classes, figure_style, compilation_configuration);
+                return Self::build_not_embed_remote_img(image, id, img_classes, figure_style, compilation_configuration, Arc::clone(&compilation_configuration_overlay));
             }
 
         } else {                // local image
@@ -170,11 +172,11 @@ impl HtmlImageRule {
 
                 if compilation_configuration.embed_local_image() {
 
-                    return Self::build_embed_local_img(image, id, img_classes, figure_style, compilation_configuration);
+                    return Self::build_embed_local_img(image, id, img_classes, figure_style, compilation_configuration, Arc::clone(&compilation_configuration_overlay));
                     
                 } else {        // local not embed
 
-                    return Ok(Self::build_not_embed_local_img(image, id, img_classes, figure_style, compilation_configuration).unwrap());
+                    return Ok(Self::build_not_embed_local_img(image, id, img_classes, figure_style, compilation_configuration, Arc::clone(&compilation_configuration_overlay)).unwrap());
                 }
 
 
@@ -193,7 +195,7 @@ impl HtmlImageRule {
 
     }
 
-    fn parse_image(search_pattern_regex: &Regex, content: &str, codex: &Codex, compilation_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+    fn parse_image(search_pattern_regex: &Regex, content: &str, codex: &Codex,  compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
 
         if !search_pattern_regex.is_match(content) {
             return Err(CompilationError::InvalidSource(format!("'{}' do not match using: {}", content, search_pattern_regex)))
@@ -213,10 +215,10 @@ impl HtmlImageRule {
                         style = None;
                     }
 
-                    let parsed_label = Compiler::compile_str(codex, label.as_str(), Arc::clone(&compilation_configuration), Arc::new(None)).unwrap();
+                    let parsed_label = Compiler::compile_str(label.as_str(), &OutputFormat::Html, codex, &compilation_configuration, Arc::clone(&compilation_configuration_overlay)).unwrap();
 
-                    let compilation_configuration = compilation_configuration.read().unwrap();
-                    let document_name = compilation_configuration.metadata().document_name().as_ref().unwrap();
+                    let binding = compilation_configuration_overlay.read().unwrap();
+                    let document_name = binding.document_name().as_ref().unwrap();
 
                     if let Some(id) = captures.get(2) {
 
@@ -227,7 +229,7 @@ impl HtmlImageRule {
                                                                         .inferring_mime_type()
                                                                         .unwrap();
 
-                        return Self::build_img_from_compilation_configuration(&mut image, Some(id), vec!["image"], style, &compilation_configuration).unwrap();
+                        return Self::build_img_from_compilation_configuration(&mut image, Some(id), vec!["image"], style, compilation_configuration, Arc::clone(&compilation_configuration_overlay)).unwrap();
 
                     } else {
 
@@ -243,7 +245,7 @@ impl HtmlImageRule {
 
                         let mut image = image.unwrap();
 
-                        return Self::build_img_from_compilation_configuration(&mut image, Some(id), vec!["image"], style, &compilation_configuration).unwrap();
+                        return Self::build_img_from_compilation_configuration(&mut image, Some(id), vec!["image"], style, compilation_configuration, Arc::clone(&compilation_configuration_overlay)).unwrap();
  
                     }
                 }
@@ -256,11 +258,10 @@ impl HtmlImageRule {
         Ok(CompilationResult::new_fixed(parsed_content))
     }
 
-    fn parse_abridged_image(search_pattern_regex: &Regex, content: &str, _codex: &Codex, compilation_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+    fn parse_abridged_image(search_pattern_regex: &Regex, content: &str, _codex: &Codex,  compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
 
-        let compilation_configuration = compilation_configuration.read().unwrap();
-
-        let document_name = compilation_configuration.metadata().document_name().as_ref().unwrap();
+        let binding = compilation_configuration_overlay.read().unwrap();
+        let document_name = binding.document_name().as_ref().unwrap();
 
         if !search_pattern_regex.is_match(content) {
             return Err(CompilationError::InvalidSource(format!("'{}' do not match using: {}", content, search_pattern_regex)))
@@ -291,14 +292,14 @@ impl HtmlImageRule {
                                                             .inferring_mime_type()
                                                             .unwrap();
 
-            return Self::build_img_from_compilation_configuration(&mut image, id, vec!["image", "abridged-image"], style, &compilation_configuration).unwrap();
+            return Self::build_img_from_compilation_configuration(&mut image, id, vec!["image", "abridged-image"], style, compilation_configuration, Arc::clone(&compilation_configuration_overlay)).unwrap();
 
         }).to_string();
         
         Ok(CompilationResult::new_fixed(parsed_content))
     }
 
-    fn parse_multi_image(search_pattern_regex: &Regex, content: &str, codex: &Codex, compilation_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+    fn parse_multi_image(search_pattern_regex: &Regex, content: &str, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
 
         let parsed_content = search_pattern_regex.replace_all(content, |captures: &Captures| {
             
@@ -343,7 +344,7 @@ impl HtmlImageRule {
                                                     ]);
 
                 for modifier in MULTI_IMAGE_PERMITTED_MODIFIER {
-                    let parse_res = Self::parse_image_from_identifier(&modifier.identifier(), &Regex::new(&modifier.modifier_pattern()).unwrap(), raw_image_line, codex, Arc::clone(&compilation_configuration));
+                    let parse_res = Self::parse_image_from_identifier(&modifier.identifier(), &Regex::new(&modifier.modifier_pattern()).unwrap(), raw_image_line, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay));
 
                     if let Ok(result) = parse_res {
                         image_container = image_container.with_raw(result.content());
@@ -360,19 +361,19 @@ impl HtmlImageRule {
         Ok(CompilationResult::new_fixed(parsed_content))
     }
 
-    fn parse_image_from_identifier(image_modifier_identifier: &ModifierIdentifier, search_pattern_regex: &Regex, content: &str, codex: &Codex, compilation_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+    fn parse_image_from_identifier(image_modifier_identifier: &ModifierIdentifier, search_pattern_regex: &Regex, content: &str, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
         
 
         if image_modifier_identifier.eq(&StandardParagraphModifier::Image.identifier()) {
-            return Self::parse_image(search_pattern_regex, content, codex, Arc::clone(&compilation_configuration));
+            return Self::parse_image(search_pattern_regex, content, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay));
         }
 
         if image_modifier_identifier.eq(&StandardParagraphModifier::AbridgedImage.identifier()) {
-            return Self::parse_abridged_image(search_pattern_regex, content, codex, Arc::clone(&compilation_configuration));        
+            return Self::parse_abridged_image(search_pattern_regex, content, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay));        
         }
 
         if image_modifier_identifier.eq(&StandardParagraphModifier::MultiImage.identifier()) {
-            return Self::parse_multi_image(search_pattern_regex, content, codex, Arc::clone(&compilation_configuration))
+            return Self::parse_multi_image(search_pattern_regex, content, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay))
         }
 
         log::error!("'{}' is unsupported image modifier identifier", image_modifier_identifier);
@@ -387,12 +388,12 @@ impl CompilationRule for HtmlImageRule {
         &self.search_pattern
     }
 
-    fn standard_compile(&self, content: &str, codex: &Codex, compilation_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, content: &str, _format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
 
-        Self::parse_image_from_identifier(&self.image_modifier_identifier, &self.search_pattern_regex, content, codex, Arc::clone(&compilation_configuration))
+        Self::parse_image_from_identifier(&self.image_modifier_identifier, &self.search_pattern_regex, content, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay))
     }
 
-    fn fast_compile(&self, content: &str, _codex: &Codex, _compilation_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+    fn fast_compile(&self, content: &str, _format: &OutputFormat, _codex: &Codex, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
         Ok(CompilationResult::new_fixed(format!(r#"<img alt="{}" />"#, content)))
     }
     
@@ -419,11 +420,13 @@ mod test {
 
         let codex = Codex::of_html(CodexConfiguration::default());
 
-        let mut pc = CompilationConfiguration::default();
+        let pc = CompilationConfiguration::default();
 
-        pc.metadata_mut().set_document_name(Some(String::from("test")));
+        let mut pco = CompilationConfigurationOverLay::default();
 
-        let parsed_content = image_rule.compile(nmd_text.as_str(), &codex, Arc::new(RwLock::new(pc))).unwrap();
+        pco.set_document_name(Some(String::from("test")));
+
+        let parsed_content = image_rule.compile(nmd_text.as_str(), &OutputFormat::Html, &codex, &pc, Arc::new(RwLock::new(pco))).unwrap();
         
         assert!(parsed_content.parts().len() > 0)
     }

@@ -6,7 +6,7 @@ use build_html::TableRow as HtmlTableRow;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-use crate::{codex::{modifier::constants::IDENTIFIER_PATTERN, Codex, modifier::standard_paragraph_modifier::StandardParagraphModifier}, compiler::{compilation_configuration::{list_bullet_configuration_record::ListBulletConfigurationRecord, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, Compiler}, resource::{resource_reference::ResourceReference, table::{Table, TableCell, TableCellAlignment}}, utility::text_utility};
+use crate::{codex::{modifier::{constants::IDENTIFIER_PATTERN, standard_paragraph_modifier::StandardParagraphModifier}, Codex}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, Compiler}, output_format::OutputFormat, resource::{resource_reference::ResourceReference, table::{Table, TableCell, TableCellAlignment}}, utility::text_utility};
 
 use super::{constants::ESCAPE_HTML, CompilationRule};
 
@@ -135,7 +135,7 @@ impl HtmlTableRule {
         cells
     }
 
-    fn load_html_row(html_row: &mut HtmlTableRow, cells: &Vec<TableCell>, codex: &Codex, compilation_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<(), CompilationError> {
+    fn load_html_row(html_row: &mut HtmlTableRow, cells: &Vec<TableCell>, codex: &Codex, compilation_configuration: &CompilationConfiguration) -> Result<(), CompilationError> {
 
         for cell in cells {
             match cell {
@@ -158,7 +158,7 @@ impl HtmlTableRule {
                         TableCellAlignment::Right => String::from("table-right-cell"),
                     };
 
-                    let content = Compiler::compile_str(codex, content, Arc::clone(&compilation_configuration), Arc::new(None))?.content();
+                    let content = Compiler::compile_str(content, &OutputFormat::Html, codex, compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default())))?.content();
 
                     let content = text_utility::replace(&content, &ESCAPE_HTML);
 
@@ -206,7 +206,7 @@ impl HtmlTableRule {
         (caption, id, style)
     }
 
-    fn build_html_table(caption: Option<String>, id: Option<String>, style: Option<String>, table: Table, codex: &Codex, compilation_configuration: Arc<RwLock<CompilationConfiguration>>) -> String {
+    fn build_html_table(caption: Option<String>, id: Option<String>, style: Option<String>, table: Table, codex: &Codex, compilation_configuration: &CompilationConfiguration) -> String {
 
         let mut html_table_attrs: Vec<(String, String)> = vec![(String::from("class"), String::from("table"))];
 
@@ -235,7 +235,7 @@ impl HtmlTableRule {
                                                         ("class", "table-header-row")
                                                     ]);
             
-            Self::load_html_row(&mut html_table_header, header_cells, codex, Arc::clone(&compilation_configuration)).unwrap();
+            Self::load_html_row(&mut html_table_header, header_cells, codex, &compilation_configuration).unwrap();
 
             html_table.add_custom_header_row(html_table_header);
         }
@@ -252,7 +252,7 @@ impl HtmlTableRule {
                                                                 ("class", "table-body-row")
                                                             ]);
 
-            Self::load_html_row(&mut html_body_row, row, codex, Arc::clone(&compilation_configuration)).unwrap();
+            Self::load_html_row(&mut html_body_row, row, codex, &compilation_configuration).unwrap();
 
             html_table.add_custom_body_row(html_body_row);
         }
@@ -269,7 +269,7 @@ impl HtmlTableRule {
                                                     ("class", "table-footer-row")
                                                 ]);
 
-            Self::load_html_row(&mut html_table_footer, footer_cells, codex, Arc::clone(&compilation_configuration)).unwrap();
+            Self::load_html_row(&mut html_table_footer, footer_cells, codex, &compilation_configuration).unwrap();
 
             html_table.add_custom_footer_row(html_table_footer);
         }
@@ -300,7 +300,7 @@ impl CompilationRule for HtmlTableRule {
         &self.search_pattern
     }
 
-    fn standard_compile(&self, content: &str, codex: &Codex, compilation_configuration: Arc<RwLock<CompilationConfiguration>>) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, content: &str, _format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
 
         let mut table: Table = Table::new();
         let mut alignments: Option<Vec<TableCellAlignment>> = None;
@@ -314,21 +314,24 @@ impl CompilationRule for HtmlTableRule {
         let lines = content.trim().lines();
         let lines_n = lines.clone().count();
 
+        let binding = compilation_configuration_overlay.read().unwrap();
+
+        if binding.document_name().is_none() {
+            return Err(CompilationError::DocumentNameNotFound)
+        }
+
+        let document_name = binding.document_name().as_ref().unwrap();
+
         for (index, line) in lines.enumerate() {
 
             // check if there is caption
             let trim_line = line.trim_start();
             if trim_line.starts_with("[") || trim_line.starts_with("{") || trim_line.starts_with("#") {
-
-                if let Ok(pc) = compilation_configuration.read() {
-
-                    let document_name = pc.metadata().document_name().as_ref().unwrap();
                     
-                    (caption, id, style) = self.extract_table_metadata(trim_line, document_name);
+                (caption, id, style) = self.extract_table_metadata(trim_line, document_name);
 
-                    if id.is_none() && caption.is_some() {
-                        id = Some(ResourceReference::of_internal_from_without_sharp(&caption.clone().unwrap(), Some(document_name)).unwrap().build());
-                    }
+                if id.is_none() && caption.is_some() {
+                    id = Some(ResourceReference::of_internal_from_without_sharp(&caption.clone().unwrap(), Some(document_name)).unwrap().build());
                 }
             }
 
@@ -380,7 +383,7 @@ impl CompilationRule for HtmlTableRule {
         }
 
         
-        Ok(CompilationResult::new_fixed(Self::build_html_table(caption, id, style, table, codex, Arc::clone(&compilation_configuration))))
+        Ok(CompilationResult::new_fixed(Self::build_html_table(caption, id, style, table, codex, &compilation_configuration)))
     }
     
     fn search_pattern_regex(&self) -> &Regex {
@@ -393,7 +396,7 @@ impl CompilationRule for HtmlTableRule {
 mod test {
     use std::sync::{Arc, RwLock};
 
-    use crate::{codex::{codex_configuration::CodexConfiguration, Codex}, compiler::{compilation_configuration::CompilationConfiguration, compilation_rule::CompilationRule}};
+    use crate::{codex::{codex_configuration::CodexConfiguration, Codex}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::CompilationRule}, output_format::OutputFormat};
 
     use super::HtmlTableRule;
 
@@ -410,9 +413,13 @@ mod test {
 
         let rule = HtmlTableRule::new();
         let codex = Codex::of_html(CodexConfiguration::default());
-        let compilation_configuration = Arc::new(RwLock::new(CompilationConfiguration::default()));
+        let compilation_configuration = CompilationConfiguration::default();
+        let mut compilation_configuration_overlay = CompilationConfigurationOverLay::default();
 
-        let outcome = rule.compile(nmd_table, &codex, compilation_configuration).unwrap().content();
+        compilation_configuration_overlay.set_document_name(Some("test".to_string()));
+
+        let outcome = rule.compile(nmd_table, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(compilation_configuration_overlay))).unwrap();
+        let outcome = outcome.content();
 
         assert!(outcome.contains("<thead"));
         assert!(outcome.contains("<tbody"));
