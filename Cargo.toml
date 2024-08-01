@@ -1,6 +1,6 @@
 [package]
 name = "nmd-core"
-version = "0.37.3"
+version = "0.37.4"
 authors = ["Nicola Ricciardi"]
 edition = "2021"
 description = "Official NMD compiler"

@@ -154,13 +154,6 @@ impl HtmlAssembler {
         page
     }
 
-    fn apply_check_preview_update_script(mut page: HtmlPage) -> Result<HtmlPage, AssemblerError> {
-
-        page.add_script_literal(include_str!("html_assembler/check_preview_updates.js"));
-
-        Ok(page)
-    }
-
     fn create_default_html_page(page_title: &String, external_styles_paths: &Vec<PathBuf>, external_styles: &Vec<String>, theme: &Theme, use_remote_addons: bool) -> Result<HtmlPage, AssemblerError> {
 
         let mut page = HtmlPage::new()
@@ -330,12 +323,12 @@ impl Assembler for HtmlAssembler {
         Ok(Artifact::new(result))
     }
 
-    fn assemble_document_standalone(document: &Document, page_title: &String, external_styles_paths: Option<&Vec<PathBuf>>, external_styles: Option<&Vec<String>>, toc: Option<&TableOfContents>, bibliography: Option<&Bibliography>, configuration: &AssemblerConfiguration) -> Result<Artifact, AssemblerError> {
+    fn assemble_document_standalone(document: &Document, page_title: &String, toc: Option<&TableOfContents>, bibliography: Option<&Bibliography>, configuration: &AssemblerConfiguration) -> Result<Artifact, AssemblerError> {
         
         let mut page = Self::create_default_html_page(
                                     page_title,
-                                    external_styles_paths.unwrap_or(&Vec::new()),
-                                    external_styles.unwrap_or(&Vec::new()),
+                                    configuration.external_styles_paths(),
+                                    configuration.external_styles(),
                                     configuration.theme(),
                                     configuration.use_remote_addons()
                                 )?;
