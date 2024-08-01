@@ -1,7 +1,7 @@
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-use super::{base_modifier::BaseModifier, modifiers_bucket::ModifiersBucket, standard_paragraph_modifier::StandardParagraphModifier, Modifier};
+use super::standard_paragraph_modifier::StandardParagraphModifier;
 
 pub const CHAPTER_TAGS_PATTERN: &str = r"(?:\r?\n@(.*))*";
 pub const CHAPTER_STYLE_PATTERN: &str = r"(\r?\n\{(?s:(.*))\})?";

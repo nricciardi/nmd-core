@@ -1,4 +1,4 @@
-use getset::{CopyGetters, Getters, Setters};
+use getset::{CopyGetters, Setters};
 use serde::{Deserialize, Serialize};
 
 

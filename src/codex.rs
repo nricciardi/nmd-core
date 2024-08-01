@@ -1,15 +1,17 @@
+//! `Codex` is a set of associations used to transform the text using a `Compiler`
+
+
 pub mod codex_configuration;
 pub mod modifier;
 
+
 use std::collections::HashMap;
 use getset::{Getters, Setters};
-
 use self::modifier::standard_paragraph_modifier::StandardParagraphModifier;
 use self::modifier::standard_text_modifier::StandardTextModifier;
 use self::modifier::ModifierIdentifier;
 use crate::output_format::OutputFormat;
 use self::codex_configuration::CodexConfiguration;
-
 use super::compiler::compilation_rule::constants::ESCAPE_HTML;
 use super::compiler::compilation_rule::html_cite_rule::HtmlCiteRule;
 use super::compiler::compilation_rule::html_extended_block_quote_rule::HtmlExtendedBlockQuoteRule;

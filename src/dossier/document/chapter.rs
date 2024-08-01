@@ -1,21 +1,10 @@
 pub mod paragraph;
 pub mod heading;
-pub mod chapter_builder;
 pub mod chapter_tag;
 
-use std::sync::{Arc, RwLock};
 
 use chapter_tag::ChapterTag;
 use getset::{Getters, MutGetters, Setters};
-use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
-
-
-use crate::codex::Codex;
-use crate::compiler::compilation_configuration::compilation_configuration_overlay::CompilationConfigurationOverLay;
-use crate::compiler::compilation_configuration::CompilationConfiguration;
-use crate::compiler::compilation_error::CompilationError;
-use crate::output_format::OutputFormat;
-
 use self::heading::Heading;
 pub use self::paragraph::Paragraph;
 

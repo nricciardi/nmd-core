@@ -1,3 +1,7 @@
+//! `Compiler` permits to transform a dossier or document based on output format and codex. Compiled dossier or document
+//! should be assembled using appropriate `Assembler`
+
+
 pub mod compilation_rule;
 pub mod compilation_error;
 pub mod compilation_result;
@@ -6,15 +10,11 @@ pub mod compilation_result_accessor;
 
 
 use std::{sync::{Arc, RwLock}, time::Instant};
-
-
 use compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration};
 use compilation_error::CompilationError;
 use compilation_result::{CompilationResult, CompilationResultPart};
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
-
 use crate::{bibliography::{Bibliography, BIBLIOGRAPHY_FICTITIOUS_DOCUMENT}, dossier::{document::{chapter::heading::Heading, Chapter}, Document, Dossier}, output_format::OutputFormat, resource::resource_reference::ResourceReference, table_of_contents::{TableOfContents, TOC_INDENTATION}};
-
 use super::{codex::{modifier::modifiers_bucket::ModifiersBucket, Codex}, dossier::document::Paragraph};
 
 
@@ -25,7 +25,6 @@ enum Segment {
     NonMatch(String),
 }
 
-// TODO: riportare codex, compilation_configuration e format nei singoli metodi e togliere &self
 
 #[derive(Debug)]
 pub struct Compiler {
@@ -34,7 +33,7 @@ pub struct Compiler {
 impl Compiler {
 
     /// Compile a dossier
-    pub fn compile_dossier(&self, dossier: &mut Dossier, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+    pub fn compile_dossier(dossier: &mut Dossier, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
 
         log::info!("compile dossier {} with ({} documents, parallelization: {})", dossier.name(), dossier.documents().len(), compilation_configuration.parallelization());
 

@@ -1,4 +1,8 @@
+//! `Loader` permits to create `Dossier` or `Document` reading filesystem
+
+
 pub mod loader_configuration;
+
 
 use std::collections::HashSet;
 use std::io;
@@ -23,13 +27,11 @@ use super::dossier::Dossier;
 use super::dossier::{document::{chapter::heading::{Heading, HeadingLevel}, Chapter, Paragraph}, Document};
 
 
-
 static CHAPTER_STYLE_PATTERN_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(CHAPTER_STYLE_PATTERN).unwrap());
 static FIND_EXTENDED_VERSION_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"heading-[[:digit:]]+-extended-version").unwrap());
 static FIND_COMPACT_VERSION_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"heading-[[:digit:]]+-compact-version").unwrap());
 static DOUBLE_NEW_LINES: Lazy<String> = Lazy::new(|| format!("{}{}", NEW_LINE, NEW_LINE));
 static TRIPLE_NEW_LINES: Lazy<String> = Lazy::new(|| format!("{}{}{}", NEW_LINE, NEW_LINE, NEW_LINE));
-
 
 
 #[derive(Error, Debug)]

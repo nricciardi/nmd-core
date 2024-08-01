@@ -52,10 +52,6 @@ impl HtmlImageRule {
         }
     }
 
-    fn set_searching_pattern(&mut self, searching_pattern: String) {
-        self.search_pattern = searching_pattern
-    }
-
     fn get_searching_pattern(image_modifier_identifier: &ModifierIdentifier) -> String {
 
         if image_modifier_identifier.eq(&StandardParagraphModifier::Image.identifier()) {

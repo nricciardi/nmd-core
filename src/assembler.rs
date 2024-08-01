@@ -1,13 +1,13 @@
-use thiserror::Error;
-
-use crate::{compiler::{compilation_result_accessor::CompilationResultAccessor, compilation_error::CompilationError}, resource::ResourceError};
-
-use self::{html_assembler::HtmlAssembler, assembler_configuration::AssemblerConfiguration};
-
-use super::{artifact::{Artifact, ArtifactError}, bibliography::Bibliography, dossier::{Document, Dossier}, output_format::OutputFormat, table_of_contents::TableOfContents};
+//! `Assembler` permits to build final `Artifact` of a compiled dossier or document
 
 pub mod html_assembler;
 pub mod assembler_configuration;
+
+
+use thiserror::Error;
+use crate::{compiler::{compilation_result_accessor::CompilationResultAccessor, compilation_error::CompilationError}, resource::ResourceError};
+use self::assembler_configuration::AssemblerConfiguration;
+use super::{artifact::{Artifact, ArtifactError}, bibliography::Bibliography, dossier::{Document, Dossier}, table_of_contents::TableOfContents};
 
 
 #[derive(Error, Debug)]
@@ -30,13 +30,11 @@ pub enum AssemblerError {
 
 pub trait Assembler {
 
-    fn configuration(&self) -> &AssemblerConfiguration;
+    /// Assemble dossier
+    fn assemble_dossier(dossier: &Dossier, configuration: &AssemblerConfiguration) -> Result<Artifact, AssemblerError> where Self: Sized;
 
-    fn set_configuration(&mut self, configuration: AssemblerConfiguration);
-
-    fn assemble_dossier(&self, dossier: &Dossier) -> Result<Artifact, AssemblerError>;
-
-    fn assemble_document(&self, document: &Document) -> Result<Artifact, AssemblerError> {
+    /// Assemble document
+    fn assemble_document(document: &Document, _configuration: &AssemblerConfiguration) -> Result<Artifact, AssemblerError> where Self: Sized {
 
         let mut result = String::new();
 
@@ -79,13 +77,13 @@ pub trait Assembler {
 
     }
 
-    fn assemble_document_standalone(&self, _page_title: &String, _styles_references: Option<&Vec<String>>, toc: Option<&TableOfContents>, bibliography: Option<&Bibliography>, document: &Document) -> Result<Artifact, AssemblerError> {
-        self.assemble_document(document)
+    /// Assemble a standalone document, so `page_title`, `styles_references`, `toc` and `bibliography` are needed
+    fn assemble_document_standalone(document: &Document, _page_title: &String, _styles_references: Option<&Vec<String>>, _toc: Option<&TableOfContents>, _bibliography: Option<&Bibliography>, configuration: &AssemblerConfiguration) -> Result<Artifact, AssemblerError> where Self: Sized{
+        Self::assemble_document(document, configuration)
     }
 }
 
-pub fn from(format: OutputFormat, configuration: AssemblerConfiguration) -> Box<dyn Assembler> {
-    match format {
-        OutputFormat::Html => Box::new(HtmlAssembler::new(configuration))  
-    }
+
+#[cfg(test)]
+mod test {
 }

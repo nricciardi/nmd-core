@@ -1,4 +1,4 @@
-use super::{base_modifier::BaseModifier, constants::{IDENTIFIER_PATTERN, NEW_LINE}, modifiers_bucket::ModifiersBucket, Modifier, ModifierIdentifier, ModifierPattern};
+use super::{base_modifier::BaseModifier, constants::{IDENTIFIER_PATTERN, NEW_LINE}, modifiers_bucket::ModifiersBucket, ModifierIdentifier, ModifierPattern};
 
 
 pub const PARAGRAPH_SEPARATOR_START: &str = r"(?m:^[ \t]*\r?\n)+";

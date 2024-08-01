@@ -1,27 +1,24 @@
 use std::str::FromStr;
 
 use build_html::{HtmlPage, HtmlContainer, Html, Container};
+use getset::{Getters, Setters};
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
 use crate::{artifact::Artifact, bibliography::Bibliography, compiler::compilation_result_accessor::CompilationResultAccessor, dossier::{document::chapter::chapter_tag::ChapterTagKey, Document, Dossier}, resource::{dynamic_resource::DynamicResource, Resource, ResourceError}, table_of_contents::TableOfContents, theme::Theme};
 
 use super::{Assembler, AssemblerError, assembler_configuration::AssemblerConfiguration};
 
+
+#[derive(Debug, Getters, Setters)]
 pub struct HtmlAssembler {
-    configuration: AssemblerConfiguration
 }
 
 impl HtmlAssembler {
-    pub fn new(configuration: AssemblerConfiguration) -> Self {
-        Self {
-            configuration,
-        }
-    }
 
+    fn apply_standard_remote_addons(mut page: HtmlPage, theme: &Theme) -> HtmlPage {
 
-    fn apply_standard_remote_addons(&self, mut page: HtmlPage) -> HtmlPage {
         // add code block js/css
-        match self.configuration.theme() {
+        match theme {
             Theme::Light | Theme::HighContrast | Theme::None => {
                 page = page
                     .with_script_link_attr("https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js", [
@@ -100,7 +97,7 @@ impl HtmlAssembler {
         page
     }
 
-    fn apply_standard_local_addons(&self, mut page: HtmlPage) -> HtmlPage {
+    fn apply_standard_local_addons(mut page: HtmlPage, theme: &Theme) -> HtmlPage {
 
         page.add_style(include_str!("html_assembler/emoji/emoji.min.css"));
         
@@ -119,7 +116,7 @@ impl HtmlAssembler {
         }"#);
 
         // add code block js/css                        
-        match self.configuration.theme() {
+        match theme {
             Theme::Light | Theme::HighContrast | Theme::None => {
                 page.add_style(include_str!("html_assembler/code_block/light_theme/prismjs.css"));
                 page.add_script_literal(include_str!("html_assembler/code_block/light_theme/prismjs.js"));
@@ -141,9 +138,9 @@ impl HtmlAssembler {
         page
     }
 
-    fn apply_theme_style(&self, mut page: HtmlPage) -> HtmlPage {
+    fn apply_theme_style(mut page: HtmlPage, theme: &Theme) -> HtmlPage {
 
-        match self.configuration.theme() {
+        match theme {
             Theme::Light => page.add_style(include_str!("html_assembler/default_style/light_theme.css")),
             Theme::Dark => page.add_style(include_str!("html_assembler/default_style/dark_theme.css")),
             Theme::Scientific => page.add_style(include_str!("html_assembler/default_style/scientific_theme.css")),
@@ -158,7 +155,7 @@ impl HtmlAssembler {
         page
     }
 
-    fn apply_styles(&self, mut page: HtmlPage, styles_references: &Vec<String>) -> Result<HtmlPage, AssemblerError> {
+    fn apply_styles(mut page: HtmlPage, styles_references: &Vec<String>) -> Result<HtmlPage, AssemblerError> {
         for ref style_ref in styles_references {
 
             log::info!("appending style (reference): {:?}", style_ref);
@@ -179,36 +176,29 @@ impl HtmlAssembler {
         Ok(page)
     }
 
-    fn apply_check_preview_update_script(&self, mut page: HtmlPage) -> Result<HtmlPage, AssemblerError> {
+    fn apply_check_preview_update_script(mut page: HtmlPage) -> Result<HtmlPage, AssemblerError> {
 
         page.add_script_literal(include_str!("html_assembler/check_preview_updates.js"));
 
         Ok(page)
     }
 
-    fn create_default_html_page(&self, page_title: &String, styles_references: &Vec<String>) -> Result<HtmlPage, AssemblerError> {
+    fn create_default_html_page(page_title: &String, styles_references: &Vec<String>, theme: &Theme, use_remote_addons: bool) -> Result<HtmlPage, AssemblerError> {
 
         let mut page = HtmlPage::new()
                                     .with_title(page_title)
                                     .with_meta(vec![("charset", "utf-8")]);
 
-        if self.configuration.use_remote_addons() {
-        page = self.apply_standard_remote_addons(page);
+        if use_remote_addons {
+        page = Self::apply_standard_remote_addons(page, theme);
 
         } else {
-        page = self.apply_standard_local_addons(page);
+        page = Self::apply_standard_local_addons(page, theme);
         }
 
-        page = self.apply_theme_style(page);
+        page = Self::apply_theme_style(page, theme);
 
-        page = self.apply_styles(page, &styles_references)?;
-
-        if self.configuration.preview() {
-
-            log::info!("applying specific script to support preview reloading");
-
-            page = self.apply_check_preview_update_script(page)?;
-        }
+        page = Self::apply_styles(page, &styles_references)?;
 
         Ok(page)
     }
@@ -216,11 +206,7 @@ impl HtmlAssembler {
 
 impl Assembler for HtmlAssembler {
 
-    fn set_configuration(&mut self, configuration: AssemblerConfiguration) {
-        self.configuration = configuration
-    }
-
-    fn assemble_dossier(&self, dossier: &Dossier) -> Result<Artifact, AssemblerError> {
+    fn assemble_dossier(dossier: &Dossier, configuration: &AssemblerConfiguration) -> Result<Artifact, AssemblerError> {
                         
         if dossier.documents().is_empty() {
             return Err(AssemblerError::TooFewElements("there are no documents".to_string()))
@@ -229,10 +215,10 @@ impl Assembler for HtmlAssembler {
         let mut styles_references = dossier.configuration().style().styles_references();
         log::info!("appending {} custom styles", styles_references.len());
 
-        let mut other_styles = self.configuration.styles_raw_path().clone();
+        let mut other_styles = configuration.styles_raw_path().clone();
         styles_references.append(&mut other_styles);
 
-        let mut page = self.create_default_html_page(dossier.name(), &styles_references)?;
+        let mut page = Self::create_default_html_page(dossier.name(), &styles_references, configuration.theme(), configuration.use_remote_addons())?;
         
         if let Some(toc) = dossier.table_of_contents() {
             if let Some(compiled_toc) = toc.compilation_result() {
@@ -240,12 +226,12 @@ impl Assembler for HtmlAssembler {
             }
         }
 
-        if self.configuration.parallelization() {
+        if configuration.parallelization() {
 
             let mut assembled_documents: Vec<Result<Artifact, AssemblerError>> = Vec::new();
 
             dossier.documents().par_iter().map(|document| {
-                self.assemble_document(document)
+                Self::assemble_document(document, configuration)
             }).collect_into_vec(&mut assembled_documents);
 
             for assembled_document in assembled_documents {
@@ -265,7 +251,7 @@ impl Assembler for HtmlAssembler {
                                                 .with_attributes(vec![
                                                     ("class", "document")
                                                 ])
-                                                .with_raw(self.assemble_document(document)?);
+                                                .with_raw(Self::assemble_document(document, configuration)?);
     
                 page.add_container(section);
             }
@@ -282,7 +268,7 @@ impl Assembler for HtmlAssembler {
         Ok(artifact)
     }
     
-    fn assemble_document(&self, document: &Document) -> Result<Artifact, AssemblerError> {
+    fn assemble_document(document: &Document, _configuration: &AssemblerConfiguration) -> Result<Artifact, AssemblerError> {
         let mut result = String::new();
 
         for paragraph in document.preamble() {
@@ -353,8 +339,8 @@ impl Assembler for HtmlAssembler {
         Ok(Artifact::new(result))
     }
 
-    fn assemble_document_standalone(&self, page_title: &String, styles_references: Option<&Vec<String>>, toc: Option<&TableOfContents>, bibliography: Option<&Bibliography>, document: &Document) -> Result<Artifact, AssemblerError> {
-        let mut page = self.create_default_html_page(page_title, styles_references.unwrap_or(&Vec::new()))?;
+    fn assemble_document_standalone(document: &Document, page_title: &String, styles_references: Option<&Vec<String>>, toc: Option<&TableOfContents>, bibliography: Option<&Bibliography>, configuration: &AssemblerConfiguration) -> Result<Artifact, AssemblerError> {
+        let mut page = Self::create_default_html_page(page_title, styles_references.unwrap_or(&Vec::new()), configuration.theme(), configuration.use_remote_addons())?;
 
         if let Some(toc) = toc {
             if let Some(compiled_toc) = toc.compilation_result() {
@@ -362,7 +348,7 @@ impl Assembler for HtmlAssembler {
             }
         }
 
-        page.add_raw(Into::<String>::into(self.assemble_document(document)?));
+        page.add_raw(Into::<String>::into(Self::assemble_document(document, configuration)?));
 
         if let Some(bib) = bibliography {
             if let Some(compiled_bib) = bib.compilation_result() {
@@ -371,10 +357,6 @@ impl Assembler for HtmlAssembler {
         }
 
         Ok(Artifact::new(page.to_html_string()))
-    }
-
-    fn configuration(&self) -> &AssemblerConfiguration {
-        &self.configuration
     }
 }
 
