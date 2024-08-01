@@ -10,5 +10,5 @@ pub mod codex;
 pub mod table_of_contents;
 pub mod bibliography;
 pub mod resource;
-mod utility;
+pub mod utility;
 pub mod constants;

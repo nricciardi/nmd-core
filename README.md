@@ -1,5 +1,8 @@
 ![Logo](images/logo.png)
 
+[![License](https://img.shields.io/badge/license-GPL3-green.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-v0.37.2-blue.svg)](CHANGELOG.md)
+
 # NMD core
 
 `nmd-core` is the *core* of [NMD](https://github.com/nricciardi/nmd). It can be used to load and build NMD files or dossier.
