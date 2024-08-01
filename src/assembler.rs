@@ -4,6 +4,8 @@ pub mod html_assembler;
 pub mod assembler_configuration;
 
 
+use std::path::PathBuf;
+
 use thiserror::Error;
 use crate::{compiler::{compilation_result_accessor::CompilationResultAccessor, compilation_error::CompilationError}, resource::ResourceError};
 use self::assembler_configuration::AssemblerConfiguration;
@@ -78,7 +80,7 @@ pub trait Assembler {
     }
 
     /// Assemble a standalone document, so `page_title`, `styles_references`, `toc` and `bibliography` are needed
-    fn assemble_document_standalone(document: &Document, _page_title: &String, _styles_references: Option<&Vec<String>>, _toc: Option<&TableOfContents>, _bibliography: Option<&Bibliography>, configuration: &AssemblerConfiguration) -> Result<Artifact, AssemblerError> where Self: Sized{
+    fn assemble_document_standalone(document: &Document, _page_title: &String, _external_styles_paths: Option<&Vec<PathBuf>>, _external_styles: Option<&Vec<String>>, _toc: Option<&TableOfContents>, _bibliography: Option<&Bibliography>, configuration: &AssemblerConfiguration) -> Result<Artifact, AssemblerError> where Self: Sized{
         Self::assemble_document(document, configuration)
     }
 }

@@ -1,10 +1,9 @@
-use std::str::FromStr;
-
+use std::path::PathBuf;
 use build_html::{HtmlPage, HtmlContainer, Html, Container};
 use getset::{Getters, Setters};
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
-use crate::{artifact::Artifact, bibliography::Bibliography, compiler::compilation_result_accessor::CompilationResultAccessor, dossier::{document::chapter::chapter_tag::ChapterTagKey, Document, Dossier}, resource::{dynamic_resource::DynamicResource, Resource, ResourceError}, table_of_contents::TableOfContents, theme::Theme};
+use crate::{artifact::Artifact, bibliography::Bibliography, compiler::compilation_result_accessor::CompilationResultAccessor, dossier::{document::chapter::chapter_tag::ChapterTagKey, Document, Dossier}, resource::{disk_resource::DiskResource, dynamic_resource::DynamicResource, Resource, ResourceError}, table_of_contents::TableOfContents, theme::Theme};
 
 use super::{Assembler, AssemblerError, assembler_configuration::AssemblerConfiguration};
 
@@ -155,27 +154,6 @@ impl HtmlAssembler {
         page
     }
 
-    fn apply_styles(mut page: HtmlPage, styles_references: &Vec<String>) -> Result<HtmlPage, AssemblerError> {
-        for ref style_ref in styles_references {
-
-            log::info!("appending style (reference): {:?}", style_ref);
-
-            let resource = DynamicResource::from_str(style_ref)?;
-
-            match resource {
-                DynamicResource::DiskResource(disk_resource) => page.add_style(disk_resource.read()?),
-                DynamicResource::ImageResource(_) => return Err(AssemblerError::ResourceError(ResourceError::InvalidResourceVerbose("image cannot be an addons".to_string()))),
-                DynamicResource::RemoteResource(remote_resource) => {
-                    page = page.with_script_link_attr(remote_resource.location().to_string(), [
-                        ("crossorigin", "anonymous"),
-                    ])
-                },
-            }
-        }
-
-        Ok(page)
-    }
-
     fn apply_check_preview_update_script(mut page: HtmlPage) -> Result<HtmlPage, AssemblerError> {
 
         page.add_script_literal(include_str!("html_assembler/check_preview_updates.js"));
@@ -183,7 +161,7 @@ impl HtmlAssembler {
         Ok(page)
     }
 
-    fn create_default_html_page(page_title: &String, styles_references: &Vec<String>, theme: &Theme, use_remote_addons: bool) -> Result<HtmlPage, AssemblerError> {
+    fn create_default_html_page(page_title: &String, external_styles_paths: &Vec<PathBuf>, external_styles: &Vec<String>, theme: &Theme, use_remote_addons: bool) -> Result<HtmlPage, AssemblerError> {
 
         let mut page = HtmlPage::new()
                                     .with_title(page_title)
@@ -198,7 +176,17 @@ impl HtmlAssembler {
 
         page = Self::apply_theme_style(page, theme);
 
-        page = Self::apply_styles(page, &styles_references)?;
+
+        for style in external_styles {
+            page.add_style(style);
+        }
+
+        for style_path in external_styles_paths {
+
+            let resource = DiskResource::new(style_path.clone())?;
+
+            page.add_style(resource.read()?);
+        }
 
         Ok(page)
     }
@@ -212,13 +200,16 @@ impl Assembler for HtmlAssembler {
             return Err(AssemblerError::TooFewElements("there are no documents".to_string()))
         }
 
-        let mut styles_references = dossier.configuration().style().styles_references();
+        let mut styles_references: Vec<PathBuf> = dossier.configuration().style().styles_references().iter()
+                                                        .map(|p| PathBuf::from(p))
+                                                        .collect();
+
         log::info!("appending {} custom styles", styles_references.len());
 
-        let mut other_styles = configuration.styles_raw_path().clone();
+        let mut other_styles = configuration.external_styles_paths().clone();
         styles_references.append(&mut other_styles);
 
-        let mut page = Self::create_default_html_page(dossier.name(), &styles_references, configuration.theme(), configuration.use_remote_addons())?;
+        let mut page = Self::create_default_html_page(dossier.name(), &styles_references, configuration.external_styles(), configuration.theme(), configuration.use_remote_addons())?;
         
         if let Some(toc) = dossier.table_of_contents() {
             if let Some(compiled_toc) = toc.compilation_result() {
@@ -339,8 +330,15 @@ impl Assembler for HtmlAssembler {
         Ok(Artifact::new(result))
     }
 
-    fn assemble_document_standalone(document: &Document, page_title: &String, styles_references: Option<&Vec<String>>, toc: Option<&TableOfContents>, bibliography: Option<&Bibliography>, configuration: &AssemblerConfiguration) -> Result<Artifact, AssemblerError> {
-        let mut page = Self::create_default_html_page(page_title, styles_references.unwrap_or(&Vec::new()), configuration.theme(), configuration.use_remote_addons())?;
+    fn assemble_document_standalone(document: &Document, page_title: &String, external_styles_paths: Option<&Vec<PathBuf>>, external_styles: Option<&Vec<String>>, toc: Option<&TableOfContents>, bibliography: Option<&Bibliography>, configuration: &AssemblerConfiguration) -> Result<Artifact, AssemblerError> {
+        
+        let mut page = Self::create_default_html_page(
+                                    page_title,
+                                    external_styles_paths.unwrap_or(&Vec::new()),
+                                    external_styles.unwrap_or(&Vec::new()),
+                                    configuration.theme(),
+                                    configuration.use_remote_addons()
+                                )?;
 
         if let Some(toc) = toc {
             if let Some(compiled_toc) = toc.compilation_result() {
@@ -360,35 +358,7 @@ impl Assembler for HtmlAssembler {
     }
 }
 
-// #[cfg(test)]
-// mod test {
 
-//     use std::{path::PathBuf, sync::Arc};
-
-//     use crate::compiler::{codex::Codex, dossier::dossier_configuration::DossierConfiguration, parser::parsing_rule::parsing_configuration::ParsingConfiguration};
-
-//     use super::*;
-
-//     #[test]
-//     fn assemble() {
-
-//         let codex = Arc::new(Codex::of_html(CodexConfiguration::default()));
-
-//         let project_directory = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-//         let dossier_dir = "nmd-test-dossier-1";
-//         let nmd_file = project_directory.join("test-resources").join(dossier_dir).join("d1.nmd");
-
-//         assert!(nmd_file.is_file());
-
-//         let mut dossier_configuration = DossierConfiguration::default();
-//         dossier_configuration.set_raw_documents_paths(vec![nmd_file.to_string_lossy().to_string()]);
-
-//         let mut dossier = Dossier::load(Arc::clone(&codex), &dossier_configuration).unwrap();
-
-//         dossier.parse(Arc::clone(&codex), Arc::new(ParsingConfiguration::default())).unwrap();
-
-//         let assembler = HtmlAssembler::new(AssemblerConfiguration::default());
-
-//         let _ = assembler.assemble(codex.into(), *dossier).unwrap();
-//     }
-// }
+#[cfg(test)]
+mod test {
+}

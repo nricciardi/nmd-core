@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use getset::{CopyGetters, Getters, Setters};
 
 use crate::{dossier::dossier_configuration::DossierConfiguration, theme::Theme};
@@ -16,7 +18,10 @@ pub struct AssemblerConfiguration {
     parallelization: bool,
 
     #[getset(get = "pub", set = "pub")]
-    styles_raw_path: Vec<String>,
+    external_styles_paths: Vec<PathBuf>,
+
+    #[getset(get = "pub", set = "pub")]
+    external_styles: Vec<String>,
 }
 
 impl AssemblerConfiguration {
@@ -26,7 +31,8 @@ impl AssemblerConfiguration {
             theme,
             use_remote_addons,
             parallelization,
-            styles_raw_path: Vec::new(),
+            external_styles_paths: Vec::new(),
+            external_styles: Vec::new(),
         }
     }
 }
@@ -37,7 +43,8 @@ impl Default for AssemblerConfiguration {
             theme: Theme::default(),
             use_remote_addons: false,
             parallelization: false,
-            styles_raw_path: Vec::new(),
+            external_styles_paths: Vec::new(),
+            external_styles: Vec::new(),
         }
     }
 }

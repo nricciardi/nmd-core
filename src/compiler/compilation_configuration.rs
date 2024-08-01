@@ -70,12 +70,6 @@ pub struct CompilationConfiguration {
 
     #[getset(get = "pub", set = "pub")]
     resource_type: CompilableResourceType,
-
-    #[getset(get_copy = "pub", set = "pub")]
-    preview: bool,
-
-    #[getset(get_copy = "pub", set = "pub")]
-    watching: bool,
 }
 
 impl CompilationConfiguration {
@@ -84,7 +78,7 @@ impl CompilationConfiguration {
                 compress_embed_image: bool, strict_image_src_check: bool, excluded_modifiers: ModifiersBucket, 
                 parallelization: bool, list_bullets_configuration: Vec<ListBulletConfigurationRecord>, strict_list_check: bool, 
                 strict_focus_block_check: bool, references: TextReferenceMap, fast_draft: bool, bibliography: Option<Bibliography>,
-                theme: Theme, resource_type: CompilableResourceType, preview: bool, watching: bool,) -> Self {
+                theme: Theme, resource_type: CompilableResourceType) -> Self {
 
         Self {
             input_location,
@@ -103,8 +97,6 @@ impl CompilationConfiguration {
             bibliography,
             theme,
             resource_type,
-            preview,
-            watching,
         }
     }
 }
@@ -128,8 +120,6 @@ impl Default for CompilationConfiguration {
             bibliography: None,
             theme: Theme::default(),
             resource_type: CompilableResourceType::default(),
-            preview: false,
-            watching: false,
         }
     }
 }
