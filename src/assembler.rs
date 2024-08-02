@@ -1,14 +1,10 @@
 //! `Assembler` permits to build final `Artifact` of a compiled dossier or document
 
 pub mod html_assembler;
-pub mod assembler_configuration;
 
-
-use std::path::PathBuf;
 
 use thiserror::Error;
 use crate::{compiler::{compilation_result_accessor::CompilationResultAccessor, compilation_error::CompilationError}, resource::ResourceError};
-use self::assembler_configuration::AssemblerConfiguration;
 use super::{artifact::{Artifact, ArtifactError}, bibliography::Bibliography, dossier::{Document, Dossier}, table_of_contents::TableOfContents};
 
 
@@ -32,11 +28,13 @@ pub enum AssemblerError {
 
 pub trait Assembler {
 
+    type Configuration;
+
     /// Assemble dossier
-    fn assemble_dossier(dossier: &Dossier, configuration: &AssemblerConfiguration) -> Result<Artifact, AssemblerError> where Self: Sized;
+    fn assemble_dossier(dossier: &Dossier, configuration: &Self::Configuration) -> Result<Artifact, AssemblerError> where Self: Sized;
 
     /// Assemble document
-    fn assemble_document(document: &Document, _configuration: &AssemblerConfiguration) -> Result<Artifact, AssemblerError> where Self: Sized {
+    fn assemble_document(document: &Document, _configuration: &Self::Configuration) -> Result<Artifact, AssemblerError> where Self: Sized {
 
         let mut result = String::new();
 
@@ -80,7 +78,7 @@ pub trait Assembler {
     }
 
     /// Assemble a standalone document, so `page_title`, `styles_references`, `toc` and `bibliography` are needed
-    fn assemble_document_standalone(document: &Document, _page_title: &String, _toc: Option<&TableOfContents>, _bibliography: Option<&Bibliography>, configuration: &AssemblerConfiguration) -> Result<Artifact, AssemblerError> where Self: Sized{
+    fn assemble_document_standalone(document: &Document, _page_title: &String, _toc: Option<&TableOfContents>, _bibliography: Option<&Bibliography>, configuration: &Self::Configuration) -> Result<Artifact, AssemblerError> where Self: Sized{
         Self::assemble_document(document, configuration)
     }
 }

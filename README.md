@@ -43,9 +43,9 @@ Compiler::compile_dossier(&mut dossier, &format, &codex, &compilation_configurat
 
 // === Assemble ===
 
-let assembler_configuration = AssemblerConfiguration::default();
+let html_assembler_configuration = HtmlAssemblerConfiguration::default();
 
-let artifact = HtmlAssembler::assemble_dossier(&dossier, &assembler_configuration)?;
+let artifact = HtmlAssembler::assemble_dossier(&dossier, &html_assembler_configuration)?;
 
 
 // === Dump === 

@@ -1,12 +1,10 @@
 use std::path::PathBuf;
-
 use getset::{CopyGetters, Getters, MutGetters, Setters};
-
 use crate::{dossier::dossier_configuration::DossierConfiguration, theme::Theme};
 
 
 #[derive(Debug, Getters, CopyGetters, MutGetters, Setters)]
-pub struct AssemblerConfiguration {
+pub struct HtmlAssemblerConfiguration {
 
     #[getset(get = "pub", set = "pub")]
     theme: Theme,
@@ -22,22 +20,28 @@ pub struct AssemblerConfiguration {
 
     #[getset(get = "pub", get_mut = "pub", set = "pub")]
     external_styles: Vec<String>,
+
+    #[getset(get = "pub", get_mut = "pub", set = "pub")]
+    external_scripts_paths: Vec<PathBuf>,
+
+    #[getset(get = "pub", get_mut = "pub", set = "pub")]
+    external_scripts: Vec<String>,
 }
 
-impl AssemblerConfiguration {
+impl HtmlAssemblerConfiguration {
     
     pub fn new(theme: Theme, use_remote_addons: bool, parallelization: bool) -> Self {
         Self {
             theme,
             use_remote_addons,
             parallelization,
-            external_styles_paths: Vec::new(),
-            external_styles: Vec::new(),
+            
+            ..Default::default()
         }
     }
 }
 
-impl Default for AssemblerConfiguration {
+impl Default for HtmlAssemblerConfiguration {
     fn default() -> Self {
         Self {
             theme: Theme::default(),
@@ -45,11 +49,13 @@ impl Default for AssemblerConfiguration {
             parallelization: false,
             external_styles_paths: Vec::new(),
             external_styles: Vec::new(),
+            external_scripts_paths: Vec::new(),
+            external_scripts: Vec::new(),
         }
     }
 }
 
-impl From<DossierConfiguration> for AssemblerConfiguration {
+impl From<DossierConfiguration> for HtmlAssemblerConfiguration {
     fn from(dossier_configuration: DossierConfiguration) -> Self {
         Self {
             theme: dossier_configuration.style().theme().clone(),

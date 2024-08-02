@@ -1,11 +1,15 @@
+pub mod html_assembler_configuration;
+
+
 use std::path::PathBuf;
 use build_html::{HtmlPage, HtmlContainer, Html, Container};
 use getset::{Getters, Setters};
+use html_assembler_configuration::HtmlAssemblerConfiguration;
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
+use crate::{artifact::Artifact, bibliography::Bibliography, compiler::compilation_result_accessor::CompilationResultAccessor, dossier::{document::chapter::chapter_tag::ChapterTagKey, Document, Dossier}, resource::{disk_resource::DiskResource, Resource}, table_of_contents::TableOfContents, theme::Theme};
 
-use crate::{artifact::Artifact, bibliography::Bibliography, compiler::compilation_result_accessor::CompilationResultAccessor, dossier::{document::chapter::chapter_tag::ChapterTagKey, Document, Dossier}, resource::{disk_resource::DiskResource, dynamic_resource::DynamicResource, Resource, ResourceError}, table_of_contents::TableOfContents, theme::Theme};
+use super::{Assembler, AssemblerError};
 
-use super::{Assembler, AssemblerError, assembler_configuration::AssemblerConfiguration};
 
 
 #[derive(Debug, Getters, Setters)]
@@ -154,7 +158,7 @@ impl HtmlAssembler {
         page
     }
 
-    fn create_default_html_page(page_title: &String, external_styles_paths: &Vec<PathBuf>, external_styles: &Vec<String>, theme: &Theme, use_remote_addons: bool) -> Result<HtmlPage, AssemblerError> {
+    fn create_default_html_page(page_title: &String, external_styles_paths: &Vec<PathBuf>, external_styles: &Vec<String>, external_scripts_paths: &Vec<PathBuf>, external_scripts: &Vec<String>, theme: &Theme, use_remote_addons: bool) -> Result<HtmlPage, AssemblerError> {
 
         let mut page = HtmlPage::new()
                                     .with_title(page_title)
@@ -181,13 +185,27 @@ impl HtmlAssembler {
             page.add_style(resource.read()?);
         }
 
+
+        for script in external_scripts {
+            page.add_script_literal(script);
+        }
+
+        for script_path in external_scripts_paths {
+
+            let resource = DiskResource::new(script_path.clone())?;
+
+            page.add_script_literal(resource.read()?);
+        }
+
         Ok(page)
     }
 }
 
 impl Assembler for HtmlAssembler {
 
-    fn assemble_dossier(dossier: &Dossier, configuration: &AssemblerConfiguration) -> Result<Artifact, AssemblerError> {
+    type Configuration = HtmlAssemblerConfiguration;
+
+    fn assemble_dossier(dossier: &Dossier, configuration: &Self::Configuration) -> Result<Artifact, AssemblerError> {
                         
         if dossier.documents().is_empty() {
             return Err(AssemblerError::TooFewElements("there are no documents".to_string()))
@@ -202,7 +220,7 @@ impl Assembler for HtmlAssembler {
         let mut other_styles = configuration.external_styles_paths().clone();
         styles_references.append(&mut other_styles);
 
-        let mut page = Self::create_default_html_page(dossier.name(), &styles_references, configuration.external_styles(), configuration.theme(), configuration.use_remote_addons())?;
+        let mut page = Self::create_default_html_page(dossier.name(), &styles_references, configuration.external_styles(), configuration.external_scripts_paths(), configuration.external_scripts(), configuration.theme(), configuration.use_remote_addons())?;
         
         if let Some(toc) = dossier.table_of_contents() {
             if let Some(compiled_toc) = toc.compilation_result() {
@@ -252,7 +270,7 @@ impl Assembler for HtmlAssembler {
         Ok(artifact)
     }
     
-    fn assemble_document(document: &Document, _configuration: &AssemblerConfiguration) -> Result<Artifact, AssemblerError> {
+    fn assemble_document(document: &Document, _configuration: &Self::Configuration) -> Result<Artifact, AssemblerError> {
         let mut result = String::new();
 
         for paragraph in document.preamble() {
@@ -323,12 +341,14 @@ impl Assembler for HtmlAssembler {
         Ok(Artifact::new(result))
     }
 
-    fn assemble_document_standalone(document: &Document, page_title: &String, toc: Option<&TableOfContents>, bibliography: Option<&Bibliography>, configuration: &AssemblerConfiguration) -> Result<Artifact, AssemblerError> {
+    fn assemble_document_standalone(document: &Document, page_title: &String, toc: Option<&TableOfContents>, bibliography: Option<&Bibliography>, configuration: &Self::Configuration) -> Result<Artifact, AssemblerError> {
         
         let mut page = Self::create_default_html_page(
                                     page_title,
                                     configuration.external_styles_paths(),
                                     configuration.external_styles(),
+                                    configuration.external_scripts_paths(),
+                                    configuration.external_scripts(),
                                     configuration.theme(),
                                     configuration.use_remote_addons()
                                 )?;
