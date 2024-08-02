@@ -1,5 +1,5 @@
 use getset::{CopyGetters, Getters, Setters};
-use crate::{compiler::{compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor}, resource::resource_reference::ResourceReference};
+use crate::{compiler::{compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor}, resource::resource_reference::ResourceReference, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 pub type HeadingLevel = u32;
@@ -19,6 +19,9 @@ pub struct Heading {
 
     #[getset(get = "pub", set = "pub")]
     resource_reference: Option<ResourceReference>,
+
+    #[getset(get = "pub", set = "pub")]
+    nuid: Option<NmdUniqueIdentifier>,
 }
 
 impl Heading {
@@ -28,7 +31,8 @@ impl Heading {
             level,
             title,
             compilation_result: None,
-            resource_reference: None
+            resource_reference: None,
+            nuid: None,
         }
     }
 }

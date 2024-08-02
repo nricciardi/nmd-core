@@ -1,7 +1,7 @@
 use std::fmt::Display;
 use getset::{Getters, Setters};
 use thiserror::Error;
-use crate::{codex::modifier::ModifierIdentifier, compiler::{compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor}};
+use crate::{codex::modifier::ModifierIdentifier, compiler::{compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor}, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 #[derive(Error, Debug)]
@@ -26,6 +26,9 @@ pub struct Paragraph {
 
     #[getset(get = "pub", set = "pub")]
     paragraph_type: ParagraphType,
+
+    #[getset(get = "pub", set = "pub")]
+    nuid: Option<NmdUniqueIdentifier>,
 }
 
 impl Paragraph {
@@ -34,7 +37,8 @@ impl Paragraph {
         Self {
             content,
             paragraph_type,
-            compilation_result: None
+            compilation_result: None,
+            nuid: None,
         }
     }
 

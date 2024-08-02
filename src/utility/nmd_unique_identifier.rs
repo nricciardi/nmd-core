@@ -1,0 +1,64 @@
+use std::{collections::HashMap, fmt::format, hash::Hash};
+use ahash::RandomState;
+use crate::dossier::{document::Paragraph, Document};
+
+
+pub type NmdUniqueIdentifier = String;
+
+const HASHER_SEED: usize = 42;
+
+pub fn assign_nuid_to_document_paragraphs(document: &mut Document) {
+
+    let hasher = RandomState::with_seed(HASHER_SEED);
+    let mut nuid_map: HashMap<u64, usize> = HashMap::new();
+
+    let mut calc_nuid = |s: &String| {
+
+        let h = hasher.hash_one(s);
+
+        let mut n = *nuid_map.get(&h).unwrap_or(&0);
+
+        n += 1;
+
+        nuid_map.insert(h, n);
+
+        let nuid = format!("{}-{}", h, n);
+
+        nuid
+    };
+    
+    document.preamble_mut().iter_mut().for_each(|p| {
+        p.set_nuid(Some(calc_nuid(p.content())));
+    });
+
+    document.chapters_mut().iter_mut().for_each(|chapter| {
+        chapter.paragraphs_mut().iter_mut().for_each(|p| {
+            p.set_nuid(Some(calc_nuid(p.content())));
+        });
+
+        let title = chapter.heading().title().clone();
+        chapter.heading_mut().set_nuid(Some(calc_nuid(&title)));
+    });
+}
+
+
+#[cfg(test)]
+mod test {
+    use ahash::RandomState;
+
+    use super::HASHER_SEED;
+
+    #[test]
+    fn deterministic_hashing() {
+
+        let test_string = "this is a test string";
+
+        let hasher = RandomState::with_seed(HASHER_SEED);
+        let h1 = hasher.hash_one(test_string);
+
+        let hasher = RandomState::with_seed(HASHER_SEED);
+        let h2 = hasher.hash_one(test_string);
+
+        assert_eq!(h1, h2);
+    }
+}
