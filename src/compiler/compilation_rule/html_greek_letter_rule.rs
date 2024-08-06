@@ -1,9 +1,6 @@
 use std::{collections::HashMap, fmt::Debug, sync::{Arc, RwLock}};
-
 use regex::{Captures, Regex};
-
-use crate::{codex::{modifier::standard_text_modifier::StandardTextModifier, Codex}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult}, output_format::OutputFormat};
-
+use crate::{codex::{modifier::standard_text_modifier::StandardTextModifier, Codex}, compiler::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult}, output_format::OutputFormat};
 use super::CompilationRule;
 
 
@@ -114,7 +111,9 @@ impl CompilationRule for HtmlGreekLettersRule {
         &self.search_pattern
     }
 
-    fn standard_compile(&self, content: &str, _format: &OutputFormat, _codex: &Codex, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, compilable: &Box<dyn Compilable>, _format: &OutputFormat, _codex: &Codex, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
+
+        let content = compilable.compilable_content();
         
         let compiled_content = self.search_pattern_regex.replace_all(content, |capture: &Captures| {
 

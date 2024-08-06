@@ -7,14 +7,16 @@ pub mod compilation_error;
 pub mod compilation_result;
 pub mod compilation_configuration;
 pub mod compilation_result_accessor;
+pub mod compilable;
 
 
 use std::{sync::{Arc, RwLock}, time::Instant};
+use compilable::{Compilable, GenericCompilable};
 use compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration};
 use compilation_error::CompilationError;
 use compilation_result::{CompilationResult, CompilationResultPart};
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
-use crate::{bibliography::{Bibliography, BIBLIOGRAPHY_FICTITIOUS_DOCUMENT}, dossier::{document::{chapter::heading::Heading, Chapter}, Document, Dossier}, output_format::OutputFormat, resource::resource_reference::ResourceReference, table_of_contents::{TableOfContents, TOC_INDENTATION}};
+use crate::{bibliography::{Bibliography, BIBLIOGRAPHY_FICTITIOUS_DOCUMENT}, dossier::{document::{chapter::heading::{self, Heading}, Chapter}, Document, Dossier}, output_format::OutputFormat, resource::resource_reference::ResourceReference, table_of_contents::{TableOfContents, TOC_INDENTATION}};
 use super::{codex::{modifier::modifiers_bucket::ModifiersBucket, Codex}, dossier::document::Paragraph};
 
 
@@ -271,15 +273,30 @@ impl Compiler {
 
         let id: ResourceReference = ResourceReference::of_internal_from_without_sharp(heading.title(), Some(&document_name))?;
 
-        let parsed_title = Self::compile_str(heading.title(), format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
+        let compiled_title = Self::compile_str(heading.title(), format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
 
-        let outcome = CompilationResult::new(vec![
-            CompilationResultPart::Fixed { content: format!(r#"<h{} class="heading-{}" id="{}">"#, heading.level(), heading.level(), id.build_without_internal_sharp()) },
-            CompilationResultPart::Mutable { content: parsed_title.content() },
-            CompilationResultPart::Fixed { content: format!(r#"</h{}>"#, heading.level()) },
-        ]);
-        
-        heading.set_compilation_result(Some(outcome));
+        let res = match format {
+            OutputFormat::Html => {
+
+                let nuid_attr: String;
+
+                if let Some(nuid) = heading.nuid() {
+                    nuid_attr = format!(r#"data-nuid="{}""#, nuid);
+                } else {
+                    nuid_attr = String::new();
+                }
+
+                let outcome = CompilationResult::new(vec![
+                    CompilationResultPart::Fixed { content: format!(r#"<h{} class="heading-{}" id="{}" {}>"#, heading.level(), heading.level(), id.build_without_internal_sharp(), nuid_attr) },
+                    CompilationResultPart::Mutable { content: compiled_title.content() },
+                    CompilationResultPart::Fixed { content: format!(r#"</h{}>"#, heading.level()) },
+                ]);
+
+                outcome
+            },
+        };
+
+        heading.set_compilation_result(Some(res));
         heading.set_resource_reference(Some(id));
 
         Ok(())
@@ -494,7 +511,8 @@ impl Compiler {
 
             log::debug!("paragraph rule {:?} is found, it is about to be applied to compile paragraph", paragraph_rule);
 
-            compilation_result = paragraph_rule.compile(&paragraph.content(), format, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay))?;
+            let compilable: Box<dyn Compilable> = Box::new(paragraph.clone());
+            compilation_result = paragraph_rule.compile(&compilable, format, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay))?;
 
             excluded_modifiers = excluded_modifiers + paragraph_modifier.incompatible_modifiers().clone();
 
@@ -597,8 +615,10 @@ impl Compiler {
                 let mut elaborate_segment_fn = |segment: Segment| -> Result<(), CompilationError> {
                     match segment {
                         Segment::Match(m) => {
+
+                            let compilable: Box<dyn Compilable> = Box::new(GenericCompilable::from(m));
                             
-                            let outcome = text_rule.compile(&m, format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
+                            let outcome = text_rule.compile(&compilable, format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
 
                             for part in Into::<Vec<CompilationResultPart>>::into(outcome) {
 

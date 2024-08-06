@@ -586,4 +586,16 @@ paragraph 1b
 
         assert_eq!(paragraphs.len(), 3)
     }
+
+    #[test]
+    fn load_dossier() {
+
+        let dossier_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("test-resources").join("nmd-test-dossier-1");
+
+        let codex = Codex::of_html(CodexConfiguration::default());
+
+        let loader_configuration = LoaderConfiguration::default();
+
+        let _dossier = Loader::load_dossier_from_path_buf(&dossier_path, &codex, &loader_configuration).unwrap();
+    }
 }

@@ -1,5 +1,5 @@
 use getset::{CopyGetters, Getters, Setters};
-use crate::{compiler::{compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor}, resource::resource_reference::ResourceReference, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use crate::{compiler::{compilable::{Compilable, CompilableContent}, compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor}, resource::resource_reference::ResourceReference, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 pub type HeadingLevel = u32;
@@ -40,5 +40,15 @@ impl Heading {
 impl CompilationResultAccessor for Heading {
     fn compilation_result(&self) -> &Option<CompilationResult> {
         &self.compilation_result
+    }
+}
+
+impl Compilable for Heading {
+    fn compilable_content(&self) -> &CompilableContent {
+        &self.title
+    }
+
+    fn nuid(&self) -> Option<&NmdUniqueIdentifier> {
+        self.nuid.as_ref()
     }
 }

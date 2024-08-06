@@ -1,11 +1,10 @@
 use std::sync::{Arc, RwLock};
-
 use once_cell::sync::Lazy;
 use regex::Regex;
-
-use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, list_bullet_configuration_record::{self, ListBulletConfigurationRecord}, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult}, output_format::OutputFormat, utility::text_utility};
-
+use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, compiler::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, list_bullet_configuration_record::{self, ListBulletConfigurationRecord}, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult}, output_format::OutputFormat, utility::text_utility};
 use super::{constants::{ESCAPE_HTML, SPACE_TAB_EQUIVALENCE}, CompilationRule};
+use std::fmt::Debug;
+
 
 static SEARCH_LIST_ITEM_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&StandardParagraphModifier::ListItem.modifier_pattern()).unwrap());
 
@@ -26,9 +25,6 @@ impl HtmlListRule {
             search_pattern_regex: Regex::new(&StandardParagraphModifier::List.modifier_pattern_with_paragraph_separator()).unwrap(),
         }
     }
-}
-
-impl HtmlListRule {
 
     fn transform_to_field(to: String) -> String {
 
@@ -67,11 +63,21 @@ impl CompilationRule for HtmlListRule {
         &self.search_pattern
     }
 
-    fn standard_compile(&self, content: &str, _format: &OutputFormat, _codex: &Codex, compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, compilable: &Box<dyn Compilable>, _format: &OutputFormat, _codex: &Codex, compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
         
         let mut compilation_result = CompilationResult::new_empty();
 
-        compilation_result.add_fixed_part(r#"<ul class="list">"#.to_string());
+        let content = compilable.compilable_content();
+
+        let nuid_attr: String;
+
+        if let Some(nuid) = compilable.nuid() {
+            nuid_attr = format!(r#"data-nuid="{}""#, nuid);
+        } else {
+            nuid_attr = String::new();
+        }
+
+        compilation_result.add_fixed_part(format!(r#"<ul class="list" {}>"#, nuid_attr));
 
         let mut items_found = 0;
 
@@ -139,7 +145,7 @@ impl CompilationRule for HtmlListRule {
 
 #[cfg(test)]
 mod test {
-    use crate::codex::codex_configuration::CodexConfiguration;
+    use crate::{codex::codex_configuration::CodexConfiguration, compiler::compilable::GenericCompilable};
 
     use super::*;
 
@@ -163,7 +169,9 @@ mod test {
 
        let codex = Codex::of_html(CodexConfiguration::default());
 
-       let _ = rule.compile(nmd_text, &OutputFormat::Html, &codex, &CompilationConfiguration::default(), Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
+       let compilable: Box<dyn Compilable> = Box::new(GenericCompilable::from(nmd_text.to_string()));
+
+       let _ = rule.compile(&compilable, &OutputFormat::Html, &codex, &CompilationConfiguration::default(), Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
 
     }
 }

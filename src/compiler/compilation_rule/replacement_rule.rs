@@ -6,6 +6,7 @@ use log;
 use regex::{Captures, Regex, Replacer};
 
 use crate::codex::Codex;
+use crate::compiler::compilable::Compilable;
 use crate::compiler::compilation_configuration::compilation_configuration_overlay::CompilationConfigurationOverLay;
 use crate::compiler::compilation_configuration::CompilationConfiguration;
 use crate::compiler::compilation_error::CompilationError;
@@ -32,9 +33,6 @@ pub struct ReplacementRuleReplacerPart<R: Replacer> {
 
     #[getset(get = "pub", set = "pub")]
     post_replacing: Option<Vec<(Regex, String)>>,
-
-    #[getset(get = "pub", set = "pub")]
-    reference_at: Option<usize>,
 }
 
 impl<R: Replacer> ReplacementRuleReplacerPart<R> {
@@ -45,7 +43,6 @@ impl<R: Replacer> ReplacementRuleReplacerPart<R> {
             fixed: true,
             references_at: Vec::new(),
             post_replacing: None,
-            reference_at: None,
         }
     }
 
@@ -55,7 +52,6 @@ impl<R: Replacer> ReplacementRuleReplacerPart<R> {
             fixed: false,
             references_at: Vec::new(),
             post_replacing: None,
-            reference_at: None,
         }
     }
 
@@ -88,6 +84,9 @@ pub struct ReplacementRule<R: Replacer> {
 
     #[getset(get = "pub", set = "pub")]
     newline_fix_pattern: Option<String>,
+
+    #[getset(get = "pub", set = "pub")]
+    nuid_placeholder: String,
 }
 
 impl<R: Replacer> ReplacementRule<R> {
@@ -102,6 +101,7 @@ impl<R: Replacer> ReplacementRule<R> {
             search_pattern: searching_pattern,
             replacer_parts: replacers,
             newline_fix_pattern: None,
+            nuid_placeholder: String::from("$nuid"),
         }
     }
 
@@ -121,9 +121,11 @@ impl Debug for ReplacementRule<String> {
 impl CompilationRule for ReplacementRule<String> {
 
     /// Compile the content using internal search and replacement pattern
-    fn standard_compile(&self, content: &str, _format: &OutputFormat, _codex: &Codex, _compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, compilable: &Box<dyn Compilable>, _format: &OutputFormat, _codex: &Codex, _compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
 
-        log::debug!("compile:\n{}\nusing '{}'->'{:?}'", content, self.search_pattern(), self.replacer_parts);
+        log::debug!("compile:\n{:#?}\nusing '{}'->'{:?}'", compilable, self.search_pattern(), self.replacer_parts);
+
+        let content = compilable.compilable_content();
 
         let mut outcome = CompilationResult::new_empty();
         let mut last_match = 0;
@@ -146,10 +148,17 @@ impl CompilationRule for ReplacementRule<String> {
                     let r = replacers[index].replacer().replace(&format!("${}", reference_at), &reference);
                     replacers[index].set_replacer(r);
 
-                    let r = replacers[index].replacer_mut().replace(&format!("${{{}}}", reference_at), &reference);
+                    let r = replacers[index].replacer().replace(&format!("${{{}}}", reference_at), &reference);
                     replacers[index].set_replacer(r);
 
                     log::debug!("id: '{}', new replacer: {:?}", reference, replacers[index]);
+                }
+
+                if let Some(nuid) = compilable.nuid() {
+
+                    let r = self.replacer_parts[index].replacer().replace(&self.nuid_placeholder, nuid);
+
+                    replacers[index].set_replacer(r);
                 }
             }
 
@@ -223,10 +232,11 @@ impl<F> CompilationRule for ReplacementRule<F>
 where F: 'static + Sync + Send + Fn(&Captures) -> String {
 
     /// Compile the content using internal search and replacement pattern
-    fn standard_compile(&self, content: &str, _format: &OutputFormat, _codex: &Codex, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, compilable: &Box<dyn Compilable>, _format: &OutputFormat, _codex: &Codex, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
 
-        log::debug!("compile:\n{}\nusing '{}'", content, self.search_pattern());
+        log::debug!("compile:\n{:#?}\nusing '{}'", compilable, self.search_pattern());
 
+        let content = compilable.compilable_content();
 
         let mut result = CompilationResult::new_empty();
 
@@ -275,7 +285,7 @@ where F: 'static + Sync + Send + Fn(&Captures) -> String {
 #[cfg(test)]
 mod test {
 
-    use crate::codex::{codex_configuration::CodexConfiguration, modifier::{standard_chapter_modifier::StandardChapterModifier, standard_paragraph_modifier::StandardParagraphModifier, standard_text_modifier::StandardTextModifier}};
+    use crate::{codex::{codex_configuration::CodexConfiguration, modifier::{standard_chapter_modifier::StandardChapterModifier, standard_paragraph_modifier::StandardParagraphModifier, standard_text_modifier::StandardTextModifier}}, compiler::compilable::GenericCompilable};
 
     use super::*;
 
@@ -294,14 +304,18 @@ mod test {
         let text_to_parse = r"A piece of **bold text** and **bold text2**";
         let compilation_configuration = CompilationConfiguration::default();
 
-        let parsed_text = parsing_rule.compile(text_to_parse, &OutputFormat::Html,&codex, &compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
+        let compilable: Box<dyn Compilable> = Box::new(GenericCompilable::from(text_to_parse.to_string()));
+        
+        let parsed_text = parsing_rule.compile(&compilable, &OutputFormat::Html,&codex, &compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
 
         assert_eq!(parsed_text.content(), r"A piece of <strong>bold text</strong> and <strong>bold text2</strong>");
 
         // without text modifier
         let text_to_parse = r"A piece of text without bold text";
 
-        let parsed_text = parsing_rule.compile(text_to_parse, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
+        let compilable: Box<dyn Compilable> = Box::new(GenericCompilable::from(text_to_parse.to_string()));
+
+        let parsed_text = parsing_rule.compile(&compilable, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
 
         assert_eq!(parsed_text.content(), r"A piece of text without bold text");
 
@@ -323,7 +337,9 @@ mod test {
 
         let text_to_parse = r"###### title 6";
 
-        let parsed_text = parsing_rule.compile(text_to_parse, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
+        let compilable: Box<dyn Compilable> = Box::new(GenericCompilable::from(text_to_parse.to_string()));
+
+        let parsed_text = parsing_rule.compile(&compilable, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
 
         assert_eq!(parsed_text.content(), r"<h6>title 6</h6>");
     }
@@ -347,7 +363,9 @@ mod test {
                                             "p3a\np3b\np3c\n\n"
                                         );
 
-        let parsed_text = parsing_rule.compile(text_to_parse, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
+        let compilable: Box<dyn Compilable> = Box::new(GenericCompilable::from(text_to_parse.to_string()));
+
+        let parsed_text = parsing_rule.compile(&compilable, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
 
         assert_eq!(parsed_text.content(), "<p>p1</p><p>p2</p><p>p3a\np3b\np3c</p>");
     }
@@ -371,8 +389,10 @@ mod test {
             r#"print("hello world")"#,
             "\n\n```\n\n"
         );
+        
+        let compilable: Box<dyn Compilable> = Box::new(GenericCompilable::from(text_to_parse.to_string()));
 
-        let parsed_text = parsing_rule.compile(text_to_parse, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
+        let parsed_text = parsing_rule.compile(&compilable, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
 
         assert_eq!(parsed_text.content(), "<pre><code class=\"language-python codeblock\">print(\"hello world\")</code></pre>");
     }
@@ -395,8 +415,10 @@ mod test {
             "::: warning\nnew warning\n\nmultiline\n:::",
             "\n",
         );
+        
+        let compilable: Box<dyn Compilable> = Box::new(GenericCompilable::from(text_to_parse.to_string()));
 
-        let parsed_text = parsing_rule.compile(text_to_parse, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
+        let parsed_text = parsing_rule.compile(&compilable, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
         let parsed_text = parsed_text.content();
 
         assert_ne!(parsed_text, text_to_parse);

@@ -6,7 +6,7 @@ use build_html::TableRow as HtmlTableRow;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-use crate::{codex::{modifier::{constants::IDENTIFIER_PATTERN, standard_paragraph_modifier::StandardParagraphModifier}, Codex}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, Compiler}, output_format::OutputFormat, resource::{resource_reference::ResourceReference, table::{Table, TableCell, TableCellAlignment}}, utility::text_utility};
+use crate::{codex::{modifier::{constants::IDENTIFIER_PATTERN, standard_paragraph_modifier::StandardParagraphModifier}, Codex}, compiler::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, Compiler}, output_format::OutputFormat, resource::{resource_reference::ResourceReference, table::{Table, TableCell, TableCellAlignment}}, utility::{nmd_unique_identifier::NmdUniqueIdentifier, text_utility}};
 
 use super::{constants::ESCAPE_HTML, CompilationRule};
 
@@ -206,7 +206,7 @@ impl HtmlTableRule {
         (caption, id, style)
     }
 
-    fn build_html_table(caption: Option<String>, id: Option<String>, style: Option<String>, table: Table, codex: &Codex, compilation_configuration: &CompilationConfiguration) -> String {
+    fn build_html_table(caption: Option<String>, id: Option<String>, nuid: Option<&NmdUniqueIdentifier>, style: Option<String>, table: Table, codex: &Codex, compilation_configuration: &CompilationConfiguration) -> String {
 
         let mut html_table_attrs: Vec<(String, String)> = vec![(String::from("class"), String::from("table"))];
 
@@ -217,6 +217,10 @@ impl HtmlTableRule {
 
         if let Some(style) = style {
             html_table_attrs.push((String::from("style"), String::from(style.as_str())));
+        }
+    
+        if let Some(nuid) = nuid {
+            html_table_attrs.push((String::from("data-nuid"), nuid.clone()));
         }
 
         let mut html_table = build_html::Table::new()
@@ -300,7 +304,7 @@ impl CompilationRule for HtmlTableRule {
         &self.search_pattern
     }
 
-    fn standard_compile(&self, content: &str, _format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, compilable: &Box<dyn Compilable>, _format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
 
         let mut table: Table = Table::new();
         let mut alignments: Option<Vec<TableCellAlignment>> = None;
@@ -311,7 +315,7 @@ impl CompilationRule for HtmlTableRule {
         let mut caption: Option<String> = None;
         let mut style: Option<String> = None;
         
-        let lines = content.trim().lines();
+        let lines = compilable.compilable_content().trim().lines();
         let lines_n = lines.clone().count();
 
         let binding = compilation_configuration_overlay.read().unwrap();
@@ -383,7 +387,7 @@ impl CompilationRule for HtmlTableRule {
         }
 
         
-        Ok(CompilationResult::new_fixed(Self::build_html_table(caption, id, style, table, codex, &compilation_configuration)))
+        Ok(CompilationResult::new_fixed(Self::build_html_table(caption, id, compilable.nuid(), style, table, codex, &compilation_configuration)))
     }
     
     fn search_pattern_regex(&self) -> &Regex {
@@ -396,7 +400,7 @@ impl CompilationRule for HtmlTableRule {
 mod test {
     use std::sync::{Arc, RwLock};
 
-    use crate::{codex::{codex_configuration::CodexConfiguration, Codex}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::CompilationRule}, output_format::OutputFormat};
+    use crate::{codex::{codex_configuration::CodexConfiguration, Codex}, compiler::{compilable::{Compilable, GenericCompilable}, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::CompilationRule}, output_format::OutputFormat};
 
     use super::HtmlTableRule;
 
@@ -418,7 +422,9 @@ mod test {
 
         compilation_configuration_overlay.set_document_name(Some("test".to_string()));
 
-        let outcome = rule.compile(nmd_table, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(compilation_configuration_overlay))).unwrap();
+        let compilable: Box<dyn Compilable> = Box::new(GenericCompilable::from(nmd_table.to_string()));
+
+        let outcome = rule.compile(&compilable, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(compilation_configuration_overlay))).unwrap();
         let outcome = outcome.content();
 
         assert!(outcome.contains("<thead"));

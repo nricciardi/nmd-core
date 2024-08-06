@@ -1,7 +1,7 @@
 use std::fmt::Display;
 use getset::{Getters, Setters};
 use thiserror::Error;
-use crate::{codex::modifier::ModifierIdentifier, compiler::{compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor}, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use crate::{codex::modifier::ModifierIdentifier, compiler::{compilable::{Compilable, CompilableContent}, compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor}, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 #[derive(Error, Debug)]
@@ -56,5 +56,15 @@ impl CompilationResultAccessor for Paragraph {
 impl Display for Paragraph {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.content)
+    }
+}
+
+impl Compilable for Paragraph {
+    fn compilable_content(&self) -> &CompilableContent {
+        &self.content
+    }
+
+    fn nuid(&self) -> Option<&NmdUniqueIdentifier> {
+        self.nuid.as_ref()
     }
 }

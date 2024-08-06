@@ -106,7 +106,7 @@ impl Codex {
             (
                 StandardTextModifier::AbridgedBookmarkWithId.identifier().clone(),
                 Box::new(ReplacementRule::new(StandardTextModifier::AbridgedBookmarkWithId.modifier_pattern().clone(), vec![
-                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="abridged-bookmark" id="$2"#)).with_references_at(vec![2]),
+                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="abridged-bookmark" id="$2""#)).with_references_at(vec![2]),
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"><div class="abridged-bookmark-title">"#)),
                     ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div></div>"#)),
@@ -308,7 +308,7 @@ impl Codex {
             (
                 StandardParagraphModifier::EmbeddedParagraphStyleWithId.identifier().clone(),
                 Box::new(ReplacementRule::new(StandardParagraphModifier::EmbeddedParagraphStyleWithId.modifier_pattern().clone(), vec![
-                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="identifier embedded-paragraph-style" id="$2" style="$3">"#)).with_references_at(vec![2]),
+                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="identifier embedded-paragraph-style" id="$2" style="$3" $nuid>"#)).with_references_at(vec![2]),
                     ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div>"#)),
                 ]).with_newline_fix(r"<br>".to_string())),
@@ -316,7 +316,7 @@ impl Codex {
             (
                 StandardParagraphModifier::EmbeddedParagraphStyle.identifier().clone(),
                 Box::new(ReplacementRule::new(StandardParagraphModifier::EmbeddedParagraphStyle.modifier_pattern().clone(), vec![
-                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="embedded-paragraph-style" style="$2">"#)),
+                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="embedded-paragraph-style" style="$2" $nuid>"#)),
                     ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div>"#)),
                 ]).with_newline_fix(r"<br>".to_string())),
@@ -324,7 +324,7 @@ impl Codex {
             (
                 StandardParagraphModifier::AbridgedEmbeddedParagraphStyleWithId.identifier().clone(),
                 Box::new(ReplacementRule::new(StandardParagraphModifier::AbridgedEmbeddedParagraphStyleWithId.modifier_pattern().clone(),  vec![
-                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="identifier abridged-embedded-paragraph-style" id="$2" style="color: $3; background-color: $4; font-family: $5;">"#)).with_references_at(vec![2]),
+                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="identifier abridged-embedded-paragraph-style" id="$2" $nuid style="color: $3; background-color: $4; font-family: $5;">"#)).with_references_at(vec![2]),
                     ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div>"#)),
                 ]).with_newline_fix(r"<br>".to_string())),
@@ -332,7 +332,7 @@ impl Codex {
             (
                 StandardParagraphModifier::AbridgedTodo.identifier().clone(),
                 Box::new(ReplacementRule::new(StandardParagraphModifier::AbridgedTodo.modifier_pattern().clone(), vec![
-                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="todo abridged-todo"><div class="todo-title"></div><div class="todo-description">"#)),
+                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="todo abridged-todo" $nuid><div class="todo-title"></div><div class="todo-description">"#)),
                     ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div></div>"#)),
                 ]))
@@ -340,7 +340,7 @@ impl Codex {
             (
                 StandardParagraphModifier::MultilineTodo.identifier().clone(),
                 Box::new(ReplacementRule::new(StandardParagraphModifier::MultilineTodo.modifier_pattern().clone(), vec![
-                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="todo multiline-todo"><div class="todo-title"></div><div class="todo-description">"#)),
+                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="todo multiline-todo" $nuid><div class="todo-title"></div><div class="todo-description">"#)),
                     ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div></div>"#)),
                 ]))
@@ -348,7 +348,7 @@ impl Codex {
             (
                 StandardParagraphModifier::AbridgedEmbeddedParagraphStyle.identifier().clone(),
                 Box::new(ReplacementRule::new(StandardParagraphModifier::AbridgedEmbeddedParagraphStyle.modifier_pattern().clone(), vec![
-                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="abridged-embedded-paragraph-style" style="color: $2; background-color: $3; font-family: $4;">"#)),
+                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="abridged-embedded-paragraph-style" $nuid style="color: $2; background-color: $3; font-family: $4;">"#)),
                     ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div>"#)),
                 ]).with_newline_fix(r"<br>".to_string())),
@@ -356,7 +356,7 @@ impl Codex {
             (
                 StandardParagraphModifier::ParagraphIdentifier.identifier().clone(),
                 Box::new(ReplacementRule::new(StandardParagraphModifier::ParagraphIdentifier.modifier_pattern().clone(), vec![
-                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<span class="identifier" id="$2">"#)).with_references_at(vec![2]),
+                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<span class="identifier" id="$2" $nuid>"#)).with_references_at(vec![2]),
                     ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"</span>"#)),
                 ]).with_newline_fix(r"<br>".to_string())),
@@ -368,7 +368,7 @@ impl Codex {
             (
                 StandardParagraphModifier::MathBlock.identifier().clone(),
                 Box::new(ReplacementRule::new(StandardParagraphModifier::MathBlock.modifier_pattern().clone(), vec![
-                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<p class="math-block">$$$$${1}$$$$</p>"#))
+                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<p class="math-block" $nuid>$$$$${1}$$$$</p>"#))
                 ]))
             ),
             (
@@ -386,7 +386,7 @@ impl Codex {
             (
                 StandardParagraphModifier::CodeBlock.identifier().clone(),
                 Box::new(ReplacementRule::new(StandardParagraphModifier::CodeBlock.modifier_pattern().clone(), vec![
-                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<pre><code class="language-${1} code-block">"#)),
+                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<pre $nuid><code class="language-${1} code-block">"#)),
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"$2"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"</code></pre>"#)),
                 ]))
@@ -398,7 +398,7 @@ impl Codex {
             (
                 StandardParagraphModifier::FocusBlock.identifier().clone(),
                 Box::new(ReplacementRule::new(StandardParagraphModifier::FocusBlock.modifier_pattern().clone(), vec![
-                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="focus-block focus-block-$1"><div class="focus-block-title focus-block-$1-title"></div><div class="focus-block-description focus-block-$1-description"">"#)),
+                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="focus-block focus-block-$1" $nuid><div class="focus-block-title focus-block-$1-title"></div><div class="focus-block-description focus-block-$1-description"">"#)),
                     ReplacementRuleReplacerPart::new_mutable(String::from(r#"$2"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div></div>"#)),
                 ]).with_newline_fix(r"<br>".to_string()))
@@ -406,25 +406,25 @@ impl Codex {
             (
                 StandardParagraphModifier::LineBreakDash.identifier().clone(),
                 Box::new(ReplacementRule::new(StandardParagraphModifier::LineBreakDash.modifier_pattern().clone(), vec![
-                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<hr class="line-break line-break-dash">"#)),
+                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<hr class="line-break line-break-dash" $nuid>"#)),
                 ]))
             ),
             (
                 StandardParagraphModifier::LineBreakStar.identifier().clone(),
                 Box::new(ReplacementRule::new(StandardParagraphModifier::LineBreakStar.modifier_pattern().clone(), vec![
-                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<hr class="line-break line-break-star">"#)),
+                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<hr class="line-break line-break-star" $nuid>"#)),
                 ]))
             ),
             (
                 StandardParagraphModifier::LineBreakPlus.identifier().clone(),
                 Box::new(ReplacementRule::new(StandardParagraphModifier::LineBreakPlus.modifier_pattern().clone(), vec![
-                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<hr class="line-break line-break-plus">"#)),
+                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<hr class="line-break line-break-plus" $nuid>"#)),
                 ]))
             ),
             (
                 StandardParagraphModifier::CommonParagraph.identifier().clone(),
                 Box::new(ReplacementRule::new(StandardParagraphModifier::CommonParagraph.modifier_pattern_with_paragraph_separator().clone(), vec![
-                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<p class="paragraph">"#)),
+                    ReplacementRuleReplacerPart::new_fixed(String::from(r#"<p class="paragraph" $nuid>"#)),
                     ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"</p>"#)),
                 ]))
