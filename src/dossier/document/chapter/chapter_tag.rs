@@ -3,11 +3,12 @@ use std::str::FromStr;
 use getset::{Getters, Setters};
 use once_cell::sync::Lazy;
 use regex::Regex;
+use serde::{Deserialize, Serialize};
 
 static FROM_STR_PATTERN_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"@(\w+) (.*)").unwrap());
 
 
-#[derive(Debug, Clone, Getters, Setters)]
+#[derive(Debug, Clone, Getters, Setters, Serialize, Deserialize)]
 pub struct ChapterTag {
 
     #[getset(get = "pub", set = "pub")]
@@ -17,7 +18,7 @@ pub struct ChapterTag {
     value: Option<String>
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ChapterTagKey {
     Id,
     Author,

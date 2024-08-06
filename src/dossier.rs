@@ -3,6 +3,7 @@ pub mod dossier_configuration;
 
 pub use document::{Document, DocumentError};
 use getset::{Getters, MutGetters, Setters};
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::resource::ResourceError;
@@ -26,7 +27,7 @@ pub enum DossierError {
 
 
 /// NMD Dossier struct. It has own documents list
-#[derive(Debug, Getters, MutGetters, Setters)]
+#[derive(Debug, Getters, MutGetters, Setters, Serialize, Deserialize)]
 pub struct Dossier {
 
     #[getset(get = "pub", set = "pub")]

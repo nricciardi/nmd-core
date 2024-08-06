@@ -1,11 +1,12 @@
 use getset::{CopyGetters, Getters, Setters};
+use serde::{Deserialize, Serialize};
 use crate::{compiler::{compilable::{Compilable, CompilableContent}, compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor}, resource::resource_reference::ResourceReference, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 pub type HeadingLevel = u32;
 
 
-#[derive(Debug, Getters, CopyGetters, Setters, Clone)]
+#[derive(Debug, Getters, CopyGetters, Setters, Clone, Serialize, Deserialize)]
 pub struct Heading {
 
     #[getset(get_copy = "pub", set = "pub")]

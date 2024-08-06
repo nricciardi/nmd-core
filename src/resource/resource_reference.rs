@@ -1,6 +1,7 @@
 use getset::{Getters, Setters};
 use once_cell::sync::Lazy;
 use regex::Regex;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::{resource::remote_resource::RemoteResource, utility::file_utility};
@@ -23,7 +24,7 @@ pub enum ResourceReferenceError {
     InvalidInternalReference,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ResourceReferenceType {
     Url,
     Asset,
@@ -40,7 +41,7 @@ pub enum ResourceReferenceType {
 /// An internal resource is composed by "document name" (where there is the resource) and the resource ID.
 /// 
 /// An external resource is interpreted "as it is"
-#[derive(Debug, Clone, Getters, Setters)]
+#[derive(Debug, Clone, Getters, Setters, Serialize, Deserialize)]
 pub struct ResourceReference {
 
     #[getset(get = "pub", set = "pub")]

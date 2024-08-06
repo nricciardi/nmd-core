@@ -1,5 +1,6 @@
 use std::fmt::Display;
 use getset::{Getters, Setters};
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use crate::{codex::modifier::ModifierIdentifier, compiler::{compilable::{Compilable, CompilableContent}, compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor}, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
@@ -15,7 +16,7 @@ pub enum ParagraphError {
 
 pub type ParagraphType = ModifierIdentifier;
 
-#[derive(Debug, Getters, Setters, Clone)]
+#[derive(Debug, Getters, Setters, Clone, Serialize, Deserialize)]
 pub struct Paragraph {
 
     #[getset(get = "pub", set = "pub")]

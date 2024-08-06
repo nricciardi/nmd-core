@@ -1,6 +1,7 @@
 pub mod content_tree;
 
 use getset::{CopyGetters, Getters, Setters};
+use serde::{Deserialize, Serialize};
 use crate::compiler::compilation_result::CompilationResult;
 use super::dossier::document::chapter::heading::Heading;
 
@@ -9,7 +10,7 @@ pub const TOC_INDENTATION: &str = r#"<span class="toc-item-indentation"></span>"
 
 
 
-#[derive(Debug, Clone, Getters, CopyGetters, Setters)]
+#[derive(Debug, Clone, Getters, CopyGetters, Setters, Serialize, Deserialize)]
 pub struct TableOfContents {
 
     #[getset(get = "pub", set = "pub")]

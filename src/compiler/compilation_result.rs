@@ -1,5 +1,7 @@
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone)]
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum CompilationResultPart {
     Fixed{ content: String },
     Mutable{ content: String },
@@ -16,7 +18,7 @@ impl CompilationResultPart {
 
 
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompilationResult {
     parts: Vec<CompilationResultPart>
 }

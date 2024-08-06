@@ -5,11 +5,12 @@ pub mod chapter_tag;
 
 use chapter_tag::ChapterTag;
 use getset::{Getters, MutGetters, Setters};
+use serde::{Deserialize, Serialize};
 use self::heading::Heading;
 pub use self::paragraph::Paragraph;
 
 
-#[derive(Debug, Getters, MutGetters, Setters)]
+#[derive(Debug, Getters, MutGetters, Setters, Serialize, Deserialize)]
 pub struct Chapter {
 
     #[getset(get = "pub", get_mut = "pub", set = "pub")]

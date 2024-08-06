@@ -3,6 +3,7 @@ pub mod chapter;
 
 pub use chapter::Chapter;
 use getset::{Getters, MutGetters, Setters};
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use crate::compiler::compilation_error::CompilationError;
 use crate::resource::ResourceError;
@@ -22,7 +23,7 @@ pub enum DocumentError {
     ParagraphError(#[from] ParagraphError),
 }
 
-#[derive(Debug, Getters, MutGetters, Setters)]
+#[derive(Debug, Getters, MutGetters, Setters, Serialize, Deserialize)]
 pub struct Document {
 
     #[getset(get = "pub", set = "pub")]
