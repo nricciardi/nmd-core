@@ -156,7 +156,7 @@ impl CompilationRule for ReplacementRule<String> {
 
                 if let Some(nuid) = compilable.nuid() {
 
-                    let r = self.replacer_parts[index].replacer().replace(&self.nuid_placeholder, nuid);
+                    let r = replacers[index].replacer().replace(&self.nuid_placeholder, nuid);
 
                     replacers[index].set_replacer(r);
                 }

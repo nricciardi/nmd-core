@@ -80,7 +80,7 @@ impl HtmlImageRule {
         let id_attr: String;
 
         if let Some(id) = id {
-            id_attr = format!(r#"id="{}""#, id.build());
+            id_attr = format!(r#"id="{}""#, id.build_without_internal_sharp());
         } else {
             id_attr = String::new();
         }
@@ -95,7 +95,8 @@ impl HtmlImageRule {
         }
 
         if let Some(c) = caption {
-            html_caption = format!(r#"<figcaption class="image-caption">{}</figcaption>"#, text_utility::replace(c, &ESCAPE_HTML));
+
+            html_caption = format!(r#"<figcaption class="image-caption">{}</figcaption>"#, c);
         } else {
             html_caption = String::new();
         }

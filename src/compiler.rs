@@ -674,11 +674,11 @@ impl Compiler {
 
 #[cfg(test)]
 mod test {
-    use std::sync::{Arc, RwLock};
+    use std::{collections::HashMap, sync::{Arc, RwLock}};
 
-    use crate::{codex::{codex_configuration::CodexConfiguration, modifier::modifiers_bucket::ModifiersBucket, Codex}, compiler::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, output_format::OutputFormat};
+    use crate::{codex::{codex_configuration::CodexConfiguration, modifier::{modifiers_bucket::ModifiersBucket, standard_paragraph_modifier::StandardParagraphModifier}, Codex}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_result_accessor::CompilationResultAccessor}, dossier::document::Paragraph, output_format::OutputFormat};
 
-    use super::Compiler;
+    use super::{compilation_rule::{constants::ESCAPE_HTML, replacement_rule::{ReplacementRule, ReplacementRuleReplacerPart}, CompilationRule}, Compiler};
 
 
     #[test]
@@ -693,5 +693,37 @@ mod test {
         let outcome = Compiler::compile_str_excluding_modifiers(content, excluded_modifiers, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
 
         assert_eq!(outcome.content(), r#"Text <strong class="bold">bold text</strong> <code class="language-markup inline-code">a **bold text** which must be not parsed</code>"#)
+    }
+
+    #[test]
+    fn parse_paragraph() {
+        let mut paragraph = Paragraph::new("\n\ntest\n\n".to_string(), StandardParagraphModifier::CommonParagraph.identifier());
+
+        paragraph.set_nuid(Some("test-nuid".to_string()));
+    
+        let codex = Codex::new(
+                CodexConfiguration::default(),
+                HashMap::new(),
+                HashMap::from([
+                    (
+                        StandardParagraphModifier::CommonParagraph.identifier().clone(),
+                        Box::new(ReplacementRule::new(StandardParagraphModifier::CommonParagraph.modifier_pattern_with_paragraph_separator().clone(), vec![
+                            ReplacementRuleReplacerPart::new_fixed(String::from(r#"<p class="paragraph" data-nuid="$nuid">"#)),
+                            ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
+                            ReplacementRuleReplacerPart::new_fixed(String::from(r#"</p>"#)),
+                        ])) as Box<dyn CompilationRule>
+                    ),
+                ]),
+                HashMap::new(),
+                HashMap::new()
+            );
+
+        Compiler::compile_paragraph(&mut paragraph, &OutputFormat::Html, &codex, &CompilationConfiguration::default(), Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
+        
+        assert_eq!(paragraph.compilation_result().clone().unwrap().content(), concat!(
+            r#"<p class="paragraph" data-nuid="test-nuid">"#,
+            "test",
+            r#"</p>"#
+        ))
     }
 }
