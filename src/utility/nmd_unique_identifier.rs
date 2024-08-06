@@ -3,6 +3,7 @@ use ahash::RandomState;
 use crate::dossier::{document::Paragraph, Document};
 
 
+/// `NmdUniqueIdentifier` is a unique identifier in a NMD compilation.
 pub type NmdUniqueIdentifier = String;
 
 const HASHER_SEED: usize = 42;
