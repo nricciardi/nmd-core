@@ -1,6 +1,7 @@
-use std::{collections::HashMap, fmt::format, hash::Hash};
+use std::collections::HashMap;
 use ahash::RandomState;
-use crate::dossier::{document::Paragraph, Document};
+use crate::dossier::Document;
+use super::file_utility;
 
 
 /// `NmdUniqueIdentifier` is a unique identifier in a NMD compilation.
@@ -13,6 +14,8 @@ pub fn assign_nuid_to_document_paragraphs(document: &mut Document) {
     let hasher = RandomState::with_seed(HASHER_SEED);
     let mut nuid_map: HashMap<u64, usize> = HashMap::new();
 
+    let prefix = file_utility::build_output_file_name(document.name(), None);
+
     let mut calc_nuid = |s: &String| {
 
         let h = hasher.hash_one(s);
@@ -23,7 +26,7 @@ pub fn assign_nuid_to_document_paragraphs(document: &mut Document) {
 
         nuid_map.insert(h, n);
 
-        let nuid = format!("{}-{}", h, n);
+        let nuid = format!("{}-{}-{}", prefix, h, n);
 
         nuid
     };
