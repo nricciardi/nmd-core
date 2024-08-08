@@ -59,10 +59,6 @@ artifact.dump(&dump_configuration)?;
 
 [Full documentation](target/doc/nmd_core/index.html)
 
-## Develop
-
-Develop [check list](DEVELOP.md)
-
 ## NMD Syntax
 
 [NMD Standard Syntax](NMD.md)
@@ -70,6 +66,19 @@ Develop [check list](DEVELOP.md)
 > [!WARNING]
 > NMD syntax is working in progress yet, you can contribute following [contribution guidelines](CONTRIBUTING.md)!
 
+
+## Develop
+
+Develop [check list](DEVELOP.md)
+
+### Known issues
+
+- [ ] Paragraphs and text are not parsed in tables
+- [ ] Nested text modifiers could be compiled wrongly (e.g. `*this is a **phrase** with some bold*.`)
+- [ ] List with empty lines between two items
+- [ ] Missed `"tab"` as modifier
+- [ ] Missed style for simples quotes
+- [ ] Text between two list items
 
 ## Author
 
