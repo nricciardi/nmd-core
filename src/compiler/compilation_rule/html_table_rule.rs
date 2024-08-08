@@ -158,9 +158,13 @@ impl HtmlTableRule {
                         TableCellAlignment::Right => String::from("table-right-cell"),
                     };
 
-                    let content = Compiler::compile_str(content, &OutputFormat::Html, codex, compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default())))?.content();
-
-                    let content = text_utility::replace(&content, &ESCAPE_HTML);
+                    let content = Compiler::compile_str(
+                        &text_utility::replace(&content, &ESCAPE_HTML),
+                        &OutputFormat::Html,
+                        codex,
+                        compilation_configuration,
+                        Arc::new(RwLock::new(CompilationConfigurationOverLay::default())))?
+                        .content();
 
                     html_row.add_cell(
                         HtmlTableCell::new(build_html::TableCellType::Data)

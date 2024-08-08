@@ -15,12 +15,14 @@ use crate::compiler::compilation_configuration::compilation_configuration_overla
 use crate::compiler::compilation_configuration::CompilationConfiguration;
 use crate::compiler::compilation_error::CompilationError;
 use crate::compiler::compilation_result::CompilationResult;
+use crate::compiler::compilation_rule::constants::ESCAPE_HTML;
 use crate::compiler::Compiler;
 use crate::output_format::OutputFormat;
 use crate::resource::resource_reference::ResourceReference;
 use crate::resource::source::Source;
 use crate::resource::image_resource::ImageResource;
 use crate::utility::nmd_unique_identifier::NmdUniqueIdentifier;
+use crate::utility::text_utility;
 use super::CompilationRule;
 use std::fmt::Debug;
 
@@ -223,6 +225,8 @@ impl HtmlImageRule {
             
             if let Some(label) = captures.get(1) {
 
+                let label = text_utility::replace(label.as_str(), &ESCAPE_HTML);
+
                 if let Some(src) = captures.get(3) {
 
                     let style: Option<String>;
@@ -233,7 +237,7 @@ impl HtmlImageRule {
                         style = None;
                     }
 
-                    let parsed_label = Compiler::compile_str(label.as_str(), &OutputFormat::Html, codex, &compilation_configuration, Arc::clone(&compilation_configuration_overlay)).unwrap();
+                    let parsed_label = Compiler::compile_str(&label, &OutputFormat::Html, codex, &compilation_configuration, Arc::clone(&compilation_configuration_overlay)).unwrap();
 
                     let binding = compilation_configuration_overlay.read().unwrap();
                     let document_name = binding.document_name().as_ref().unwrap();
