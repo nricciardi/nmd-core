@@ -141,7 +141,7 @@ impl CompilationRule for ReplacementRule<String> {
 
                     let reference = captures.get(reference_at.clone()).unwrap().as_str();
 
-                    let reference = ResourceReference::of(reference, Some(compilation_configuration_overlay.read().unwrap().document_name().as_ref().unwrap()))?;
+                    let reference = ResourceReference::of(reference, compilation_configuration_overlay.read().unwrap().document_name().as_ref().map(|x| x.as_str()))?;
     
                     let reference = reference.build();
 

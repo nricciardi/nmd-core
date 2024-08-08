@@ -6,6 +6,7 @@ pub mod dynamic_resource;
 pub mod resource_reference;
 pub mod text_reference;
 pub mod table;
+pub mod source;
 
 use std::{str::FromStr, io::{self}};
 use thiserror::Error;
@@ -16,6 +17,9 @@ pub enum ResourceError {
 
     #[error("resource '{0}' not found")]
     ResourceNotFound(String),
+
+    #[error("wrong elaboration: '{0}'")]
+    WrongElaboration(String),
 
     #[error("resource is invalid")]
     InvalidResource,

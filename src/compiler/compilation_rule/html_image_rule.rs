@@ -1,12 +1,12 @@
 use std::fs;
+use std::str::FromStr;
 use std::sync::RwLock;
-use std::{path::PathBuf, sync::Arc};
+use std::sync::Arc;
 
 use build_html::{Container, Html, HtmlContainer};
 use log;
 use once_cell::sync::Lazy;
 use regex::{Regex, Captures};
-use url::Url;
 use crate::codex::modifier::ModifierIdentifier;
 use crate::codex::Codex;
 use crate::codex::modifier::standard_paragraph_modifier::StandardParagraphModifier;
@@ -15,13 +15,12 @@ use crate::compiler::compilation_configuration::compilation_configuration_overla
 use crate::compiler::compilation_configuration::CompilationConfiguration;
 use crate::compiler::compilation_error::CompilationError;
 use crate::compiler::compilation_result::CompilationResult;
-use crate::compiler::compilation_rule::constants::ESCAPE_HTML;
 use crate::compiler::Compiler;
 use crate::output_format::OutputFormat;
 use crate::resource::resource_reference::ResourceReference;
-use crate::resource::{image_resource::ImageResource, remote_resource::RemoteResource};
+use crate::resource::source::Source;
+use crate::resource::image_resource::ImageResource;
 use crate::utility::nmd_unique_identifier::NmdUniqueIdentifier;
-use crate::utility::text_utility;
 use super::CompilationRule;
 use std::fmt::Debug;
 
@@ -58,15 +57,15 @@ impl HtmlImageRule {
     fn get_searching_pattern(image_modifier_identifier: &ModifierIdentifier) -> String {
 
         if image_modifier_identifier.eq(&StandardParagraphModifier::Image.identifier()) {
-            return StandardParagraphModifier::Image.modifier_pattern_with_paragraph_separator()
+            return StandardParagraphModifier::Image.modifier_pattern()
         }
 
         if image_modifier_identifier.eq(&StandardParagraphModifier::AbridgedImage.identifier()) {
-            return StandardParagraphModifier::AbridgedImage.modifier_pattern_with_paragraph_separator()
+            return StandardParagraphModifier::AbridgedImage.modifier_pattern()
         }
 
         if image_modifier_identifier.eq(&StandardParagraphModifier::MultiImage.identifier()) {
-            return StandardParagraphModifier::MultiImage.modifier_pattern_with_paragraph_separator()
+            return StandardParagraphModifier::MultiImage.modifier_pattern()
         }
 
         log::error!("'{}' is unsupported image modifier identifier", image_modifier_identifier);
@@ -124,9 +123,12 @@ impl HtmlImageRule {
     }
 
     fn build_not_embed_remote_img(image: &mut ImageResource, id: Option<ResourceReference>, nuid: Option<&NmdUniqueIdentifier>, img_classes: Vec<&str>, figure_style: Option<String>, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<String, CompilationError> {
-        let src = Url::parse(image.src().to_str().unwrap()).unwrap();
+        if let Source::Remote { url } = image.src() {
 
-        return Ok(Self::build_html_img(&src.to_string(), image.label().as_ref(), image.caption().as_ref(), id, nuid, img_classes, figure_style))
+            return Ok(Self::build_html_img(url.as_str(), image.label().as_ref(), image.caption().as_ref(), id, nuid, img_classes, figure_style))
+        }
+
+        panic!("image {:#?} must have remote src", image)
     }
 
     fn build_embed_remote_img(_image: &mut ImageResource, _id: Option<ResourceReference>, _nuid: Option<&NmdUniqueIdentifier>, _img_classes: Vec<&str>, _figure_style: Option<String>, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<String, CompilationError> {
@@ -155,50 +157,56 @@ impl HtmlImageRule {
     }
 
     fn build_not_embed_local_img(image: &mut ImageResource, id: Option<ResourceReference>, nuid: Option<&NmdUniqueIdentifier>, img_classes: Vec<&str>, figure_style: Option<String>, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<String, CompilationError> {
-        let local_not_embed_src = fs::canonicalize(image.src()).unwrap();
+        
+        if let Source::Local { path } = image.src() {
+            let local_not_embed_src = fs::canonicalize(path).unwrap();
 
-        return Ok(Self::build_html_img(&local_not_embed_src.to_string_lossy().to_string(), image.label().as_ref(), image.caption().as_ref(), id.clone(), nuid, img_classes.clone(), figure_style.clone()));
+            return Ok(Self::build_html_img(&local_not_embed_src.to_string_lossy().to_string(), image.label().as_ref(), image.caption().as_ref(), id.clone(), nuid, img_classes.clone(), figure_style.clone()));
+    
+        }
+
+        panic!("image {:#?} must have local src", image)
     }
 
 
     fn build_img_from_compilation_configuration(image: &mut ImageResource, id: Option<ResourceReference>, nuid: Option<&NmdUniqueIdentifier>, img_classes: Vec<&str>, figure_style: Option<String>,  compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<String, CompilationError> {
 
-        if RemoteResource::is_valid_remote_resource(image.src().to_str().unwrap()) {          // remote image (e.g. URL)
+        match image.src() {
+            Source::Remote { url: _ } => {
+                if compilation_configuration.embed_remote_image() {
 
-            if compilation_configuration.embed_remote_image() {
-
-                return Self::build_embed_remote_img(image, id, nuid, img_classes, figure_style, compilation_configuration, Arc::clone(&compilation_configuration_overlay));
-
-            } else {
-                
-                return Self::build_not_embed_remote_img(image, id, nuid, img_classes, figure_style, compilation_configuration, Arc::clone(&compilation_configuration_overlay));
-            }
-
-        } else {                // local image
-
-            if image.src().exists() {
-
-                if compilation_configuration.embed_local_image() {
-
-                    return Self::build_embed_local_img(image, id, nuid, img_classes, figure_style, compilation_configuration, Arc::clone(&compilation_configuration_overlay));
+                    return Self::build_embed_remote_img(image, id, nuid, img_classes, figure_style, compilation_configuration, Arc::clone(&compilation_configuration_overlay));
+    
+                } else {
                     
-                } else {        // local not embed
-
-                    return Ok(Self::build_not_embed_local_img(image, id, nuid, img_classes, figure_style, compilation_configuration, Arc::clone(&compilation_configuration_overlay)).unwrap());
+                    return Self::build_not_embed_remote_img(image, id, nuid, img_classes, figure_style, compilation_configuration, Arc::clone(&compilation_configuration_overlay));
                 }
+            },
 
+            Source::Local { path } => {
+                if path.exists() {
 
-            } else if compilation_configuration.strict_image_src_check() {
-
-                log::error!("{}", CompilationError::InvalidSource(String::from(image.src().to_string_lossy().to_string())));
-
-                panic!("invalid src")
-
-            } else {
-
-                return Ok(Self::build_html_img(&image.src().to_string_lossy().to_string(), image.label().as_ref(), image.caption().as_ref(), id, nuid,  img_classes, figure_style))       // create image tag of invalid image instead of panic
-            }
-
+                    if compilation_configuration.embed_local_image() {
+    
+                        return Self::build_embed_local_img(image, id, nuid, img_classes, figure_style, compilation_configuration, Arc::clone(&compilation_configuration_overlay));
+                        
+                    } else {        // local not embed
+    
+                        return Ok(Self::build_not_embed_local_img(image, id, nuid, img_classes, figure_style, compilation_configuration, Arc::clone(&compilation_configuration_overlay)).unwrap());
+                    }
+    
+    
+                } else if compilation_configuration.strict_image_src_check() {
+    
+                    log::error!("{}", CompilationError::InvalidSource(String::from(path.to_string_lossy().to_string())));
+    
+                    panic!("invalid src")
+    
+                } else {
+    
+                    return Ok(Self::build_html_img(&path.to_string_lossy().to_string(), image.label().as_ref(), image.caption().as_ref(), id, nuid,  img_classes, figure_style))       // create image tag of invalid image instead of panic
+                }
+            },
         }
 
     }
@@ -234,10 +242,9 @@ impl HtmlImageRule {
 
                         let id = ResourceReference::of_internal_from_without_sharp(id.as_str(), Some(document_name)).unwrap();
 
-                        let mut image: ImageResource = ImageResource::new(PathBuf::from(src.as_str()), Some(parsed_label.content()), Some(label.as_str().to_string()))
+                        let mut image: ImageResource = ImageResource::new(Source::from_str(src.as_str()).unwrap(), Some(parsed_label.content()), Some(label.as_str().to_string()))
                                                                         .elaborating_relative_path_as_dossier_assets(compilation_configuration.input_location())
-                                                                        .inferring_mime_type()
-                                                                        .unwrap();
+                                                                        .inferring_mime_type_or_nothing();
 
                         return Self::build_img_from_compilation_configuration(&mut image, Some(id), compilable.nuid(), vec!["image"], style, compilation_configuration, Arc::clone(&compilation_configuration_overlay)).unwrap();
 
@@ -245,15 +252,9 @@ impl HtmlImageRule {
 
                         let id = ResourceReference::of(label.as_str(), Some(document_name)).unwrap();
 
-                        let image = ImageResource::new(PathBuf::from(src.as_str()), Some(parsed_label.content()), Some(label.as_str().to_string()))
+                        let mut image = ImageResource::new(Source::from_str(src.as_str()).unwrap(), Some(parsed_label.content()), Some(label.as_str().to_string()))
                                                             .elaborating_relative_path_as_dossier_assets(compilation_configuration.input_location())
-                                                            .inferring_mime_type();
-                        
-                        if let Err(err) = &image {
-                            log::error!("error occurs during image '{}' loading: {}", src.as_str(), err.to_string());
-                        }
-
-                        let mut image = image.unwrap();
+                                                            .inferring_mime_type_or_nothing();
 
                         return Self::build_img_from_compilation_configuration(&mut image, Some(id), compilable.nuid(), vec!["image"], style, compilation_configuration, Arc::clone(&compilation_configuration_overlay)).unwrap();
  
@@ -299,7 +300,7 @@ impl HtmlImageRule {
                 style = None;
             }
 
-            let mut image = ImageResource::new(PathBuf::from(src.as_str()), None, None)
+            let mut image = ImageResource::new(Source::from_str(src.as_str()).unwrap(), None, None)
                                                             .elaborating_relative_path_as_dossier_assets(compilation_configuration.input_location())
                                                             .inferring_mime_type()
                                                             .unwrap();
@@ -422,6 +423,8 @@ impl CompilationRule for HtmlImageRule {
 
 #[cfg(test)]
 mod test {
+
+    use std::path::PathBuf;
 
     use crate::{codex::codex_configuration::CodexConfiguration, compiler::compilable::GenericCompilable};
 

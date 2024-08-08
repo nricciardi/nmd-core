@@ -14,6 +14,7 @@ pub struct RemoteResource {
 impl RemoteResource {
 
     pub fn is_valid_remote_resource(s: &str) -> bool {
+        
         Self::is_valid_url(s)
     }
 

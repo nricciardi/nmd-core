@@ -6,15 +6,15 @@ use oxipng::Options;
 
 use crate::dossier;
 
-use super::ResourceError;
+use super::{source::Source, ResourceError};
 
 
 /// Image resource to manipulate images
-#[derive(Debug, Getters, Setters)]
+#[derive(Debug, Getters, Setters, Clone)]
 pub struct ImageResource {
 
     #[getset(get = "pub", set = "pub")]
-    src: PathBuf,
+    src: Source,
 
     #[getset(get = "pub", set = "pub")]
     mime_type: Option<String>,
@@ -28,7 +28,7 @@ pub struct ImageResource {
 
 impl ImageResource {
 
-    pub fn new(src: PathBuf, caption: Option<String>, label: Option<String>) -> Self {
+    pub fn new(src: Source, caption: Option<String>, label: Option<String>) -> Self {
 
         Self {
             src,
@@ -39,56 +39,89 @@ impl ImageResource {
     }
 
     /// Infer mime type from image path using `infer` lib.
+    /// If `src` is not a path error occurs.
+    /// 
     /// `text/xml` is replaced by `image/svg+xml`
     pub fn inferring_mime_type(mut self) -> Result<Self, ResourceError> {
 
-        let mime_type = infer::get_from_path(&self.src)?;
+        match &self.src {
+            Source::Remote { url } => {
+                log::debug!("impossible to infer mime type of url: {}", url);
+            },
+            Source::Local { path } => {
+                let mime_type = infer::get_from_path(path)?;
 
-        if let Some(t) = mime_type {
+                if let Some(t) = mime_type {
 
-            let mut mime_type = t.mime_type().to_string();
+                    let mut mime_type = t.mime_type().to_string();
 
-            // work-around svg+xml
-            if mime_type.contains("text/xml") {
-                mime_type = String::from("image/svg+xml");
-            }
+                    // work-around svg+xml
+                    if mime_type.contains("text/xml") {
+                        mime_type = String::from("image/svg+xml");
+                    }
 
-            self.set_mime_type(Some(mime_type));
+                    self.set_mime_type(Some(mime_type));
 
-            return Ok(self);
+                    return Ok(self);
 
-        } else {
-            return Err(ResourceError::InvalidResourceVerbose(format!("image {:?} mime type not found", self.src)));
+                } else {
+                    return Err(ResourceError::InvalidResourceVerbose(format!("image {:?} mime type not found", self.src)));
+                }
+            },
+        }
+
+        Ok(self)
+    }
+
+    /// Call `inferring_mime_type`, but if this returns an error nothing will be done
+    pub fn inferring_mime_type_or_nothing(self) -> Self {
+        let backup = self.clone();
+
+        match self.inferring_mime_type() {
+            Ok(ok) => ok,
+            Err(err) => {
+                log::warn!("{}", err.to_string());
+
+                backup
+            },
         }
     }
 
     /// Elaborate `src` path if it is relative appending if it doesn't exist dossier `assets` directory
     pub fn elaborating_relative_path_as_dossier_assets(mut self, base_location: &PathBuf) -> Self {
 
-        let mut base_location: PathBuf = base_location.clone();
+        match &self.src {
+            Source::Remote { url: _ } => (),
+            Source::Local { path } => {
 
-        if !base_location.is_dir() {
-            base_location = PathBuf::from(base_location.parent().unwrap());
-        }
-
-        if self.src().is_relative() {
-
-            self.set_src(base_location.join(self.src()));
-
-            if !self.src().exists() {
-
-                log::debug!("{:?} not found, try adding images directory path", self.src());
-
-                let image_file_name = self.src().file_name().unwrap();
-
-                self.set_src(base_location.join(dossier::ASSETS_DIR).join(dossier::IMAGES_DIR).join(image_file_name));
-
-                if !self.src().exists() {
-                    if let Ok(src) = fs::canonicalize(self.src().clone()) {
-                        self.set_src(src);
-                    }
+                let mut base_location: PathBuf = base_location.clone();
+        
+                if !base_location.is_dir() {
+                    base_location = PathBuf::from(base_location.parent().unwrap());
                 }
-            }
+        
+                if path.is_relative() {
+
+                    let mut path = base_location.join(path);
+        
+                    if !path.exists() {
+        
+                        log::debug!("{:?} not found, try adding images directory path", path);
+        
+                        let image_file_name = path.file_name().unwrap();
+        
+                        path = base_location.join(dossier::ASSETS_DIR).join(dossier::IMAGES_DIR).join(image_file_name);
+        
+                        if !path.exists() {
+                            if let Ok(src) = fs::canonicalize(path.clone()) {
+                                path = src;
+                            }
+                        }
+                    }
+        
+                    self.set_src(Source::Local { path });
+                }
+            },
         }
 
         self
@@ -123,11 +156,17 @@ impl ImageResource {
 
     pub fn to_vec_u8(&self) -> Result<Vec<u8>, ResourceError> {
 
-        let mut image_file = File::open(self.src.clone())?;
-        let mut raw_image: Vec<u8> = Vec::new();
-        image_file.read_to_end(&mut raw_image)?;
+        match &self.src {
+            Source::Remote { url } => return Err(ResourceError::WrongElaboration(format!("url '{}' cannot be parsed into bytes", url))),
+            Source::Local { path } => {
 
-        Ok(raw_image)
+                let mut image_file = File::open(path.clone())?;
+                let mut raw_image: Vec<u8> = Vec::new();
+                image_file.read_to_end(&mut raw_image)?;
+
+                return Ok(raw_image)
+            },
+        }
     }
 }
 
@@ -135,7 +174,7 @@ impl FromStr for ImageResource {
     type Err = ResourceError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self::new(PathBuf::from(s), None, None).inferring_mime_type()?)
+        Ok(Self::new(Source::from_str(s)?, None, None).inferring_mime_type()?)
     }
 }
 

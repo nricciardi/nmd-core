@@ -16,7 +16,7 @@ use compilation_configuration::{compilation_configuration_overlay::CompilationCo
 use compilation_error::CompilationError;
 use compilation_result::{CompilationResult, CompilationResultPart};
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
-use crate::{bibliography::{Bibliography, BIBLIOGRAPHY_FICTITIOUS_DOCUMENT}, dossier::{document::{chapter::heading::{self, Heading}, Chapter}, Document, Dossier}, output_format::OutputFormat, resource::resource_reference::ResourceReference, table_of_contents::{TableOfContents, TOC_INDENTATION}};
+use crate::{bibliography::{Bibliography, BIBLIOGRAPHY_FICTITIOUS_DOCUMENT}, dossier::{document::{chapter::heading::Heading, Chapter}, Document, Dossier}, output_format::OutputFormat, resource::resource_reference::ResourceReference, table_of_contents::{TableOfContents, TOC_INDENTATION}};
 use super::{codex::{modifier::modifiers_bucket::ModifiersBucket, Codex}, dossier::document::Paragraph};
 
 

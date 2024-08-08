@@ -306,7 +306,7 @@ impl CompilationRule for HtmlTableRule {
 
     fn standard_compile(&self, compilable: &Box<dyn Compilable>, _format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
 
-        let mut table: Table = Table::new();
+        let mut table: Table = Table::new_empty();
         let mut alignments: Option<Vec<TableCellAlignment>> = None;
         let mut max_row_len: usize = 0;
         let mut there_is_header: bool = false;
@@ -400,12 +400,12 @@ impl CompilationRule for HtmlTableRule {
 mod test {
     use std::sync::{Arc, RwLock};
 
-    use crate::{codex::{codex_configuration::CodexConfiguration, Codex}, compiler::{compilable::{Compilable, GenericCompilable}, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::CompilationRule}, output_format::OutputFormat};
+    use crate::{codex::{codex_configuration::CodexConfiguration, modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, compiler::{compilable::{Compilable, GenericCompilable}, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_result_accessor::CompilationResultAccessor, compilation_rule::CompilationRule, Compiler}, dossier::document::Paragraph, output_format::OutputFormat, resource::table::{self, Table, TableCell, TableCellAlignment}};
 
     use super::HtmlTableRule;
 
     #[test]
-    fn test() {
+    fn head_body_foot() {
         let nmd_table = r#"
 |                                                           | $x_1$ | $...$ | $x_n$ | $s_1$ | $...$ | $s_m$ | $a_1$ | $...$ |
 |-----------------------------------------------------------|:-----:|:-----:|:-----:|:-----:|:-----:|-------|-------|:-----:|
@@ -430,5 +430,91 @@ mod test {
         assert!(outcome.contains("<thead"));
         assert!(outcome.contains("<tbody"));
         assert!(outcome.contains("<tfoot"));
+    }
+
+    #[test]
+    fn table_with_inner_image() {
+        let nmd_text = concat!(
+            "\n\n",
+            "|h1|h2|\n",
+            "|**a**|![Simple image](https://en.wikipedia.org/wiki/Main_Page)|",
+            "\n\n"
+        );
+
+        let rule = HtmlTableRule::new();
+        let codex = Codex::of_html(CodexConfiguration::default());
+        let compilation_configuration = CompilationConfiguration::default();
+        let mut compilation_configuration_overlay = CompilationConfigurationOverLay::default();
+
+        compilation_configuration_overlay.set_document_name(Some("test".to_string()));
+
+        let compilable: Box<dyn Compilable> = Box::new(GenericCompilable::from(nmd_text.to_string()));
+
+        let outcome = rule.compile(&compilable, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(compilation_configuration_overlay))).unwrap();
+        let outcome = outcome.content();
+
+        let expected_result = HtmlTableRule::build_html_table(
+            None,
+            None,
+            None,
+            None,
+            Table::new(
+                Some(vec![
+                    TableCell::ContentCell {
+                        content: "a".to_string(),
+                        alignment: TableCellAlignment::Center
+                    },
+                    TableCell::ContentCell {
+                        content: "a".to_string(),
+                        alignment: TableCellAlignment::Center
+                    },
+                ]),
+                vec![
+                    vec![
+                        TableCell::ContentCell {
+                            content: Compiler::compile_str(
+                                "**a**",
+                                &OutputFormat::Html,
+                                &codex,
+                                &CompilationConfiguration::default(),
+                                Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))
+                            ).unwrap().content(),
+                            alignment: TableCellAlignment::Center
+                        },
+                        TableCell::ContentCell {
+                            content: {
+
+                                let mut p = Paragraph::new(
+                                    "![Simple image](https://en.wikipedia.org/wiki/Main_Page)".to_string(),
+                                    StandardParagraphModifier::Image.identifier()
+                                );
+
+                                let mut conf_over = CompilationConfigurationOverLay::default();
+
+                                conf_over.set_document_name(Some("test".to_string()));
+
+                                Compiler::compile_paragraph(
+                                    &mut p,
+                                    &OutputFormat::Html,
+                                    &codex,
+                                    &CompilationConfiguration::default(),
+                                    Arc::new(RwLock::new(conf_over))
+                                ).unwrap();
+
+                                let r = p.compilation_result().clone().unwrap().content();
+
+                                r
+                            },
+                            alignment: TableCellAlignment::Center
+                        },
+                    ]
+                ],
+                None
+            ),
+            &codex,
+            &CompilationConfiguration::default()
+        );
+
+        assert_eq!(outcome, expected_result);
     }
 }

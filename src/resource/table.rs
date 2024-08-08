@@ -32,7 +32,16 @@ pub struct Table {
 }
 
 impl Table {
-    pub fn new() -> Self {
+
+    pub fn new(header: Option<Vec<TableCell>>, body: Vec<Vec<TableCell>>, footer: Option<Vec<TableCell>>) -> Self {
+        Self {
+            header,
+            body,
+            footer
+        }
+    }
+
+    pub fn new_empty() -> Self {
         Self {
             header: None,
             body: Vec::new(),
