@@ -265,7 +265,6 @@ impl HtmlTableRule {
             html_table.add_custom_body_row(html_body_row);
         }
 
-        // TODO: use embedded add_tfoot when available
         if let Some(footer_cells) = table.footer() {
 
             html_table.add_tfoot_attributes(vec![
@@ -441,6 +440,7 @@ mod test {
         let nmd_text = concat!(
             "\n\n",
             "|h1|h2|\n",
+            "|---|---|\n",
             "|**a**|![Simple image](https://en.wikipedia.org/wiki/Main_Page)|",
             "\n\n"
         );
@@ -465,11 +465,11 @@ mod test {
             Table::new(
                 Some(vec![
                     TableCell::ContentCell {
-                        content: "a".to_string(),
+                        content: "h1".to_string(),
                         alignment: TableCellAlignment::Center
                     },
                     TableCell::ContentCell {
-                        content: "a".to_string(),
+                        content: "h2".to_string(),
                         alignment: TableCellAlignment::Center
                     },
                 ]),
