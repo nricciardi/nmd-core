@@ -1,28 +1,24 @@
 pub mod standard_paragraph_modifier;
-pub mod modifiers_bucket;
 pub mod standard_text_modifier;
-pub mod standard_chapter_modifier;
+pub mod standard_heading_modifier;
 pub mod base_modifier;
 pub mod constants;
 
+
 use std::fmt;
-
 use regex::Regex;
+use crate::resource::bucket::Bucket;
+use self::base_modifier::BaseModifier;
+use super::CodexIdentifier;
 
-use self::{base_modifier::BaseModifier, modifiers_bucket::ModifiersBucket};
 
-
-
+pub type ModifiersBucket = Bucket<CodexIdentifier>;
 pub type ModifierIdentifier = String;
 pub type ModifierPattern = String;
 
 
 /// `Modifier` is the component to identify a NMD modifier, which will be replaced using particular rule indicated by `Codex` 
-pub trait Modifier: Sync + Send {
-
-    fn identifier(&self) -> &ModifierIdentifier {
-        &self.modifier_pattern()
-    }
+pub trait Modifier: std::fmt::Debug + Sync + Send {
 
     fn modifier_pattern(&self) -> &ModifierPattern;
     
@@ -30,12 +26,6 @@ pub trait Modifier: Sync + Send {
 
     fn incompatible_modifiers(&self) -> &ModifiersBucket {
         &ModifiersBucket::None
-    }
-}
-
-impl fmt::Debug for dyn Modifier {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}: {}", self.identifier(), self.modifier_pattern())
     }
 }
 
@@ -47,6 +37,6 @@ impl PartialEq for dyn Modifier {
 
 impl Clone for Box<dyn Modifier> {
     fn clone(&self) -> Self {
-        Box::new(BaseModifier::new(self.identifier().clone(), self.modifier_pattern().clone(), self.incompatible_modifiers().clone()))
+        Box::new(BaseModifier::new(self.modifier_pattern().clone(), self.incompatible_modifiers().clone()))
     }
 }

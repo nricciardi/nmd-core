@@ -4,11 +4,11 @@ use crate::codex::modifier::constants::{CHAPTER_STYLE_PATTERN, CHAPTER_TAGS_PATT
 
 use super::base_modifier::BaseModifier;
 use super::constants::MAX_HEADING_LEVEL;
-use super::modifiers_bucket::ModifiersBucket;
+use super::ModifiersBucket;
 use super::ModifierIdentifier;
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum StandardChapterModifier {
+pub enum StandardHeading {
 
     HeadingGeneralCompactVersion(u32),
     HeadingGeneralExtendedVersion(u32),
@@ -18,7 +18,7 @@ pub enum StandardChapterModifier {
 
 }
 
-impl StandardChapterModifier {
+impl StandardHeading {
     pub fn ordered() -> Vec<Self> {
         let mut heading_modifiers: Vec<Self> = vec![Self::MinorHeading, Self::MajorHeading, Self::SameHeading];
 
@@ -70,9 +70,9 @@ impl StandardChapterModifier {
 
                 format!(r"heading-{}-compact-version", level)
             },
-            StandardChapterModifier::MinorHeading => String::from("minor-heading"),
-            StandardChapterModifier::MajorHeading => String::from("major-heading"),
-            StandardChapterModifier::SameHeading => String::from("same-heading"),
+            StandardHeading::MinorHeading => String::from("minor-heading"),
+            StandardHeading::MajorHeading => String::from("major-heading"),
+            StandardHeading::SameHeading => String::from("same-heading"),
         }
     }
     
@@ -94,9 +94,9 @@ impl StandardChapterModifier {
 
                 format!(r"(?m:^#({})\s+(.*))", level)
             },
-            StandardChapterModifier::MinorHeading => String::from(r"(?m:^#-\s+(.*))"),
-            StandardChapterModifier::MajorHeading => String::from(r"(?m:^#\+\s+(.*))"),
-            StandardChapterModifier::SameHeading => String::from(r"(?m:^#=\s+(.*))"),
+            StandardHeading::MinorHeading => String::from(r"(?m:^#-\s+(.*))"),
+            StandardHeading::MajorHeading => String::from(r"(?m:^#\+\s+(.*))"),
+            StandardHeading::SameHeading => String::from(r"(?m:^#=\s+(.*))"),
         };
 
         format!("{}{}{}", specific_pattern, CHAPTER_TAGS_PATTERN, CHAPTER_STYLE_PATTERN)
@@ -107,8 +107,8 @@ impl StandardChapterModifier {
     }
 }
 
-impl Into<BaseModifier> for StandardChapterModifier {
+impl Into<BaseModifier> for StandardHeading {
     fn into(self) -> BaseModifier {
-        BaseModifier::new(self.identifier(), self.modifier_pattern(), self.incompatible_modifiers())
+        BaseModifier::new(self.modifier_pattern(), self.incompatible_modifiers())
     }
 }

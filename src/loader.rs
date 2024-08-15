@@ -2,6 +2,7 @@
 
 
 pub mod loader_configuration;
+pub mod paragraph_content_loading_rule;
 
 
 use std::collections::HashSet;
@@ -15,8 +16,11 @@ use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIter
 use rayon::slice::ParallelSliceMut;
 use regex::Regex;
 use thiserror::Error;
+use crate::codex::modifier::base_modifier::BaseModifier;
 use crate::codex::modifier::constants::{INCOMPATIBLE_CHAPTER_HEADING_REGEX, NEW_LINE};
-use crate::codex::modifier::standard_chapter_modifier::StandardChapterModifier;
+use crate::codex::modifier::standard_heading_modifier::StandardHeading;
+use crate::codex::modifier::Modifier;
+use crate::dossier::document::chapter::paragraph::ParagraphTrait;
 use crate::resource::disk_resource::DiskResource;
 use crate::resource::{Resource, ResourceError};
 use super::codex::modifier::constants::CHAPTER_STYLE_PATTERN;
@@ -28,8 +32,10 @@ use super::dossier::{document::{chapter::heading::{Heading, HeadingLevel}, Chapt
 
 
 static CHAPTER_STYLE_PATTERN_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(CHAPTER_STYLE_PATTERN).unwrap());
+
 static FIND_EXTENDED_VERSION_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"heading-[[:digit:]]+-extended-version").unwrap());
 static FIND_COMPACT_VERSION_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"heading-[[:digit:]]+-compact-version").unwrap());
+
 static DOUBLE_NEW_LINES: Lazy<String> = Lazy::new(|| format!("{}{}", NEW_LINE, NEW_LINE));
 static TRIPLE_NEW_LINES: Lazy<String> = Lazy::new(|| format!("{}{}{}", NEW_LINE, NEW_LINE, NEW_LINE));
 
@@ -98,13 +104,11 @@ impl Loader {
         // String: chapter heading + options found
         let mut chapter_borders: Vec<(usize, usize, String)> = Vec::new();
 
-        for chapter_modifier in codex.configuration().ordered_chapter_modifier() {
-            
-            let modifier_pattern = chapter_modifier.modifier_pattern();
+        for heading in StandardHeading::ordered() {
 
-            log::debug!("find chapter borders using chapter modifier: {:#?}", chapter_modifier);
+            let heading_modifier = Into::<BaseModifier>::into(heading);
 
-            chapter_modifier.modifier_pattern_regex().find_iter(content.as_str()).for_each(|m| {
+            heading_modifier.modifier_pattern_regex().find_iter(content.as_str()).for_each(|m| {
 
                 let matched_str = m.as_str().to_string();
 
@@ -119,7 +123,7 @@ impl Loader {
                 });
 
                 if let Some(p) = overlap_chapter {     // => overlap
-                    log::debug!("discarded chapter:\n{}\nbecause there is an overlap between {} and {} using pattern {:?}:\n{:#?}\n", m.as_str(), start, end, modifier_pattern, p);
+                    log::debug!("discarded chapter because there is an overlap between {} and {} using pattern {:?}:\n{:#?}\n", start, end, heading_modifier, p);
                     return
                 }
 
@@ -133,7 +137,7 @@ impl Loader {
                     return
                 }
 
-                log::debug!("found chapter border between {} and {}:\n{}\nusing {:?}", start, end, matched_str, &chapter_modifier);
+                log::debug!("find chapter between {} and {}: {:?}", start, end, &matched_str);
 
                 let cb = (
                     start,
@@ -192,7 +196,7 @@ impl Loader {
             preamble_end = chapter_borders[0].0;
         }
 
-        let preamble: Vec<Paragraph>;
+        let preamble: Vec<Box<dyn ParagraphTrait>>;
         
         if preamble_end > 0 {      // => there is a preamble
             
@@ -237,7 +241,7 @@ impl Loader {
     }
 
     /// Split a string in the corresponding vector of paragraphs
-    pub fn load_paragraphs_from_str(content: &str, codex: &Codex, _configuration: &LoaderConfiguration) -> Result<Vec<Paragraph>, LoadError> {
+    pub fn load_paragraphs_from_str(content: &str, codex: &Codex, configuration: &LoaderConfiguration) -> Result<Vec<Box<dyn ParagraphTrait>>, LoadError> {
 
         if content.trim().is_empty() {
             log::debug!("skip paragraphs loading: empty content");
@@ -246,7 +250,7 @@ impl Loader {
 
         log::debug!("loading paragraph:\n{}", content);
 
-        let mut paragraphs: Vec<(usize, usize, Paragraph)> = Vec::new();
+        let mut paragraphs: Vec<(usize, usize, Box<dyn ParagraphTrait>)> = Vec::new();
         let mut content = String::from(content);
 
         content = content.replace(&(*DOUBLE_NEW_LINES), &(*TRIPLE_NEW_LINES));
@@ -260,11 +264,11 @@ impl Loader {
             content.push_str(NEW_LINE);
         }
 
-        for paragraph_modifier in codex.configuration().ordered_paragraph_modifiers() {
+        for (codex_identifier, paragraph_modifier) in codex.paragraph_modifiers() {
 
             let search_pattern = paragraph_modifier.modifier_pattern();
 
-            log::debug!("test paragraph modifier '{}': {:?}", paragraph_modifier.identifier(), search_pattern);
+            log::debug!("test paragraph modifier '{}': {:?}", codex_identifier, search_pattern);
 
             paragraph_modifier.modifier_pattern_regex().find_iter(content.clone().as_str()).for_each(|m| {
 
@@ -278,7 +282,7 @@ impl Loader {
                     end -= nl_at_end;
                 }
 
-                log::debug!("found paragraph using '{}': {:?} between {} and {}:\n{}", paragraph_modifier.identifier(), search_pattern, start, end, matched_str);
+                log::debug!("found paragraph using '{}': {:?} between {} and {}:\n{}", codex_identifier, search_pattern, start, end, matched_str);
 
                 let overlap_paragraph = paragraphs.par_iter().find_any(|p| {
                     (p.0 >= start && p.1 <= end) ||     // current paragraph contains p
@@ -297,14 +301,31 @@ impl Loader {
                     return;
                 }
 
-                let matched_str = matched_str.replace(&(*TRIPLE_NEW_LINES), &(*DOUBLE_NEW_LINES));
+                let raw_content = matched_str.replace(&(*TRIPLE_NEW_LINES), &(*DOUBLE_NEW_LINES));
 
-                let paragraph = Paragraph::new(matched_str, paragraph_modifier.identifier().clone());
+                if let Some(loading_rule) = codex.paragraph_loading_rules().get(codex_identifier) {
 
-                if !paragraph.contains_only_newlines() {
-                    log::debug!("added paragraph to paragraphs list:\n{:#?}", paragraph);
-                    
-                    paragraphs.push((start, end, paragraph));
+                    let res = loading_rule.load(&raw_content, codex, configuration);
+
+                    if let Ok(paragraph) = res {
+
+                        if !paragraph.is_empty() {
+                            log::debug!("added paragraph to paragraphs list:\n{:#?}", paragraph);
+                            
+                            paragraphs.push((start, end, paragraph));
+                        }
+
+                    } else {
+
+                        let err = res.err().unwrap().to_string();
+
+                        log::error!("paragraph content loading error: {}", err);
+                        panic!("paragraph content loading error: {}", err)
+                    }
+
+                } else {
+                    log::error!("paragraph content loading rule not found for {}", codex_identifier);
+                    panic!("paragraph content loading rule not found for {}", codex_identifier)
                 }
 
             });
@@ -312,7 +333,7 @@ impl Loader {
 
         paragraphs.par_sort_by(|a, b| a.0.cmp(&b.1));
 
-        Ok(paragraphs.iter().map(|p| p.2.to_owned()).collect())
+        Ok(paragraphs.into_iter().map(|p| p.2).collect())
     }
 
 
@@ -354,100 +375,96 @@ impl Loader {
 
         log::debug!("load chapter metadata from (last heading level: {}):\n{}", last_heading_level, content);
 
-        let chapter_modifiers = codex.configuration().ordered_chapter_modifier();
+        for heading in StandardHeading::ordered() {
 
-        for chapter_modifier in chapter_modifiers {
+            let heading_modifier = Into::<BaseModifier>::into(heading.clone());
 
-            if !chapter_modifier.modifier_pattern_regex().is_match(content) {
+            if !heading_modifier.modifier_pattern_regex().is_match(content) {
                 continue
             }
 
-            // ==== MinorHeading ====
-            if chapter_modifier.identifier().eq(&StandardChapterModifier::MinorHeading.identifier()) {
-                let matched = chapter_modifier.modifier_pattern_regex().captures(content).unwrap();
+            match heading {
+                StandardHeading::MinorHeading => {
+                    let matched = heading_modifier.modifier_pattern_regex().captures(content).unwrap();
 
-                let level: HeadingLevel;
+                    let level: HeadingLevel;
 
-                if last_heading_level < 1 {
-                    log::warn!("{} found, but last heading has level {}, so it is set as 1", StandardChapterModifier::MinorHeading.identifier(), last_heading_level);
-                    level = 1;
+                    if last_heading_level < 1 {
+                        log::warn!("{} found, but last heading has level {}, so it is set as 1", StandardHeading::MinorHeading.identifier(), last_heading_level);
+                        level = 1;
 
-                } else {
+                    } else {
 
-                    level = last_heading_level - 1;
-                }
+                        level = last_heading_level - 1;
+                    }
 
-                let title = matched.get(1).unwrap().as_str();
+                    let title = matched.get(1).unwrap().as_str();
 
 
-                let tags = Self::load_chapter_tags_from_str(content, codex, configuration);
+                    let tags = Self::load_chapter_tags_from_str(content, codex, configuration);
 
-                return (Some(Heading::new(level, String::from(title))), tags);
-            }
+                    return (Some(Heading::new(level, String::from(title))), tags);
+                },
 
-            // ==== MajorHeading ====
-            if chapter_modifier.identifier().eq(&StandardChapterModifier::MajorHeading.identifier()) {
-                let matched = chapter_modifier.modifier_pattern_regex().captures(content).unwrap();
+                StandardHeading::MajorHeading => {
+                    let matched = heading_modifier.modifier_pattern_regex().captures(content).unwrap();
 
-                let mut level: HeadingLevel = last_heading_level + 1;
+                    let mut level: HeadingLevel = last_heading_level + 1;
 
-                if level < 1 {
-                    log::warn!("level {} < 0, so it is set as 1", level);
-                    level = 1;
-                }
+                    if level < 1 {
+                        log::warn!("level {} < 0, so it is set as 1", level);
+                        level = 1;
+                    }
 
-                let title = matched.get(1).unwrap().as_str();
+                    let title = matched.get(1).unwrap().as_str();
 
-                let tags = Self::load_chapter_tags_from_str(content, codex, configuration);
+                    let tags = Self::load_chapter_tags_from_str(content, codex, configuration);
 
-                return (Some(Heading::new(level, String::from(title))), tags);
-            }
+                    return (Some(Heading::new(level, String::from(title))), tags);
+                },
 
-            // ==== SameHeading ====
-            if chapter_modifier.identifier().eq(&StandardChapterModifier::SameHeading.identifier()) {
-                let matched = chapter_modifier.modifier_pattern_regex().captures(content).unwrap();
+                StandardHeading::SameHeading => {
+                    let matched = heading_modifier.modifier_pattern_regex().captures(content).unwrap();
 
-                let level: HeadingLevel;
-                if last_heading_level < 1 {
-                    log::warn!("{} found, but last heading has level {}, so it is set as 1", StandardChapterModifier::MinorHeading.identifier(), last_heading_level);
-                    level = 1;
+                    let level: HeadingLevel;
+                    if last_heading_level < 1 {
+                        log::warn!("{} found, but last heading has level {}, so it is set as 1", StandardHeading::MinorHeading.identifier(), last_heading_level);
+                        level = 1;
 
-                } else {
+                    } else {
 
-                    level = last_heading_level;
-                }
-                
-                let title = matched.get(1).unwrap().as_str();
+                        level = last_heading_level;
+                    }
+                    
+                    let title = matched.get(1).unwrap().as_str();
 
-                let tags = Self::load_chapter_tags_from_str(content, codex, configuration);
+                    let tags = Self::load_chapter_tags_from_str(content, codex, configuration);
 
-                return (Some(Heading::new(level, String::from(title))), tags);
-            }
+                    return (Some(Heading::new(level, String::from(title))), tags);
+                },
 
-            // ==== Extended version heading ====
-            if FIND_EXTENDED_VERSION_REGEX.is_match(chapter_modifier.identifier()) {
+                StandardHeading::HeadingGeneralCompactVersion(_) => {
+                    let level: u32 = content.chars().take_while(|&c| c == '#').count() as u32;
 
-                let level: u32 = content.chars().take_while(|&c| c == '#').count() as u32;
+                    let matched = heading_modifier.modifier_pattern_regex().captures(content).unwrap();
 
-                let matched = chapter_modifier.modifier_pattern_regex().captures(content).unwrap();
+                    let title = matched.get(1).unwrap().as_str();
 
-                let title = matched.get(1).unwrap().as_str();
+                    let tags = Self::load_chapter_tags_from_str(content, codex, configuration);
 
-                let tags = Self::load_chapter_tags_from_str(content, codex, configuration);
+                    return (Some(Heading::new(level, String::from(title))), tags);
+                },
 
-                return (Some(Heading::new(level, String::from(title))), tags);
-            }
+                StandardHeading::HeadingGeneralExtendedVersion(_) => {
+                    let matched = heading_modifier.modifier_pattern_regex().captures(content).unwrap();
 
-            // ==== Compact version heading ====
-            if FIND_COMPACT_VERSION_REGEX.is_match(chapter_modifier.identifier()) {
-                let matched = chapter_modifier.modifier_pattern_regex().captures(content).unwrap();
-
-                let level: HeadingLevel = matched.get(1).unwrap().as_str().parse().unwrap();
-                let title = matched.get(2).unwrap().as_str();
-
-                let tags = Self::load_chapter_tags_from_str(content, codex, configuration);
-
-                return (Some(Heading::new(level, String::from(title))), tags);
+                    let level: HeadingLevel = matched.get(1).unwrap().as_str().parse().unwrap();
+                    let title = matched.get(2).unwrap().as_str();
+    
+                    let tags = Self::load_chapter_tags_from_str(content, codex, configuration);
+    
+                    return (Some(Heading::new(level, String::from(title))), tags);
+                },
             }
 
         }
@@ -536,35 +553,35 @@ impl Loader {
 #[cfg(test)]
 mod test {
 
-    use crate::codex::codex_configuration::CodexConfiguration;
-
     use super::*;
 
     #[test]
     fn chapters_from_str() {
 
-        let codex = Codex::of_html(CodexConfiguration::default());
+        todo!()
 
-        let content: String = 
-r#"
-# title 1a
+//         let codex = Codex::of_html(CodexConfiguration::default());
 
-paragraph 1a
+//         let content: String = 
+// r#"
+// # title 1a
 
-## title 2a
+// paragraph 1a
 
-paragraph 2a
+// ## title 2a
 
-# title 1b
+// paragraph 2a
 
-paragraph 1b
-"#.trim().to_string();
+// # title 1b
 
-        let document = Loader::load_document_from_str("test", &content, &codex, &LoaderConfiguration::default()).unwrap();
+// paragraph 1b
+// "#.trim().to_string();
 
-        assert_eq!(document.preamble().len(), 0);
+//         let document = Loader::load_document_from_str("test", &content, &codex, &LoaderConfiguration::default()).unwrap();
 
-        assert_eq!(document.chapters().len(), 3);
+//         assert_eq!(document.preamble().len(), 0);
+
+//         assert_eq!(document.chapters().len(), 3);
 
 
         
@@ -572,30 +589,35 @@ paragraph 1b
 
     #[test]
     fn paragraphs_from_str() {
-        let content = concat!(
-            "paragraph1",
-            "\n\n",
-            "paragraph2a\nparagraph2b",
-            "\n\n",
-            "paragraph3",
-        );
 
-        let codex = Codex::of_html(CodexConfiguration::default());
+        todo!()
 
-        let paragraphs = Loader::load_paragraphs_from_str(content, &codex, &LoaderConfiguration::default()).unwrap();
+        // let content = concat!(
+        //     "paragraph1",
+        //     "\n\n",
+        //     "paragraph2a\nparagraph2b",
+        //     "\n\n",
+        //     "paragraph3",
+        // );
 
-        assert_eq!(paragraphs.len(), 3)
+        // let codex = Codex::of_html(CodexConfiguration::default());
+
+        // let paragraphs = Loader::load_paragraphs_from_str(content, &codex, &LoaderConfiguration::default()).unwrap();
+
+        // assert_eq!(paragraphs.len(), 3)
     }
 
     #[test]
     fn load_dossier() {
 
-        let dossier_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("test-resources").join("nmd-test-dossier-1");
+        todo!()
 
-        let codex = Codex::of_html(CodexConfiguration::default());
+        // let dossier_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("test-resources").join("nmd-test-dossier-1");
 
-        let loader_configuration = LoaderConfiguration::default();
+        // let codex = Codex::of_html(CodexConfiguration::default());
 
-        let _dossier = Loader::load_dossier_from_path_buf(&dossier_path, &codex, &loader_configuration).unwrap();
+        // let loader_configuration = LoaderConfiguration::default();
+
+        // let _dossier = Loader::load_dossier_from_path_buf(&dossier_path, &codex, &loader_configuration).unwrap();
     }
 }

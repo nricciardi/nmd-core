@@ -80,7 +80,7 @@ impl ResourceReference {
     /// Raw string must be in the format: <document-name>#id 
     /// 
     /// <document-name> can be omitted. 
-    pub fn of_internal(raw: &str, document_name_if_missed: Option<&str>) -> Result<Self, ResourceReferenceError> {
+    pub fn of_internal(raw: &str, document_name_if_missed: Option<&impl ToString>) -> Result<Self, ResourceReferenceError> {
 
         let raw = raw.to_lowercase();
 
@@ -110,11 +110,11 @@ impl ResourceReference {
             }
         }
 
-        Ok(Self::new(&format!("{}{}{}", document_name_if_missed.unwrap(), VALUE_SEPARATOR, value), ResourceReferenceType::Internal))
+        Ok(Self::new(&format!("{}{}{}", document_name_if_missed.unwrap().to_string(), VALUE_SEPARATOR, value), ResourceReferenceType::Internal))
         
     }
 
-    pub fn of_internal_from_without_sharp(raw: &str, document_name_if_missed: Option<&str>) -> Result<Self, ResourceReferenceError> {
+    pub fn of_internal_from_without_sharp(raw: &str, document_name_if_missed: Option<&impl ToString>) -> Result<Self, ResourceReferenceError> {
 
         let raw_with_sharp = format!("#{}", raw);
 
@@ -128,7 +128,7 @@ impl ResourceReference {
     /// - url
     /// - url#id
     /// - asset 
-    pub fn of(raw: &str, document_name_if_missed: Option<&str>) -> Result<Self, ResourceReferenceError> {
+    pub fn of(raw: &str, document_name_if_missed: Option<&impl ToString>) -> Result<Self, ResourceReferenceError> {
 
         if RemoteResource::is_valid_remote_resource(raw) {
             return Self::of_url(raw)

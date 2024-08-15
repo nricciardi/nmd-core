@@ -1,9 +1,10 @@
 pub mod chapter;
 
 
+use chapter::paragraph::ParagraphTrait;
 pub use chapter::Chapter;
 use getset::{Getters, MutGetters, Setters};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use thiserror::Error;
 use crate::compiler::compilation_error::CompilationError;
 use crate::resource::ResourceError;
@@ -23,14 +24,15 @@ pub enum DocumentError {
     ParagraphError(#[from] ParagraphError),
 }
 
-#[derive(Debug, Getters, MutGetters, Setters, Serialize, Deserialize)]
+#[derive(Debug, Getters, MutGetters, Setters, Serialize)]
 pub struct Document {
 
     #[getset(get = "pub", set = "pub")]
     name: String,
 
     #[getset(get = "pub", get_mut = "pub", set = "pub")]
-    preamble: Vec<Paragraph>,
+    #[serde(skip)]      // TODO
+    preamble: Vec<Box<dyn ParagraphTrait>>,
 
     #[getset(get = "pub", get_mut = "pub", set = "pub")]
     chapters: Vec<Chapter>
@@ -39,7 +41,7 @@ pub struct Document {
 
 impl Document {
 
-    pub fn new(name: String, preamble: Vec<Paragraph>, chapters: Vec<Chapter>) -> Self {
+    pub fn new(name: String, preamble: Vec<Box<dyn ParagraphTrait>>, chapters: Vec<Chapter>) -> Self {
         
         Self {
             name,

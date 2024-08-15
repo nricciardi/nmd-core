@@ -145,33 +145,36 @@ impl CompilationRule for HtmlListRule {
 
 #[cfg(test)]
 mod test {
-    use crate::{codex::codex_configuration::CodexConfiguration, compiler::compilable::GenericCompilable};
+    use crate::compiler::compilable::GenericCompilable;
 
     use super::*;
 
     #[test]
     fn parsing() {
-        let nmd_text = r#"
-- element 1
-- element 2
-    - element 2.1
-        - element 2.1.1a
-        | element 2.1.1b
-        - element 2.1.2
-        - element 2.1.3
-    - element 2.2
-- element 3
-"#.trim();
+
+        todo!()
+
+//         let nmd_text = r#"
+// - element 1
+// - element 2
+//     - element 2.1
+//         - element 2.1.1a
+//         | element 2.1.1b
+//         - element 2.1.2
+//         - element 2.1.3
+//     - element 2.2
+// - element 3
+// "#.trim();
        
-       let rule = HtmlListRule::new();
+//        let rule = HtmlListRule::new();
 
-       let _ = Regex::new(rule.search_pattern()).unwrap();
+//        let _ = Regex::new(rule.search_pattern()).unwrap();
 
-       let codex = Codex::of_html(CodexConfiguration::default());
+//        let codex = Codex::of_html(CodexConfiguration::default());
 
-       let compilable: Box<dyn Compilable> = Box::new(GenericCompilable::from(nmd_text.to_string()));
+//        let compilable: Box<dyn Compilable> = Box::new(GenericCompilable::from(nmd_text.to_string()));
 
-       let _ = rule.compile(&compilable, &OutputFormat::Html, &codex, &CompilationConfiguration::default(), Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
+//        let _ = rule.compile(&compilable, &OutputFormat::Html, &codex, &CompilationConfiguration::default(), Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
 
     }
 }

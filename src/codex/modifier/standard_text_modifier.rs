@@ -1,4 +1,4 @@
-use super::{base_modifier::BaseModifier, constants::NEW_LINE, modifiers_bucket::ModifiersBucket, ModifierIdentifier};
+use super::{base_modifier::BaseModifier, constants::NEW_LINE, ModifiersBucket, ModifierIdentifier};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum StandardTextModifier {
@@ -174,6 +174,6 @@ impl StandardTextModifier {
 
 impl Into<BaseModifier> for StandardTextModifier {
     fn into(self) -> BaseModifier {
-        BaseModifier::new(self.identifier(), self.modifier_pattern(), self.incompatible_modifiers())
+        BaseModifier::new(self.modifier_pattern(), self.incompatible_modifiers())
     }
 }

@@ -11,29 +11,30 @@ pub enum TableCellAlignment {
 
 
 #[derive(Debug, Clone, Default)]
-pub enum TableCell {
+pub enum TableCell<T> {
     #[default] None,
-    ContentCell{content: String, alignment: TableCellAlignment}
+    ContentCell{content: T, alignment: TableCellAlignment}
 }
 
 
 
 #[derive(Debug, Clone, Getters, MutGetters, Setters)]
-pub struct Table {
-
-    #[getset(get = "pub", set = "pub")]
-    header: Option<Vec<TableCell>>,
+pub struct Table<H, B, F> {
 
     #[getset(get = "pub", get_mut = "pub", set = "pub")]
-    body: Vec<Vec<TableCell>>,
+    header: Option<Vec<TableCell<H>>>,
 
-    #[getset(get = "pub", set = "pub")]
-    footer: Option<Vec<TableCell>>
+    #[getset(get = "pub", get_mut = "pub", set = "pub")]
+    body: Vec<Vec<TableCell<B>>>,
+
+    #[getset(get = "pub", get_mut = "pub", set = "pub")]
+    footer: Option<Vec<TableCell<F>>>
 }
 
-impl Table {
+impl<H, B, F> Table<H, B, F>
+where B: Into<H> + Into<F> {
 
-    pub fn new(header: Option<Vec<TableCell>>, body: Vec<Vec<TableCell>>, footer: Option<Vec<TableCell>>) -> Self {
+    pub fn new(header: Option<Vec<TableCell<H>>>, body: Vec<Vec<TableCell<B>>>, footer: Option<Vec<TableCell<F>>>) -> Self {
         Self {
             header,
             body,
@@ -49,7 +50,7 @@ impl Table {
         }
     }
 
-    pub fn append_to_body(&mut self, row: Vec<TableCell>) {
+    pub fn append_to_body(&mut self, row: Vec<TableCell<B>>) {
         
         self.body.push(row);
     }
@@ -58,7 +59,22 @@ impl Table {
 
         let first_row = self.body.remove(0);
 
-        self.header = Some(first_row.clone());
+        let mut header: Vec<TableCell<H>> = Vec::new();
+
+        for table_cell in first_row {
+
+            match table_cell {
+                TableCell::None => header.push(TableCell::None),
+                TableCell::ContentCell { content, alignment } => {
+                    header.push(TableCell::ContentCell {
+                        content: Into::<H>::into(content),
+                        alignment
+                    })
+                },
+            }
+        }
+
+        self.header = Some(header);
 
     }
 
@@ -66,7 +82,22 @@ impl Table {
 
         let last_row = self.body.remove(self.body.len() - 1);
 
-        self.footer = Some(last_row.clone());
+        let mut footer: Vec<TableCell<F>> = Vec::new();
+
+        for table_cell in last_row {
+
+            match table_cell {
+                TableCell::None => footer.push(TableCell::None),
+                TableCell::ContentCell { content, alignment } => {
+                    footer.push(TableCell::ContentCell {
+                        content: Into::<F>::into(content),
+                        alignment
+                    })
+                },
+            }
+        }
+
+        self.footer = Some(footer);
 
     }
 }

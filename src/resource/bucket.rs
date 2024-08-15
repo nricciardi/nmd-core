@@ -1,25 +1,24 @@
 use std::ops::Add;
 
-use super::Modifier;
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum ModifiersBucket {
+pub enum Bucket<T> {
     All,
-    List(Vec<Box<dyn Modifier>>),
+    List(Vec<T>),
     None
 }
 
-impl ModifiersBucket {
-    pub fn contains(&self, searched_modifier: &Box<dyn Modifier>) -> bool {
+impl<T: PartialEq> Bucket<T> {
+    pub fn contains(&self, item: &T) -> bool {
         match self {
             Self::All => true,
-            Self::List(modifiers_list) => modifiers_list.contains(searched_modifier),
+            Self::List(list) => list.contains(item),
             Self::None => false,
         }
     }
 }
 
-impl Add for ModifiersBucket {
+impl<T: Clone> Add for Bucket<T> {
     type Output = Self;
 
     fn add(self, new_modifiers_excluded: Self) -> Self::Output {

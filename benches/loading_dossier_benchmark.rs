@@ -1,15 +1,15 @@
 use std::path::PathBuf;
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use nmd_core::{codex::{codex_configuration::CodexConfiguration, Codex}, loader::{loader_configuration::LoaderConfiguration, Loader}, output_format::OutputFormat};
+use nmd_core::{loader::{loader_configuration::LoaderConfiguration, Loader}, output_format::OutputFormat};
 
 fn load_dossier(dossier_path: &PathBuf) {
 
-    let codex = Codex::of_html(CodexConfiguration::default());
+    // let codex = Codex::of_html(CodexConfiguration::default());
 
-    let loader_configuration = LoaderConfiguration::default();
+    // let loader_configuration = LoaderConfiguration::default();
 
-    let _dossier = Loader::load_dossier_from_path_buf(dossier_path, &codex, &loader_configuration).unwrap();
+    // let _dossier = Loader::load_dossier_from_path_buf(dossier_path, &codex, &loader_configuration).unwrap();
 
 }
 

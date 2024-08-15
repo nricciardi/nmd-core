@@ -44,7 +44,7 @@ impl Bibliography {
 
     pub fn get_reference_from_key(&self, target_key: &str) -> Option<Result<ResourceReference, ResourceReferenceError>> {
         if let Some(_) = self.content.get(target_key) {
-            return Some(ResourceReference::of_internal_from_without_sharp(&target_key, Some(BIBLIOGRAPHY_FICTITIOUS_DOCUMENT)))
+            return Some(ResourceReference::of_internal_from_without_sharp(&target_key, Some(&BIBLIOGRAPHY_FICTITIOUS_DOCUMENT)))
         }
 
         None

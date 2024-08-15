@@ -1,4 +1,4 @@
-use super::{base_modifier::BaseModifier, constants::{IDENTIFIER_PATTERN, NEW_LINE}, modifiers_bucket::ModifiersBucket, ModifierIdentifier, ModifierPattern};
+use super::{base_modifier::BaseModifier, constants::{IDENTIFIER_PATTERN, NEW_LINE}, ModifiersBucket, ModifierIdentifier, ModifierPattern};
 
 
 pub const PARAGRAPH_SEPARATOR_START: &str = r"(?m:^[ \t]*\r?\n)+";
@@ -152,7 +152,7 @@ impl StandardParagraphModifier {
 
 impl Into<BaseModifier> for StandardParagraphModifier {
     fn into(self) -> BaseModifier {
-        BaseModifier::new(self.identifier(), self.modifier_pattern_with_paragraph_separator(), self.incompatible_modifiers())
+        BaseModifier::new(self.modifier_pattern_with_paragraph_separator(), self.incompatible_modifiers())
     }
 }
 

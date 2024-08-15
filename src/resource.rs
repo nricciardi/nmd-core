@@ -7,6 +7,8 @@ pub mod resource_reference;
 pub mod text_reference;
 pub mod table;
 pub mod source;
+pub mod bucket;
+
 
 use std::{str::FromStr, io::{self}};
 use thiserror::Error;

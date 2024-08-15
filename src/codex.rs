@@ -1,27 +1,30 @@
 //! `Codex` is a set of associations used to transform the text using a `Compiler`
 
 
-pub mod codex_configuration;
 pub mod modifier;
 
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
+use std::fmt::Debug;
 use getset::{Getters, Setters};
+use modifier::Modifier;
 use self::modifier::standard_paragraph_modifier::StandardParagraphModifier;
 use self::modifier::standard_text_modifier::StandardTextModifier;
 use self::modifier::ModifierIdentifier;
+use crate::loader::paragraph_content_loading_rule::ParagraphContentLoadingRule;
 use crate::output_format::OutputFormat;
-use self::codex_configuration::CodexConfiguration;
 use super::compiler::compilation_rule::constants::ESCAPE_HTML;
 use super::compiler::compilation_rule::html_cite_rule::HtmlCiteRule;
 use super::compiler::compilation_rule::html_extended_block_quote_rule::HtmlExtendedBlockQuoteRule;
 use super::compiler::compilation_rule::html_greek_letter_rule::HtmlGreekLettersRule;
 use super::compiler::compilation_rule::html_image_rule::HtmlImageRule;
 use super::compiler::compilation_rule::html_list_rule::HtmlListRule;
-use super::compiler::compilation_rule::html_table_rule::HtmlTableRule;
 use super::compiler::compilation_rule::reference_rule::ReferenceRule;
 use super::compiler::compilation_rule::replacement_rule::{ReplacementRule, ReplacementRuleReplacerPart};
 use super::compiler::compilation_rule::CompilationRule;
+
+
+pub type CodexIdentifier = String;
 
 
 /// Ordered collection of rules
@@ -29,30 +32,37 @@ use super::compiler::compilation_rule::CompilationRule;
 #[derive(Debug, Getters, Setters)]
 pub struct Codex {
 
-    #[getset(get = "pub", set = "pub")]
-    configuration: CodexConfiguration,
+    // #[getset(get = "pub", set = "pub")]
+    // configuration: CodexConfiguration,
+
 
     #[getset(get = "pub", set = "pub")]
-    text_rules: HashMap<ModifierIdentifier, Box<dyn CompilationRule>>,
+    text_modifiers: BTreeMap<CodexIdentifier, Box<dyn Modifier>>,
 
     #[getset(get = "pub", set = "pub")]
-    paragraph_rules: HashMap<ModifierIdentifier, Box<dyn CompilationRule>>,
+    paragraph_modifiers: BTreeMap<CodexIdentifier, Box<dyn Modifier>>,
+
+    // #[getset(get = "pub", set = "pub")]
+    // chapter_modifiers: BTreeMap<CodexIdentifier, Box<dyn Modifier>>,
 
     #[getset(get = "pub", set = "pub")]
-    chapter_rules: HashMap<ModifierIdentifier, Box<dyn CompilationRule>>,
+    text_compilation_rules: BTreeMap<CodexIdentifier, Box<dyn CompilationRule>>,
 
     #[getset(get = "pub", set = "pub")]
-    document_rules: HashMap<ModifierIdentifier, Box<dyn CompilationRule>>,
+    paragraph_loading_rules: BTreeMap<CodexIdentifier, Box<dyn ParagraphContentLoadingRule>>,
+
+    // #[getset(get = "pub", set = "pub")]
+    // document_rules: HashMap<ModifierIdentifier, Box<dyn CompilationRule>>,
     
 }
 
 impl Codex {
 
-    pub fn from(format: &OutputFormat, configuration: CodexConfiguration) -> Self {
-        match format {
-            OutputFormat::Html => Self::of_html(configuration)
-        }
-    }
+    // pub fn from(format: &OutputFormat, configuration: CodexConfiguration) -> Self {
+    //     match format {
+    //         OutputFormat::Html => Self::of_html(configuration)
+    //     }
+    // }
 
     /// Create a new `Codex`
     /// 
@@ -81,19 +91,20 @@ impl Codex {
     ///     HashMap::new(),
     /// );
     /// ```
-    pub fn new(configuration: CodexConfiguration, text_rules: HashMap<ModifierIdentifier, Box<dyn CompilationRule>>, paragraph_rules: HashMap<ModifierIdentifier, Box<dyn CompilationRule>>, chapter_rules: HashMap<ModifierIdentifier, Box<dyn CompilationRule>>, document_rules: HashMap<ModifierIdentifier, Box<dyn CompilationRule>>) -> Codex {
+    pub fn new(text_modifiers: BTreeMap<CodexIdentifier, Box<dyn Modifier>>, paragraph_modifiers: BTreeMap<CodexIdentifier, Box<dyn Modifier>>,
+                text_compilation_rules: BTreeMap<CodexIdentifier, Box<dyn CompilationRule>>, paragraph_loading_rules: BTreeMap<CodexIdentifier, Box<dyn ParagraphContentLoadingRule>>,) -> Self {
 
         // TODO: check if there are all necessary rules based on theirs type
 
-        Codex {
-            configuration,
-            text_rules,
-            paragraph_rules,
-            chapter_rules,
-            document_rules
+        Self {
+            text_modifiers,
+            paragraph_modifiers,
+            text_compilation_rules,
+            paragraph_loading_rules,
         }
     }
 
+/*
     /// Standard HTML `Codex`
     pub fn of_html(configuration: CodexConfiguration) -> Self {
 
@@ -462,10 +473,10 @@ impl Codex {
             ),
         ]);
 
-        let chapter_rules: HashMap<ModifierIdentifier, Box<dyn CompilationRule>> = HashMap::new();
+        // let chapter_rules: HashMap<ModifierIdentifier, Box<dyn CompilationRule>> = HashMap::new();
 
-        Self::new(configuration, text_rules, paragraph_rules, chapter_rules, HashMap::new())
-    }
+        Self::new(configuration, text_rules, paragraph_rules, /* chapter_rules, HashMap::new() */)
+    }*/
 }
 
 #[cfg(test)]
@@ -473,47 +484,91 @@ mod test {
 
     use std::sync::{Arc, RwLock};
 
+    use modifier::base_modifier::BaseModifier;
+
     use crate::{compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, Compiler}, loader::{loader_configuration::LoaderConfiguration, Loader}};
 
     use super::*;
 
     #[test]
+    fn correct_order() {
+        let codex = Codex::new(
+            BTreeMap::from([
+                (
+                    String::from("a"),
+                    Box::new(Into::<BaseModifier>::into(StandardTextModifier::BoldStarVersion)) as Box<dyn Modifier>
+                ),
+                (
+                    String::from("b"),
+                    Box::new(Into::<BaseModifier>::into(StandardTextModifier::AbridgedEmbeddedStyle)) as Box<dyn Modifier>
+                ),
+                (
+                    String::from("c"),
+                    Box::new(Into::<BaseModifier>::into(StandardTextModifier::BookmarkWithId)) as Box<dyn Modifier>
+                ),
+                (
+                    String::from("d"),
+                    Box::new(Into::<BaseModifier>::into(StandardTextModifier::ColoredText)) as Box<dyn Modifier>
+                ),
+                (
+                    String::from("e"),
+                    Box::new(Into::<BaseModifier>::into(StandardTextModifier::Link)) as Box<dyn Modifier>
+                ),
+            ]),
+            BTreeMap::new(),
+            BTreeMap::new(),
+            BTreeMap::new(),
+        );
+
+
+        let ids: Vec<String> = codex.text_modifiers.into_iter().map(|tm| tm.0).collect();
+
+        assert_eq!(ids.join(""), "abcde");
+    }
+
+    #[test]
     fn html_multiple_uses() {
-        let codex = Codex::of_html(CodexConfiguration::default());
 
-        let nmd_text = "This is a simple **nmd** text for test";
-        let expected_result = r#"This is a simple <strong class="bold">nmd</strong> text for test"#;
+        todo!()
 
-        let outcome = Compiler::compile_str(&nmd_text, &OutputFormat::Html, &codex, &CompilationConfiguration::default(), Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
+        // let codex = Codex::of_html(CodexConfiguration::default());
 
-        assert_eq!(outcome.content(), expected_result);
+        // let nmd_text = "This is a simple **nmd** text for test";
+        // let expected_result = r#"This is a simple <strong class="bold">nmd</strong> text for test"#;
 
-        let nmd_text = "This is a simple *nmd* text for test";
-        let expected_result = r#"This is a simple <em class="italic">nmd</em> text for test"#;
+        // let outcome = Compiler::compile_str(&nmd_text, &OutputFormat::Html, &codex, &CompilationConfiguration::default(), Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
 
-        let outcome = Compiler::compile_str(&nmd_text, &OutputFormat::Html, &codex, &CompilationConfiguration::default(), Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
+        // assert_eq!(outcome.content(), expected_result);
 
-        assert_eq!(outcome.content(), expected_result);
+        // let nmd_text = "This is a simple *nmd* text for test";
+        // let expected_result = r#"This is a simple <em class="italic">nmd</em> text for test"#;
+
+        // let outcome = Compiler::compile_str(&nmd_text, &OutputFormat::Html, &codex, &CompilationConfiguration::default(), Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
+
+        // assert_eq!(outcome.content(), expected_result);
     }
 
 
     #[test]
     fn split_str_in_paragraphs() {
-        let codex: Codex = Codex::of_html(CodexConfiguration::default());
 
-        let nmd_text = 
-r#"
-```python
+        todo!()
 
-print("hello world")
+//         let codex: Codex = Codex::of_html(CodexConfiguration::default());
 
-```
+//         let nmd_text = 
+// r#"
+// ```python
 
-`print("hello world)`
-"#.trim();
+// print("hello world")
 
-        let paragraphs = Loader::load_paragraphs_from_str(nmd_text, &codex, &LoaderConfiguration::default()).unwrap();
+// ```
 
-        assert_eq!(paragraphs.len(), 2)
+// `print("hello world)`
+// "#.trim();
+
+//         let paragraphs = Loader::load_paragraphs_from_str(nmd_text, &codex, &LoaderConfiguration::default()).unwrap();
+
+//         assert_eq!(paragraphs.len(), 2)
     }
 }

@@ -32,12 +32,12 @@ pub fn assign_nuid_to_document_paragraphs(document: &mut Document) {
     };
     
     document.preamble_mut().iter_mut().for_each(|p| {
-        p.set_nuid(Some(calc_nuid(p.content())));
+        p.set_nuid(Some(calc_nuid(p.raw_content())));
     });
 
     document.chapters_mut().iter_mut().for_each(|chapter| {
         chapter.paragraphs_mut().iter_mut().for_each(|p| {
-            p.set_nuid(Some(calc_nuid(p.content())));
+            p.set_nuid(Some(calc_nuid(p.raw_content())));
         });
 
         let title = chapter.heading().title().clone();

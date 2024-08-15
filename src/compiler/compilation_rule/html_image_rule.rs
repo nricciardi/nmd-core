@@ -429,32 +429,33 @@ impl CompilationRule for HtmlImageRule {
 mod test {
 
     use std::path::PathBuf;
-
-    use crate::{codex::codex_configuration::CodexConfiguration, compiler::compilable::GenericCompilable};
+    use crate::compiler::compilable::GenericCompilable;
 
     use super::*;
 
     #[test]
     fn parse_all_in_one() {
 
-        let img_src = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("test-resources").join("wikipedia-logo.png");
+        todo!()
 
-        let image_rule = HtmlImageRule::new(StandardParagraphModifier::Image.identifier());
+        // let img_src = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("test-resources").join("wikipedia-logo.png");
 
-        let nmd_text = format!("\n\n![image1]({})\n\n", img_src.as_os_str().to_string_lossy());
+        // let image_rule = HtmlImageRule::new(StandardParagraphModifier::Image.identifier());
 
-        let codex = Codex::of_html(CodexConfiguration::default());
+        // let nmd_text = format!("\n\n![image1]({})\n\n", img_src.as_os_str().to_string_lossy());
 
-        let pc = CompilationConfiguration::default();
+        // let codex = Codex::of_html(CodexConfiguration::default());
 
-        let mut pco = CompilationConfigurationOverLay::default();
+        // let pc = CompilationConfiguration::default();
 
-        pco.set_document_name(Some(String::from("test")));
+        // let mut pco = CompilationConfigurationOverLay::default();
 
-        let compilable: Box<dyn Compilable> = Box::new(GenericCompilable::from(nmd_text.to_string()));
+        // pco.set_document_name(Some(String::from("test")));
 
-        let parsed_content = image_rule.compile(&compilable, &OutputFormat::Html, &codex, &pc, Arc::new(RwLock::new(pco))).unwrap();
+        // let compilable: Box<dyn Compilable> = Box::new(GenericCompilable::from(nmd_text.to_string()));
+
+        // let parsed_content = image_rule.compile(&compilable, &OutputFormat::Html, &codex, &pc, Arc::new(RwLock::new(pco))).unwrap();
         
-        assert!(parsed_content.parts().len() > 0)
+        // assert!(parsed_content.parts().len() > 0)
     }
 }

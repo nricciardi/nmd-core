@@ -8,6 +8,7 @@ pub mod compilation_result;
 pub mod compilation_configuration;
 pub mod compilation_result_accessor;
 pub mod compilable;
+pub mod self_compile;
 
 
 use std::{sync::{Arc, RwLock}, time::Instant};
@@ -16,8 +17,8 @@ use compilation_configuration::{compilation_configuration_overlay::CompilationCo
 use compilation_error::CompilationError;
 use compilation_result::{CompilationResult, CompilationResultPart};
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
-use crate::{bibliography::{Bibliography, BIBLIOGRAPHY_FICTITIOUS_DOCUMENT}, dossier::{document::{chapter::heading::Heading, Chapter}, Document, Dossier}, output_format::OutputFormat, resource::resource_reference::ResourceReference, table_of_contents::{TableOfContents, TOC_INDENTATION}};
-use super::{codex::{modifier::modifiers_bucket::ModifiersBucket, Codex}, dossier::document::Paragraph};
+use crate::{bibliography::{Bibliography, BIBLIOGRAPHY_FICTITIOUS_DOCUMENT}, codex::{modifier::ModifiersBucket, CodexIdentifier}, dossier::{document::{chapter::heading::Heading, Chapter}, Document, Dossier}, output_format::OutputFormat, resource::{bucket::Bucket, resource_reference::ResourceReference}, table_of_contents::{TableOfContents, TOC_INDENTATION}};
+use super::codex::Codex;
 
 
 
@@ -170,7 +171,7 @@ impl Compiler {
             let maybe_one_failed: Option<Result<(), CompilationError>> = document.preamble_mut().par_iter_mut()
                 .map(|paragraph| {
 
-                    Self::compile_paragraph(paragraph, format, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay))
+                    paragraph.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())
                 
                 }).find_any(|result| result.is_err());
 
@@ -194,8 +195,8 @@ impl Compiler {
             let maybe_one_failed: Option<Result<(), CompilationError>> = document.preamble_mut().iter_mut()
                 .map(|paragraph| {
 
-                    Self::compile_paragraph(paragraph, format, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay))
-                
+                    paragraph.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())
+
                 }).find(|result| result.is_err());
 
             if let Some(result) = maybe_one_failed {
@@ -229,7 +230,9 @@ impl Compiler {
 
             let maybe_failed = chapter.paragraphs_mut().par_iter_mut()
                 .map(|paragraph| {
-                    Self::compile_paragraph(paragraph, format, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay))
+                    
+                    paragraph.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())
+
                 })
                 .find_any(|result| result.is_err());
     
@@ -246,7 +249,7 @@ impl Compiler {
                     let compilation_configuration_overlay = compilation_configuration_overlay.clone();
 
                     move |paragraph| {
-                        Self::compile_paragraph(paragraph, format, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay))
+                        paragraph.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())
                     }
                 })
                 .find(|result| result.is_err());
@@ -429,7 +432,7 @@ impl Compiler {
                 compilation_result.add_fixed_part(String::from(r#"<ul class="bibliography-body">"#));
         
                 for (bib_key, bib_record) in bibliography.content().iter() {
-                    compilation_result.add_fixed_part(format!(r#"<div class="bibliography-item" id="{}">"#, ResourceReference::of_internal_from_without_sharp(bib_key, Some(BIBLIOGRAPHY_FICTITIOUS_DOCUMENT))?.build_without_internal_sharp()));
+                    compilation_result.add_fixed_part(format!(r#"<div class="bibliography-item" id="{}">"#, ResourceReference::of_internal_from_without_sharp(bib_key, Some(&BIBLIOGRAPHY_FICTITIOUS_DOCUMENT))?.build_without_internal_sharp()));
                     compilation_result.add_fixed_part(String::from(r#"<div class="bibliography-item-title">"#));
         
                     compilation_result.add_fixed_part(bib_record.title().to_string());
@@ -478,7 +481,7 @@ impl Compiler {
             },
         }
     }
-
+/*
     /// Compile a `Paragraph`.
     /// 
     /// Only one paragraph rule can be applied on Paragraph.
@@ -528,6 +531,7 @@ impl Compiler {
         Ok(())
     }
 
+    */
 
 
     /// Compile a string
@@ -543,7 +547,7 @@ impl Compiler {
 
         log::debug!("start to compile content:\n{}\nexcluding: {:?}", content, excluded_modifiers);
 
-        if excluded_modifiers == ModifiersBucket::All {
+        if excluded_modifiers == Bucket::All {
             log::debug!("compilation of content:\n{} is skipped because are excluded all modifiers", content);
             
             return Ok(CompilationResult::new_fixed(content.to_string()))
@@ -552,17 +556,17 @@ impl Compiler {
         let mut content_parts: Vec<CompilationResultPart> = vec![CompilationResultPart::Mutable{ content: String::from(content) }];
         let mut content_parts_additional_excluded_modifiers: Vec<ModifiersBucket> = vec![ModifiersBucket::None];
 
-        for text_modifier in codex.configuration().ordered_text_modifiers() {
+        for (codex_identifier, text_modifier) in codex.text_modifiers() {
 
             assert_eq!(content_parts.len(), content_parts_additional_excluded_modifiers.len());
 
-            if excluded_modifiers.contains(text_modifier) {
+            if excluded_modifiers.contains(codex_identifier) {
 
                 log::debug!("{:?} is skipped", text_modifier);
                 continue;
             }
 
-            let text_rule = codex.text_rules().get(text_modifier.identifier());
+            let text_rule = codex.text_compilation_rules().get(codex_identifier);
 
             if text_rule.is_none() {
                 log::warn!("text rule for {:#?} not found", text_modifier);
@@ -592,7 +596,7 @@ impl Compiler {
                     continue;
                 }
 
-                if current_excluded_modifiers.contains(text_modifier) {
+                if current_excluded_modifiers.contains(codex_identifier) {
                     log::debug!("{:?} is skipped for '{}'", text_modifier, content_part.content());
 
                     no_match_fn();
@@ -676,54 +680,59 @@ impl Compiler {
 mod test {
     use std::{collections::HashMap, sync::{Arc, RwLock}};
 
-    use crate::{codex::{codex_configuration::CodexConfiguration, modifier::{modifiers_bucket::ModifiersBucket, standard_paragraph_modifier::StandardParagraphModifier}, Codex}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_result_accessor::CompilationResultAccessor}, dossier::document::Paragraph, output_format::OutputFormat};
+    use crate::{codex::{modifier::{standard_paragraph_modifier::StandardParagraphModifier}, Codex}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_result_accessor::CompilationResultAccessor}, dossier::document::Paragraph, output_format::OutputFormat};
 
-    use super::{compilation_rule::{constants::ESCAPE_HTML, replacement_rule::{ReplacementRule, ReplacementRuleReplacerPart}, CompilationRule}, Compiler};
+    use super::{compilation_rule::{replacement_rule::{ReplacementRule, ReplacementRuleReplacerPart}, CompilationRule}, Compiler};
 
 
     #[test]
     fn parse_text() {
 
-        let codex = Codex::of_html(CodexConfiguration::default());
-        let compilation_configuration = CompilationConfiguration::default();
+        todo!()
 
-        let content = "Text **bold text** `a **bold text** which must be not parsed`";
-        let excluded_modifiers = ModifiersBucket::None;
+        // let codex = Codex::of_html(CodexConfiguration::default());
+        // let compilation_configuration = CompilationConfiguration::default();
 
-        let outcome = Compiler::compile_str_excluding_modifiers(content, excluded_modifiers, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
+        // let content = "Text **bold text** `a **bold text** which must be not parsed`";
+        // let excluded_modifiers = ModifiersBucket::None;
 
-        assert_eq!(outcome.content(), r#"Text <strong class="bold">bold text</strong> <code class="language-markup inline-code">a **bold text** which must be not parsed</code>"#)
+        // let outcome = Compiler::compile_str_excluding_modifiers(content, excluded_modifiers, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
+
+        // assert_eq!(outcome.content(), r#"Text <strong class="bold">bold text</strong> <code class="language-markup inline-code">a **bold text** which must be not parsed</code>"#)
     }
 
     #[test]
     fn parse_paragraph() {
-        let mut paragraph = Paragraph::new("\n\ntest\n\n".to_string(), StandardParagraphModifier::CommonParagraph.identifier());
 
-        paragraph.set_nuid(Some("test-nuid".to_string()));
+        todo!()
+
+        // let mut paragraph = Paragraph::new("\n\ntest\n\n".to_string(), StandardParagraphModifier::CommonParagraph.identifier());
+
+        // paragraph.set_nuid(Some("test-nuid".to_string()));
     
-        let codex = Codex::new(
-                CodexConfiguration::default(),
-                HashMap::new(),
-                HashMap::from([
-                    (
-                        StandardParagraphModifier::CommonParagraph.identifier().clone(),
-                        Box::new(ReplacementRule::new(StandardParagraphModifier::CommonParagraph.modifier_pattern_with_paragraph_separator().clone(), vec![
-                            ReplacementRuleReplacerPart::new_fixed(String::from(r#"<p class="paragraph" data-nuid="$nuid">"#)),
-                            ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-                            ReplacementRuleReplacerPart::new_fixed(String::from(r#"</p>"#)),
-                        ])) as Box<dyn CompilationRule>
-                    ),
-                ]),
-                HashMap::new(),
-                HashMap::new()
-            );
+        // let codex = Codex::new(
+        //         CodexConfiguration::default(),
+        //         HashMap::new(),
+        //         HashMap::from([
+        //             (
+        //                 StandardParagraphModifier::CommonParagraph.identifier().clone(),
+        //                 Box::new(ReplacementRule::new(StandardParagraphModifier::CommonParagraph.modifier_pattern_with_paragraph_separator().clone(), vec![
+        //                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"<p class="paragraph" data-nuid="$nuid">"#)),
+        //                     ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)),
+        //                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"</p>"#)),
+        //                 ])) as Box<dyn CompilationRule>
+        //             ),
+        //         ]),
+        //         HashMap::new(),
+        //         HashMap::new(),
+        //     );
 
-        Compiler::compile_paragraph(&mut paragraph, &OutputFormat::Html, &codex, &CompilationConfiguration::default(), Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
+        // Compiler::compile_paragraph(&mut paragraph, &OutputFormat::Html, &codex, &CompilationConfiguration::default(), Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
         
-        assert_eq!(paragraph.compilation_result().clone().unwrap().content(), concat!(
-            r#"<p class="paragraph" data-nuid="test-nuid">"#,
-            "test",
-            r#"</p>"#
-        ))
+        // assert_eq!(paragraph.compilation_result().clone().unwrap().content(), concat!(
+        //     r#"<p class="paragraph" data-nuid="test-nuid">"#,
+        //     "test",
+        //     r#"</p>"#
+        // ))
     }
 }

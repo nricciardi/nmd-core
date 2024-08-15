@@ -5,12 +5,13 @@ pub mod chapter_tag;
 
 use chapter_tag::ChapterTag;
 use getset::{Getters, MutGetters, Setters};
-use serde::{Deserialize, Serialize};
+use paragraph::ParagraphTrait;
+use serde::Serialize;
 use self::heading::Heading;
 pub use self::paragraph::Paragraph;
 
 
-#[derive(Debug, Getters, MutGetters, Setters, Serialize, Deserialize)]
+#[derive(Debug, Getters, MutGetters, Setters, Serialize)]
 pub struct Chapter {
 
     #[getset(get = "pub", get_mut = "pub", set = "pub")]
@@ -20,13 +21,14 @@ pub struct Chapter {
     tags: Vec<ChapterTag>,
     
     #[getset(get = "pub", get_mut = "pub", set = "pub")]
-    paragraphs: Vec<Paragraph>,
+    #[serde(skip)]      // TODO
+    paragraphs: Vec<Box<dyn ParagraphTrait>>,
 }
 
 
 impl Chapter {
 
-    pub fn new(heading: Heading, tags: Vec<ChapterTag>, paragraphs: Vec<Paragraph>) -> Self {
+    pub fn new(heading: Heading, tags: Vec<ChapterTag>, paragraphs: Vec<Box<dyn ParagraphTrait>>) -> Self {
         Self {
             heading,
             tags,

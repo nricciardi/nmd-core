@@ -27,7 +27,7 @@ pub enum DossierError {
 
 
 /// NMD Dossier struct. It has own documents list
-#[derive(Debug, Getters, MutGetters, Setters, Serialize, Deserialize)]
+#[derive(Debug, Getters, MutGetters, Setters, Serialize)]
 pub struct Dossier {
 
     #[getset(get = "pub", set = "pub")]

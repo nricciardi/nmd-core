@@ -3,9 +3,8 @@ pub mod compilation_configuration_overlay;
 
 use std::{collections::HashMap, path::PathBuf};
 use getset::{CopyGetters, Getters, MutGetters, Setters};
-use crate::{{bibliography::Bibliography, theme::Theme}, resource::text_reference::TextReferenceMap};
+use crate::{bibliography::Bibliography, codex::{modifier::ModifiersBucket, CodexIdentifier}, resource::{bucket::Bucket, text_reference::TextReferenceMap}, theme::Theme};
 use self::list_bullet_configuration_record::ListBulletConfigurationRecord;
-use crate::codex::modifier::modifiers_bucket::ModifiersBucket;
 
 
 
@@ -110,7 +109,7 @@ impl Default for CompilationConfiguration {
             embed_remote_image: false,
             compress_embed_image: false,
             strict_image_src_check: false,
-            excluded_modifiers: ModifiersBucket::None,
+            excluded_modifiers: Bucket::None,
             parallelization: false,
             list_bullets_configuration: list_bullet_configuration_record::default_bullets_configuration(),
             strict_list_check: false,
