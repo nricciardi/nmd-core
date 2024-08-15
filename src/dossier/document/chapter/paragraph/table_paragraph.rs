@@ -88,7 +88,7 @@ impl TableParagraph {
         Ok(())
     }
 
-    fn standard_compile_html(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+    fn html_standard_compile(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
         let mut html_table_attrs: Vec<(String, String)> = vec![(String::from("class"), String::from("table"))];
 
         if let Some(ref id) = self.raw_id {
@@ -222,7 +222,7 @@ impl SelfCompile for TableParagraph {
     fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
         
         match format {
-            OutputFormat::Html => self.standard_compile_html(codex, compilation_configuration, compilation_configuration_overlay.clone()),
+            OutputFormat::Html => self.html_standard_compile(codex, compilation_configuration, compilation_configuration_overlay.clone()),
         }
     }
 }

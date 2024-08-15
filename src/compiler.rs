@@ -537,13 +537,7 @@ impl Compiler {
     /// Compile a string
     pub fn compile_str(content: &str, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
 
-        let excluded_modifiers = compilation_configuration.excluded_modifiers().clone();
-
-        Self::compile_str_excluding_modifiers(content, excluded_modifiers, format, codex, compilation_configuration, compilation_configuration_overlay)
-    }
-
-    /// Compile a string excluding a set of modifiers
-    pub fn compile_str_excluding_modifiers(content: &str, excluded_modifiers: ModifiersBucket, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
+        let excluded_modifiers = compilation_configuration_overlay.read().unwrap().excluded_modifiers().clone();
 
         log::debug!("start to compile content:\n{}\nexcluding: {:?}", content, excluded_modifiers);
 

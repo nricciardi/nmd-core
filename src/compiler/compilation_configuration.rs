@@ -40,9 +40,6 @@ pub struct CompilationConfiguration {
     #[getset(get_copy = "pub", set = "pub")]
     strict_image_src_check: bool,
 
-    #[getset(get = "pub", set = "pub")]
-    excluded_modifiers: ModifiersBucket,
-
     #[getset(get_copy = "pub", set = "pub")]
     parallelization: bool,
 
@@ -74,7 +71,7 @@ pub struct CompilationConfiguration {
 impl CompilationConfiguration {
 
     pub fn new(input_location: PathBuf, output_location: PathBuf, embed_local_image: bool, embed_remote_image: bool, 
-                compress_embed_image: bool, strict_image_src_check: bool, excluded_modifiers: ModifiersBucket, 
+                compress_embed_image: bool, strict_image_src_check: bool,
                 parallelization: bool, list_bullets_configuration: Vec<ListBulletConfigurationRecord>, strict_list_check: bool, 
                 strict_focus_block_check: bool, references: TextReferenceMap, fast_draft: bool, bibliography: Option<Bibliography>,
                 theme: Theme, resource_type: CompilableResourceType) -> Self {
@@ -86,7 +83,6 @@ impl CompilationConfiguration {
             embed_remote_image,
             compress_embed_image,
             strict_image_src_check,
-            excluded_modifiers,
             parallelization,
             list_bullets_configuration,
             strict_list_check,
@@ -109,7 +105,6 @@ impl Default for CompilationConfiguration {
             embed_remote_image: false,
             compress_embed_image: false,
             strict_image_src_check: false,
-            excluded_modifiers: Bucket::None,
             parallelization: false,
             list_bullets_configuration: list_bullet_configuration_record::default_bullets_configuration(),
             strict_list_check: false,

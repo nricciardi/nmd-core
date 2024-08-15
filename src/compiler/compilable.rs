@@ -1,7 +1,5 @@
 use std::{convert::Infallible, fmt::Debug, str::FromStr};
-
 use getset::{Getters, Setters};
-
 use crate::utility::nmd_unique_identifier::NmdUniqueIdentifier;
 
 

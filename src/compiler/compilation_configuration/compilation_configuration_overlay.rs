@@ -2,6 +2,8 @@ use std::collections::HashSet;
 
 use getset::{Getters, Setters};
 
+use crate::codex::modifier::ModifiersBucket;
+
 
 
 #[derive(Debug, Getters, Setters, Default)]
@@ -18,4 +20,7 @@ pub struct CompilationConfigurationOverLay {
 
     #[getset(get = "pub", set = "pub")]
     document_name: Option<String>,
+
+    #[getset(get = "pub", set = "pub")]
+    excluded_modifiers: ModifiersBucket,
 }

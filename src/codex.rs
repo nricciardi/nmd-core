@@ -7,10 +7,14 @@ pub mod modifier;
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::Debug;
 use getset::{Getters, Setters};
+use modifier::base_modifier::BaseModifier;
 use modifier::Modifier;
 use self::modifier::standard_paragraph_modifier::StandardParagraphModifier;
 use self::modifier::standard_text_modifier::StandardTextModifier;
 use self::modifier::ModifierIdentifier;
+use crate::loader::paragraph_content_loading_rule::pass_through_paragraph_loading_rule::PassThroughParagraphLoadingRule;
+use crate::loader::paragraph_content_loading_rule::replacement_rule_paragraph_loading_rule::ReplacementRuleParagraphLoadingRule;
+use crate::loader::paragraph_content_loading_rule::table_paragraph_loading_rule::TableParagraphLoadingRule;
 use crate::loader::paragraph_content_loading_rule::ParagraphContentLoadingRule;
 use crate::output_format::OutputFormat;
 use super::compiler::compilation_rule::constants::ESCAPE_HTML;
@@ -58,11 +62,11 @@ pub struct Codex {
 
 impl Codex {
 
-    // pub fn from(format: &OutputFormat, configuration: CodexConfiguration) -> Self {
-    //     match format {
-    //         OutputFormat::Html => Self::of_html(configuration)
-    //     }
-    // }
+    pub fn from(format: &OutputFormat) -> Self {
+        match format {
+            OutputFormat::Html => Self::of_html()
+        }
+    }
 
     /// Create a new `Codex`
     /// 
@@ -104,11 +108,23 @@ impl Codex {
         }
     }
 
-/*
-    /// Standard HTML `Codex`
-    pub fn of_html(configuration: CodexConfiguration) -> Self {
 
-        let text_rules: HashMap<ModifierIdentifier, Box<dyn CompilationRule>> = HashMap::from([
+    /// Standard HTML `Codex`
+    pub fn of_html() -> Self {
+
+        let mut text_modifiers: BTreeMap<CodexIdentifier, Box<dyn Modifier>> = BTreeMap::new();
+
+        StandardTextModifier::ordered().iter().for_each(|tm| {
+            text_modifiers.insert(tm.identifier(), Box::new(Into::<BaseModifier>::into(*tm)) as Box<dyn Modifier>);
+        });
+
+        let mut paragraph_modifiers: BTreeMap<CodexIdentifier, Box<dyn Modifier>> = BTreeMap::new();
+
+        StandardParagraphModifier::ordered().iter().for_each(|tm| {
+            paragraph_modifiers.insert(tm.identifier(), Box::new(Into::<BaseModifier>::into(*tm)) as Box<dyn Modifier>);
+        });
+
+        let text_rules: BTreeMap<ModifierIdentifier, Box<dyn CompilationRule>> = BTreeMap::from([
             (
                 StandardTextModifier::Todo.identifier().clone(),
                 Box::new(ReplacementRule::new(StandardTextModifier::Todo.modifier_pattern().clone(), vec![
@@ -336,68 +352,209 @@ impl Codex {
             ),
         ]);
 
-        let paragraph_rules: HashMap<ModifierIdentifier, Box<dyn CompilationRule>> = HashMap::from([
-            (
+        // let paragraph_rules: BTreeMap<ModifierIdentifier, Box<dyn CompilationRule>> = BTreeMap::from([
+        //     (
+        //         StandardParagraphModifier::PageBreak.identifier().clone(),
+        //         Box::new(ReplacementRule::new(StandardParagraphModifier::PageBreak.modifier_pattern().clone(), vec![
+        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="page-break"></div>"#)),
+        //         ])) as Box<dyn CompilationRule>
+        //     ),
+        //     (
+        //         StandardParagraphModifier::EmbeddedParagraphStyleWithId.identifier().clone(),
+        //         Box::new(ReplacementRule::new(StandardParagraphModifier::EmbeddedParagraphStyleWithId.modifier_pattern().clone(), vec![
+        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="identifier embedded-paragraph-style" id="$2" style="$3" data-nuid="$nuid">"#)).with_references_at(vec![2]),
+        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
+        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div>"#)),
+        //         ]).with_newline_fix(r"<br>".to_string())),
+        //     ),
+        //     (
+        //         StandardParagraphModifier::EmbeddedParagraphStyle.identifier().clone(),
+        //         Box::new(ReplacementRule::new(StandardParagraphModifier::EmbeddedParagraphStyle.modifier_pattern().clone(), vec![
+        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="embedded-paragraph-style" style="$2" data-nuid="$nuid">"#)),
+        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
+        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div>"#)),
+        //         ]).with_newline_fix(r"<br>".to_string())),
+        //     ),
+        //     (
+        //         StandardParagraphModifier::AbridgedEmbeddedParagraphStyleWithId.identifier().clone(),
+        //         Box::new(ReplacementRule::new(StandardParagraphModifier::AbridgedEmbeddedParagraphStyleWithId.modifier_pattern().clone(),  vec![
+        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="identifier abridged-embedded-paragraph-style" id="$2" data-nuid="$nuid" style="color: $3; background-color: $4; font-family: $5;">"#)).with_references_at(vec![2]),
+        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
+        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div>"#)),
+        //         ]).with_newline_fix(r"<br>".to_string())),
+        //     ),
+        //     (
+        //         StandardParagraphModifier::AbridgedTodo.identifier().clone(),
+        //         Box::new(ReplacementRule::new(StandardParagraphModifier::AbridgedTodo.modifier_pattern().clone(), vec![
+        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="todo abridged-todo" data-nuid="$nuid"><div class="todo-title"></div><div class="todo-description">"#)),
+        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
+        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div></div>"#)),
+        //         ]))
+        //     ),
+        //     (
+        //         StandardParagraphModifier::MultilineTodo.identifier().clone(),
+        //         Box::new(ReplacementRule::new(StandardParagraphModifier::MultilineTodo.modifier_pattern().clone(), vec![
+        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="todo multiline-todo" data-nuid="$nuid"><div class="todo-title"></div><div class="todo-description">"#)),
+        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
+        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div></div>"#)),
+        //         ]))
+        //     ),
+        //     (
+        //         StandardParagraphModifier::AbridgedEmbeddedParagraphStyle.identifier().clone(),
+        //         Box::new(ReplacementRule::new(StandardParagraphModifier::AbridgedEmbeddedParagraphStyle.modifier_pattern().clone(), vec![
+        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="abridged-embedded-paragraph-style" data-nuid="$nuid" style="color: $2; background-color: $3; font-family: $4;">"#)),
+        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
+        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div>"#)),
+        //         ]).with_newline_fix(r"<br>".to_string())),
+        //     ),
+        //     (
+        //         StandardParagraphModifier::ParagraphIdentifier.identifier().clone(),
+        //         Box::new(ReplacementRule::new(StandardParagraphModifier::ParagraphIdentifier.modifier_pattern().clone(), vec![
+        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<span class="identifier" id="$2" data-nuid="$nuid">"#)).with_references_at(vec![2]),
+        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
+        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</span>"#)),
+        //         ]).with_newline_fix(r"<br>".to_string())),
+        //     ),
+        //     (
+        //         StandardParagraphModifier::ExtendedBlockQuote.identifier().clone(),
+        //         Box::new(HtmlExtendedBlockQuoteRule::new()),
+        //     ),
+        //     (
+        //         StandardParagraphModifier::MathBlock.identifier().clone(),
+        //         Box::new(ReplacementRule::new(StandardParagraphModifier::MathBlock.modifier_pattern().clone(), vec![
+        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<p class="math-block" data-nuid="$nuid">$$$$${1}$$$$</p>"#))
+        //         ]))
+        //     ),
+        //     (
+        //         StandardParagraphModifier::Image.identifier().clone(),
+        //         Box::new(HtmlImageRule::new(StandardParagraphModifier::Image.identifier()))
+        //     ),
+        //     (
+        //         StandardParagraphModifier::AbridgedImage.identifier().clone(),
+        //         Box::new(HtmlImageRule::new(StandardParagraphModifier::AbridgedImage.identifier()))
+        //     ),
+        //     (
+        //         StandardParagraphModifier::MultiImage.identifier().clone(),
+        //         Box::new(HtmlImageRule::new(StandardParagraphModifier::MultiImage.identifier()))
+        //     ),
+        //     (
+        //         StandardParagraphModifier::CodeBlock.identifier().clone(),
+        //         Box::new(ReplacementRule::new(StandardParagraphModifier::CodeBlock.modifier_pattern().clone(), vec![
+        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<pre data-nuid="$nuid"><code class="language-${1} code-block">"#)),
+        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"$2"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
+        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</code></pre>"#)),
+        //         ]))
+        //     ),
+        //     (
+        //         StandardParagraphModifier::List.identifier().clone(),
+        //         Box::new(HtmlListRule::new()),
+        //     ),
+        //     (
+        //         StandardParagraphModifier::FocusBlock.identifier().clone(),
+        //         Box::new(ReplacementRule::new(StandardParagraphModifier::FocusBlock.modifier_pattern().clone(), vec![
+        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="focus-block focus-block-$1" data-nuid="$nuid"><div class="focus-block-title focus-block-$1-title"></div><div class="focus-block-description focus-block-$1-description"">"#)),
+        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$2"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
+        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div></div>"#)),
+        //         ]).with_newline_fix(r"<br>".to_string()))
+        //     ),
+        //     (
+        //         StandardParagraphModifier::LineBreakDash.identifier().clone(),
+        //         Box::new(ReplacementRule::new(StandardParagraphModifier::LineBreakDash.modifier_pattern().clone(), vec![
+        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<hr class="line-break line-break-dash" data-nuid="$nuid">"#)),
+        //         ]))
+        //     ),
+        //     (
+        //         StandardParagraphModifier::LineBreakStar.identifier().clone(),
+        //         Box::new(ReplacementRule::new(StandardParagraphModifier::LineBreakStar.modifier_pattern().clone(), vec![
+        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<hr class="line-break line-break-star" data-nuid="$nuid">"#)),
+        //         ]))
+        //     ),
+        //     (
+        //         StandardParagraphModifier::LineBreakPlus.identifier().clone(),
+        //         Box::new(ReplacementRule::new(StandardParagraphModifier::LineBreakPlus.modifier_pattern().clone(), vec![
+        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<hr class="line-break line-break-plus" data-nuid="$nuid">"#)),
+        //         ]))
+        //     ),
+        //     (
+        //         StandardParagraphModifier::CommonParagraph.identifier().clone(),
+        //         Box::new(ReplacementRule::new(StandardParagraphModifier::CommonParagraph.modifier_pattern_with_paragraph_separator().clone(), vec![
+        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<p class="paragraph" data-nuid="$nuid">"#)),
+        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
+        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</p>"#)),
+        //         ]))
+        //     ),
+        //     (
+        //         StandardParagraphModifier::Table.identifier().clone(),
+        //         Box::new(HtmlTableRule::new())
+        //     ),
+        // ]);
+
+        let paragraph_rules: BTreeMap<String, Box<dyn ParagraphContentLoadingRule>> = BTreeMap::from([
+           (
+                StandardParagraphModifier::Table.identifier(),
+                Box::new(TableParagraphLoadingRule::new()) as Box<dyn ParagraphContentLoadingRule>
+           ),
+           (
                 StandardParagraphModifier::PageBreak.identifier().clone(),
-                Box::new(ReplacementRule::new(StandardParagraphModifier::PageBreak.modifier_pattern().clone(), vec![
+                Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::PageBreak.modifier_pattern().clone(), vec![
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="page-break"></div>"#)),
-                ])) as Box<dyn CompilationRule>
+                ])))
             ),
             (
                 StandardParagraphModifier::EmbeddedParagraphStyleWithId.identifier().clone(),
-                Box::new(ReplacementRule::new(StandardParagraphModifier::EmbeddedParagraphStyleWithId.modifier_pattern().clone(), vec![
+                Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::EmbeddedParagraphStyleWithId.modifier_pattern().clone(), vec![
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="identifier embedded-paragraph-style" id="$2" style="$3" data-nuid="$nuid">"#)).with_references_at(vec![2]),
                     ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div>"#)),
-                ]).with_newline_fix(r"<br>".to_string())),
+                ]).with_newline_fix(r"<br>".to_string()))),
             ),
             (
                 StandardParagraphModifier::EmbeddedParagraphStyle.identifier().clone(),
-                Box::new(ReplacementRule::new(StandardParagraphModifier::EmbeddedParagraphStyle.modifier_pattern().clone(), vec![
+                Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::EmbeddedParagraphStyle.modifier_pattern().clone(), vec![
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="embedded-paragraph-style" style="$2" data-nuid="$nuid">"#)),
                     ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div>"#)),
-                ]).with_newline_fix(r"<br>".to_string())),
+                ]).with_newline_fix(r"<br>".to_string()))),
             ),
             (
                 StandardParagraphModifier::AbridgedEmbeddedParagraphStyleWithId.identifier().clone(),
-                Box::new(ReplacementRule::new(StandardParagraphModifier::AbridgedEmbeddedParagraphStyleWithId.modifier_pattern().clone(),  vec![
+                Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::AbridgedEmbeddedParagraphStyleWithId.modifier_pattern().clone(),  vec![
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="identifier abridged-embedded-paragraph-style" id="$2" data-nuid="$nuid" style="color: $3; background-color: $4; font-family: $5;">"#)).with_references_at(vec![2]),
                     ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div>"#)),
-                ]).with_newline_fix(r"<br>".to_string())),
+                ]).with_newline_fix(r"<br>".to_string()))),
             ),
             (
                 StandardParagraphModifier::AbridgedTodo.identifier().clone(),
-                Box::new(ReplacementRule::new(StandardParagraphModifier::AbridgedTodo.modifier_pattern().clone(), vec![
+                Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::AbridgedTodo.modifier_pattern().clone(), vec![
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="todo abridged-todo" data-nuid="$nuid"><div class="todo-title"></div><div class="todo-description">"#)),
                     ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div></div>"#)),
-                ]))
+                ])))
             ),
             (
                 StandardParagraphModifier::MultilineTodo.identifier().clone(),
-                Box::new(ReplacementRule::new(StandardParagraphModifier::MultilineTodo.modifier_pattern().clone(), vec![
+                Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::MultilineTodo.modifier_pattern().clone(), vec![
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="todo multiline-todo" data-nuid="$nuid"><div class="todo-title"></div><div class="todo-description">"#)),
                     ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div></div>"#)),
-                ]))
+                ])))
             ),
             (
                 StandardParagraphModifier::AbridgedEmbeddedParagraphStyle.identifier().clone(),
-                Box::new(ReplacementRule::new(StandardParagraphModifier::AbridgedEmbeddedParagraphStyle.modifier_pattern().clone(), vec![
+                Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::AbridgedEmbeddedParagraphStyle.modifier_pattern().clone(), vec![
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="abridged-embedded-paragraph-style" data-nuid="$nuid" style="color: $2; background-color: $3; font-family: $4;">"#)),
                     ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div>"#)),
-                ]).with_newline_fix(r"<br>".to_string())),
+                ]).with_newline_fix(r"<br>".to_string()))),
             ),
             (
                 StandardParagraphModifier::ParagraphIdentifier.identifier().clone(),
-                Box::new(ReplacementRule::new(StandardParagraphModifier::ParagraphIdentifier.modifier_pattern().clone(), vec![
+                Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::ParagraphIdentifier.modifier_pattern().clone(), vec![
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"<span class="identifier" id="$2" data-nuid="$nuid">"#)).with_references_at(vec![2]),
                     ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"</span>"#)),
-                ]).with_newline_fix(r"<br>".to_string())),
+                ]).with_newline_fix(r"<br>".to_string()))),
             ),
             (
                 StandardParagraphModifier::ExtendedBlockQuote.identifier().clone(),
@@ -405,9 +562,9 @@ impl Codex {
             ),
             (
                 StandardParagraphModifier::MathBlock.identifier().clone(),
-                Box::new(ReplacementRule::new(StandardParagraphModifier::MathBlock.modifier_pattern().clone(), vec![
+                Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::MathBlock.modifier_pattern().clone(), vec![
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"<p class="math-block" data-nuid="$nuid">$$$$${1}$$$$</p>"#))
-                ]))
+                ])))
             ),
             (
                 StandardParagraphModifier::Image.identifier().clone(),
@@ -423,60 +580,59 @@ impl Codex {
             ),
             (
                 StandardParagraphModifier::CodeBlock.identifier().clone(),
-                Box::new(ReplacementRule::new(StandardParagraphModifier::CodeBlock.modifier_pattern().clone(), vec![
+                Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::CodeBlock.modifier_pattern().clone(), vec![
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"<pre data-nuid="$nuid"><code class="language-${1} code-block">"#)),
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"$2"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"</code></pre>"#)),
-                ]))
+                ])))
             ),
             (
                 StandardParagraphModifier::List.identifier().clone(),
-                Box::new(HtmlListRule::new()),
+                Box::new(PassThroughParagraphLoadingRule::ListParagraphLoadingRule),
             ),
             (
                 StandardParagraphModifier::FocusBlock.identifier().clone(),
-                Box::new(ReplacementRule::new(StandardParagraphModifier::FocusBlock.modifier_pattern().clone(), vec![
+                Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::FocusBlock.modifier_pattern().clone(), vec![
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="focus-block focus-block-$1" data-nuid="$nuid"><div class="focus-block-title focus-block-$1-title"></div><div class="focus-block-description focus-block-$1-description"">"#)),
                     ReplacementRuleReplacerPart::new_mutable(String::from(r#"$2"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div></div>"#)),
-                ]).with_newline_fix(r"<br>".to_string()))
+                ]).with_newline_fix(r"<br>".to_string())))
             ),
             (
                 StandardParagraphModifier::LineBreakDash.identifier().clone(),
-                Box::new(ReplacementRule::new(StandardParagraphModifier::LineBreakDash.modifier_pattern().clone(), vec![
+                Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::LineBreakDash.modifier_pattern().clone(), vec![
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"<hr class="line-break line-break-dash" data-nuid="$nuid">"#)),
-                ]))
+                ])))
             ),
             (
                 StandardParagraphModifier::LineBreakStar.identifier().clone(),
-                Box::new(ReplacementRule::new(StandardParagraphModifier::LineBreakStar.modifier_pattern().clone(), vec![
+                Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::LineBreakStar.modifier_pattern().clone(), vec![
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"<hr class="line-break line-break-star" data-nuid="$nuid">"#)),
-                ]))
+                ])))
             ),
             (
                 StandardParagraphModifier::LineBreakPlus.identifier().clone(),
-                Box::new(ReplacementRule::new(StandardParagraphModifier::LineBreakPlus.modifier_pattern().clone(), vec![
+                Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::LineBreakPlus.modifier_pattern().clone(), vec![
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"<hr class="line-break line-break-plus" data-nuid="$nuid">"#)),
-                ]))
+                ])))
             ),
             (
                 StandardParagraphModifier::CommonParagraph.identifier().clone(),
-                Box::new(ReplacementRule::new(StandardParagraphModifier::CommonParagraph.modifier_pattern_with_paragraph_separator().clone(), vec![
+                Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::CommonParagraph.modifier_pattern_with_paragraph_separator().clone(), vec![
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"<p class="paragraph" data-nuid="$nuid">"#)),
                     ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"</p>"#)),
-                ]))
-            ),
-            (
-                StandardParagraphModifier::Table.identifier().clone(),
-                Box::new(HtmlTableRule::new())
+                ])))
             ),
         ]);
 
-        // let chapter_rules: HashMap<ModifierIdentifier, Box<dyn CompilationRule>> = HashMap::new();
-
-        Self::new(configuration, text_rules, paragraph_rules, /* chapter_rules, HashMap::new() */)
-    }*/
+        Self::new(
+            text_modifiers,
+            paragraph_modifiers,
+            text_rules,
+            paragraph_rules,
+        )
+    }
 }
 
 #[cfg(test)]

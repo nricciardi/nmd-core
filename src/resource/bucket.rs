@@ -1,10 +1,12 @@
 use std::ops::Add;
 
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Default)]
 pub enum Bucket<T> {
     All,
     List(Vec<T>),
+
+    #[default]
     None
 }
 

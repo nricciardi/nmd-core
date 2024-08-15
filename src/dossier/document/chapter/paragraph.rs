@@ -1,6 +1,8 @@
 pub mod paragraph_content;
-pub mod common_paragraph;
+pub mod replacement_rule_paragraph;
 pub mod table_paragraph;
+pub mod list_paragraph;
+pub mod image_paragraph;
 
 
 use std::fmt::Display;
@@ -38,8 +40,12 @@ pub trait ParagraphTrait: std::fmt::Debug + SelfCompile + CompilationResultAcces
     }
 }
 
+pub trait SimpleParagraphConstructor {
 
+    fn new(raw_content: &str) -> Box<dyn ParagraphTrait> where Self: Sized;
+}
 
+// TODO: remove this struct
 
 /// # Paragraph
 /// 

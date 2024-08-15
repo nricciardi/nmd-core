@@ -70,7 +70,7 @@ impl<R: Replacer> ReplacementRuleReplacerPart<R> {
 
 
 /// Rule to replace a NMD text based on a specific pattern matching rule
-#[derive(Getters, Setters)]
+#[derive(Getters, Setters, Clone)]
 pub struct ReplacementRule<R: Replacer> {
 
     #[getset(set)]

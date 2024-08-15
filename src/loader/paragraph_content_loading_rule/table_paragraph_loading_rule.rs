@@ -2,7 +2,7 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 
 use super::ParagraphContentLoadingRule;
-use crate::{codex::{modifier::constants::IDENTIFIER_PATTERN, Codex}, dossier::document::chapter::paragraph::{common_paragraph::CommonParagraph, paragraph_content::ParagraphContent, table_paragraph::{TableParagraph, TableParagraphContent, TableParagraphContentRow}, ParagraphTrait}, loader::{loader_configuration::LoaderConfiguration, LoadError, Loader}, resource::table::{Table, TableCell, TableCellAlignment}};
+use crate::{codex::{modifier::constants::IDENTIFIER_PATTERN, Codex}, dossier::document::chapter::paragraph::{replacement_rule_paragraph::ReplacementRuleParagraph, paragraph_content::ParagraphContent, table_paragraph::{TableParagraph, TableParagraphContent, TableParagraphContentRow}, ParagraphTrait}, loader::{loader_configuration::LoaderConfiguration, LoadError, Loader}, resource::table::{Table, TableCell, TableCellAlignment}};
 
 
 /// (caption, id, style)

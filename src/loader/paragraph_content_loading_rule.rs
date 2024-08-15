@@ -1,5 +1,6 @@
-pub mod common_paragraph_loading_rule;
+pub mod replacement_rule_paragraph_loading_rule;
 pub mod table_paragraph_loading_rule;
+pub mod pass_through_paragraph_loading_rule;
 
 
 use crate::{codex::Codex, dossier::document::chapter::paragraph::{paragraph_content::ParagraphContent, ParagraphTrait}};
