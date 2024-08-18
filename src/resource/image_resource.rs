@@ -1,42 +1,68 @@
 use std::{fs::{self, File}, io::Read, path::PathBuf, str::FromStr};
 
 use base64::{engine::general_purpose::STANDARD, Engine};
-use getset::{Getters, Setters};
+use getset::{Getters, MutGetters, Setters};
 use oxipng::Options;
 
 use crate::dossier;
 
-use super::{source::Source, ResourceError};
+use super::{resource_reference::ResourceReference, source::Source, ResourceError};
 
 
 /// Image resource to manipulate images
-#[derive(Debug, Getters, Setters, Clone)]
+#[derive(Debug, Getters, MutGetters, Setters, Clone)]
 pub struct ImageResource {
 
-    #[getset(get = "pub", set = "pub")]
+    #[getset(get = "pub", get_mut = "pub", set = "pub")]
     src: Source,
 
     #[getset(get = "pub", set = "pub")]
     mime_type: Option<String>,
 
     #[getset(get = "pub", set = "pub")]
+    id: Option<ResourceReference>,
+
+    #[getset(get = "pub", set = "pub")]
     caption: Option<String>,
 
     #[getset(get = "pub", set = "pub")]
-    label: Option<String>,
+    style: Option<String>,
 }
 
 impl ImageResource {
 
-    pub fn new(src: Source, caption: Option<String>, label: Option<String>) -> Self {
+    pub fn new(src: Source, mime_type: Option<String>, id: Option<ResourceReference>, caption: Option<String>, style: Option<String>) -> Self {
 
         Self {
             src,
-            mime_type: None,
+            mime_type,
+            id,
             caption,
-            label
+            style
         }
     }
+
+    pub fn inferring_id_if_not_set(mut self, document_name: &impl ToString) -> Result<Self, ResourceError> {
+
+        if self.id.is_none() {
+            
+            if let Some(ref caption) = self.caption {
+
+                self.id = Some(ResourceReference::of_internal_from_without_sharp(caption, Some(document_name))?)
+
+            } else {
+
+                match &self.src {
+                    Source::Remote { url } => self.id = Some(ResourceReference::of_url(url.as_str())?),
+                    Source::Local { path } => self.id = Some(ResourceReference::of_asset(path.to_string_lossy().to_string().as_str())?),
+                    Source::Base64String { base64: _ } | Source::Bytes { bytes: _ } => todo!(),     // TODO
+                }
+
+            }
+        }
+
+        Ok(self)
+    } 
 
     /// Infer mime type from image path using `infer` lib.
     /// If `src` is not a path error occurs.
@@ -68,6 +94,7 @@ impl ImageResource {
                     return Err(ResourceError::InvalidResourceVerbose(format!("image {:?} mime type not found", self.src)));
                 }
             },
+            Source::Base64String { base64: _ } | Source::Bytes { bytes: _ } => todo!(),
         }
 
         Ok(self)
@@ -91,7 +118,7 @@ impl ImageResource {
     pub fn elaborating_relative_path_as_dossier_assets(mut self, base_location: &PathBuf) -> Self {
 
         match &self.src {
-            Source::Remote { url: _ } => (),
+            Source::Remote { url: _ } | Source::Base64String { base64: _ } | Source::Bytes { bytes: _ } => (),
             Source::Local { path } => {
 
                 let mut base_location: PathBuf = base_location.clone();
@@ -127,47 +154,6 @@ impl ImageResource {
         self
     }
 
-    /// Encode image in base64
-    pub fn to_base64(&self, compression: bool) -> Result<String, ResourceError> {
-
-        let buffer = self.to_vec_u8()?;
-
-        if compression {
-
-            let original_log_level = log::max_level();
-            log::set_max_level(log::LevelFilter::Warn);
-
-            let options = Options::max_compression();
-
-            let optimized_png = oxipng::optimize_from_memory(&buffer, &options);
-
-            log::set_max_level(original_log_level);
-    
-            match optimized_png {
-                Ok(image) => return Ok(STANDARD.encode(image)),
-                Err(err) => return Err(ResourceError::ElaborationError(format!("image compression error: {}", err)))
-            }
-
-        } else {
-
-            Ok(STANDARD.encode(buffer))
-        }
-    }
-
-    pub fn to_vec_u8(&self) -> Result<Vec<u8>, ResourceError> {
-
-        match &self.src {
-            Source::Remote { url } => return Err(ResourceError::WrongElaboration(format!("url '{}' cannot be parsed into bytes", url))),
-            Source::Local { path } => {
-
-                let mut image_file = File::open(path.clone())?;
-                let mut raw_image: Vec<u8> = Vec::new();
-                image_file.read_to_end(&mut raw_image)?;
-
-                return Ok(raw_image)
-            },
-        }
-    }
 }
 
 impl FromStr for ImageResource {

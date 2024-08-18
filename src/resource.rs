@@ -11,6 +11,7 @@ pub mod bucket;
 
 
 use std::{str::FromStr, io::{self}};
+use resource_reference::ResourceReferenceError;
 use thiserror::Error;
 
 
@@ -40,6 +41,9 @@ pub enum ResourceError {
     
     #[error("elaboration error: {0}")]
     ElaborationError(String),
+
+    #[error(transparent)]
+    ResourceReferenceError(#[from] ResourceReferenceError),
 }
 
 impl Clone for ResourceError {
