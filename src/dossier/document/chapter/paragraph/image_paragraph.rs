@@ -1,17 +1,28 @@
 use std::sync::{Arc, RwLock};
+use build_html::{Container, Html, HtmlContainer};
 use getset::{Getters, Setters};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, compiler::{compilable::{Compilable, GenericCompilable}, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, list_bullet_configuration_record::{self, ListBulletConfigurationRecord}, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor, compilation_rule::{constants::{ESCAPE_HTML, SPACE_TAB_EQUIVALENCE}, CompilationRule}, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::ParagraphTrait, output_format::OutputFormat, resource::{image_resource::ImageResource, source::Source}, utility::{image_utility, nmd_unique_identifier::NmdUniqueIdentifier, text_utility}};
 
 
+static ALIGN_ITEM_PATTERN_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(ALIGN_ITEM_PATTERN).unwrap());
+
+const MULTI_IMAGE_PERMITTED_MODIFIER: &'static [StandardParagraphModifier] = &[StandardParagraphModifier::Image, StandardParagraphModifier::AbridgedImage];
+const DEFAULT_JUSTIFY_CONTENT: &str = "normal";
+const DEFAULT_ALIGN_SELF: &str = "center";
+const ALIGN_ITEM_PATTERN: &str = r":([\w-]*):";
+
+const SINGLE_IMAGE_CLASSES: [&str; 1] = ["image"];
+const ABRIDGED_IMAGE_CLASSES: [&str; 2] = ["image", "abridged-image"];
+
 #[derive(Debug)]
 pub struct MultiImage {
     
-    pub alignment: String,
+    pub alignment: Option<String>,
 
     /// (image resource, image alignment)
-    pub images: Vec<(ImageResource, String)>, 
+    pub images: Vec<(ImageParagraphContent, String)>, 
 }
 
 
@@ -51,65 +62,102 @@ impl ImageParagraph {
         }
     }
 
-    fn html_standard_compile_single_or_abridged_image(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
+    fn html_standard_compile_single_or_abridged_image(content: &mut ImageParagraphContent, nuid: Option<&NmdUniqueIdentifier>, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<String, CompilationError> {
 
-        match &mut self.content {
+        let img_classes = match &content {
+            ImageParagraphContent::SingleImage(_) => SINGLE_IMAGE_CLASSES.to_vec(),
+            ImageParagraphContent::AbridgedImage(_) => ABRIDGED_IMAGE_CLASSES.to_vec(),
+            ImageParagraphContent::MultiImage(_) => panic!("content {:#?} must be a single image", content),
+        };
+
+        match content {
             ImageParagraphContent::SingleImage(image) | ImageParagraphContent::AbridgedImage(image) => {
 
                 match image.src() {
-                    Source::Remote { url } => {
+                    Source::Remote { url: _ } => {
 
                         if compilation_configuration.embed_remote_image() {
                             image_utility::set_image_base64_embed_src(image, compilation_configuration.compress_embed_image())?;
                         }
 
-                        return image_utility::compile_image_resource_in_html(image, img_classes, nuid)
+                        let mut image_html_tag = image_utility::compile_image_resource_in_html(image, img_classes, nuid)?;
 
+                        image_html_tag.apply_compile_function_to_mutable_parts(|mutable_part| Compiler::compile_str(&mutable_part.content(), &OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone()))?;
 
+                        return Ok(image_html_tag.content())
                     },
-                    Source::Local { path } => todo!(),
-                    Source::Base64String { base64 } => todo!(),
-                    Source::Bytes { bytes } => todo!(),
+                    Source::Local { path } => {
+
+                        if compilation_configuration.embed_local_image() {
+                        
+                            image_utility::set_image_base64_embed_src(image, compilation_configuration.compress_embed_image())?;
+                        
+                        } else {
+
+                            image.set_src(Source::Local { path: std::fs::canonicalize(path).unwrap() });
+                        }
+
+                        let mut image_html_tag = image_utility::compile_image_resource_in_html(image, img_classes, nuid)?;
+
+                        image_html_tag.apply_compile_function_to_mutable_parts(|mutable_part| Compiler::compile_str(&mutable_part.content(), &OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone()))?;
+
+                        return Ok(image_html_tag.content())
+                    },
+                    Source::Base64String { base64: _ } => {
+
+                        let mut image_html_tag = image_utility::compile_image_resource_in_html(image, img_classes, nuid)?;
+
+                        image_html_tag.apply_compile_function_to_mutable_parts(|mutable_part| Compiler::compile_str(&mutable_part.content(), &OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone()))?;
+
+                        return Ok(image_html_tag.content())
+                    },
+                    Source::Bytes { bytes: _ } => todo!(),
                 }
 
             },
 
-            ImageParagraphContent::MultiImage(_) => panic!("content {:#?} must be a single image", self.content),
+            ImageParagraphContent::MultiImage(_) => unreachable!(),
         }
         
     }
 
-    fn html_standard_compile_single_or_abridged_image(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
+    fn html_standard_compile_multi_image(multi_image: &mut MultiImage, nuid: Option<&NmdUniqueIdentifier>, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<String, CompilationError> {
 
-        if let ImageParagraphContent::MultiImage(ref multi_image) = self.content {
+        let images_container_style: String = format!("display: flex; justify-content: {};", multi_image.alignment.as_ref().unwrap_or(&String::from(DEFAULT_JUSTIFY_CONTENT)));
+        let mut images_container = build_html::Container::new(build_html::ContainerType::Div)
+                                            .with_attributes(vec![
+                                                ("style", images_container_style.as_str()),
+                                                ("class", "images-container")
+                                            ]);
 
+        for (content, alignment) in &mut multi_image.images {
+
+            let image_html_tag = Self::html_standard_compile_single_or_abridged_image(content, nuid, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
             
+            let image_container = Container::new(build_html::ContainerType::Div)
+                                                .with_attributes(vec![
+                                                    ("style", format!(r"align-self: {}", alignment).as_str()),
+                                                    ("class", "image-container")
+                                                ])
+                                                .with_raw( image_html_tag);
 
+            images_container.add_container(image_container);
         }
 
-        panic!("content {:#?} must be a single image", self.content)
+        Ok(images_container.to_html_string())
     }
 
     fn html_standard_compile(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
         
         self.compiled_content = Some(match self.content {
-            ImageParagraphContent::SingleImage(_) | ImageParagraphContent::AbridgedImage(_) => self.html_standard_compile_single_or_abridged_image(codex, compilation_configuration, compilation_configuration_overlay.clone())?,
-            ImageParagraphContent::MultiImage(_) => todo!(),    // TODO
+            ImageParagraphContent::SingleImage(_) | ImageParagraphContent::AbridgedImage(_) => {
+                CompilationResult::new_fixed(Self::html_standard_compile_single_or_abridged_image(&mut self.content, self.nuid.as_ref(), codex, compilation_configuration, compilation_configuration_overlay.clone())?)
+            },
+            ImageParagraphContent::MultiImage(ref mut multi_image) => {
+                CompilationResult::new_fixed(Self::html_standard_compile_multi_image(multi_image, self.nuid.as_ref(), codex, compilation_configuration, compilation_configuration_overlay.clone())?)
+            },
         });
 
-        // match &mut self.content {
-        //     ImageParagraphContent::SingleImage(image) | ImageParagraphContent::AbridgedImage(image) => {
-
-
-                
-
-        //         CompilationResult::new_fixed(image_utility::build_html_img_tag(image, vec![], self.nuid.as_ref())?);
-        //     },
-        //     ImageParagraphContent::MultiImage(multi_image) => {
-        //         todo!()     
-        //     },
-        // };
-        
         Ok(())
     }
 
@@ -117,11 +165,14 @@ impl ImageParagraph {
         
 
         match &self.content {
-            ImageParagraphContent::SingleImage(image) | ImageParagraphContent::AbridgedImage(image) => {
-                self.compiled_content = Some(CompilationResult::new_fixed(image_utility::compile_image_resource_in_html(image, vec![], self.nuid.as_ref())?));
+            ImageParagraphContent::SingleImage(image) => {
+                self.compiled_content = Some(image_utility::compile_image_resource_in_html(image, SINGLE_IMAGE_CLASSES.to_vec(), self.nuid.as_ref())?);
             },
+            ImageParagraphContent::AbridgedImage(image) => {
+                self.compiled_content = Some(image_utility::compile_image_resource_in_html(image, ABRIDGED_IMAGE_CLASSES.to_vec(), self.nuid.as_ref())?);
+            }
             ImageParagraphContent::MultiImage(multi_image) => {
-                todo!()     // TODO
+                self.compiled_content = Some(CompilationResult::new_fixed(format!(r#"<img alt="multi-image paragraph with {} image(s)" />"#, multi_image.images.len())))
             },
         };
         

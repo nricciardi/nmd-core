@@ -41,6 +41,9 @@ pub fn set_image_base64_embed_src(image: &mut ImageResource, compression: bool) 
 
 
 pub fn compile_image_resource_in_html(image: &ImageResource, img_classes: Vec<&str>, nuid: Option<&NmdUniqueIdentifier>) -> Result<CompilationResult, ResourceError> {
+    
+    let mut compilation_result = CompilationResult::new_empty();
+    
     let id_attr: String;
 
     if let Some(id) = image.id() {
@@ -49,20 +52,12 @@ pub fn compile_image_resource_in_html(image: &ImageResource, img_classes: Vec<&s
         id_attr = String::new();
     }
 
-    // let html_alt: String;
-    let html_caption: String;
+    let nuid_attr: String;
 
-    // if let Some(a) = alt {
-    //     html_alt = format!(r#"alt="{}""#, a);
-    // } else {
-    //     html_alt = String::new();
-    // }
-
-    if let Some(c) = image.caption() {
-
-        html_caption = format!(r#"<figcaption class="image-caption">{}</figcaption>"#, c);
+    if let Some(nuid) = nuid {
+        nuid_attr = format!(r#"data-nuid="{}""#, nuid);
     } else {
-        html_caption = String::new();
+        nuid_attr = String::new();
     }
 
     let style_attr: String;
@@ -73,13 +68,15 @@ pub fn compile_image_resource_in_html(image: &ImageResource, img_classes: Vec<&s
         style_attr = String::new();
     }
 
-    let nuid_attr: String;
+    compilation_result.add_fixed_part(format!(r#"<figure class="figure" {} {} {}>"#, id_attr, nuid_attr, style_attr));
 
-    if let Some(nuid) = nuid {
-        nuid_attr = format!(r#"data-nuid="{}""#, nuid);
-    } else {
-        nuid_attr = String::new();
-    }
+    // let html_alt: String;
+
+    // if let Some(a) = alt {
+    //     html_alt = format!(r#"alt="{}""#, a);
+    // } else {
+    //     html_alt = String::new();
+    // }
 
     let src: String = match image.src() {
         Source::Remote { url: _ } | Source::Local { path: _ } => image.src().to_string(),
@@ -104,9 +101,15 @@ pub fn compile_image_resource_in_html(image: &ImageResource, img_classes: Vec<&s
         },
     };
 
-    Ok(format!(r#"<figure class="figure" {} {}>
-            <img src="{}" class="{}" {} />
-            {}
-        </figure>"#, id_attr, nuid_attr, src, img_classes.join(" "), style_attr, html_caption
-    ))
+    compilation_result.add_fixed_part(format!(r#"<img src="{}" class="{}" />"#, src, img_classes.join(" ")));
+
+
+    if let Some(c) = image.caption() {
+
+        compilation_result.add_fixed_part(String::from(r#"<figcaption class="image-caption">"#));
+        compilation_result.add_mutable_part(c.clone());
+        compilation_result.add_fixed_part(String::from(r#"</figcaption>"#));
+    }
+
+    Ok(compilation_result)
 } 
