@@ -1,8 +1,10 @@
+use std::sync::{Arc, RwLock};
+
 use once_cell::sync::Lazy;
 use regex::Regex;
 
 use super::ParagraphContentLoadingRule;
-use crate::{codex::{modifier::constants::IDENTIFIER_PATTERN, Codex}, dossier::document::chapter::paragraph::{replacement_rule_paragraph::ReplacementRuleParagraph, paragraph_content::ParagraphContent, table_paragraph::{TableParagraph, TableParagraphContent, TableParagraphContentRow}, ParagraphTrait}, loader::{loader_configuration::LoaderConfiguration, LoadError, Loader}, resource::table::{Table, TableCell, TableCellAlignment}};
+use crate::{codex::{modifier::constants::IDENTIFIER_PATTERN, Codex}, dossier::document::chapter::paragraph::{paragraph_content::ParagraphContent, replacement_rule_paragraph::ReplacementRuleParagraph, table_paragraph::{TableParagraph, TableParagraphContent, TableParagraphContentRow}, ParagraphTrait}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError, Loader}, resource::table::{Table, TableCell, TableCellAlignment}};
 
 
 /// (caption, id, style)
@@ -84,7 +86,7 @@ impl TableParagraphLoadingRule {
         Some(alignments)
     }
 
-    fn build_row(row: &Vec<String>, alignments: &Vec<TableCellAlignment>, codex: &Codex, configuration: &LoaderConfiguration) -> Result<Vec<TableCell<TableParagraphContentRow>>, LoadError> {
+    fn build_row(row: &Vec<String>, alignments: &Vec<TableCellAlignment>, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<Vec<TableCell<TableParagraphContentRow>>, LoadError> {
 
         let mut cells: Vec<TableCell<TableParagraphContentRow>> = Vec::new();
 
@@ -121,7 +123,7 @@ impl TableParagraphLoadingRule {
 
                 let content = cell;
 
-                let content = Loader::load_paragraphs_from_str(&content, codex, configuration)?;
+                let content = Loader::load_paragraphs_from_str(&content, codex, configuration, configuration_overlay.clone())?;
 
                 cells.push(TableCell::ContentCell { content, alignment: align});
             }
@@ -162,7 +164,7 @@ impl TableParagraphLoadingRule {
 }
 
 impl ParagraphContentLoadingRule for TableParagraphLoadingRule {
-    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoaderConfiguration) -> Result<Box<dyn ParagraphTrait>, LoadError> {
+    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<Box<dyn ParagraphTrait>, LoadError> {
 
         let mut table: TableParagraphContent = Table::new_empty();
 
@@ -220,7 +222,7 @@ impl ParagraphContentLoadingRule for TableParagraphLoadingRule {
                 continue;
             }
 
-            let row = Self::build_row(&row, alignments.as_ref().unwrap(), codex, configuration)?;
+            let row = Self::build_row(&row, alignments.as_ref().unwrap(), codex, configuration, configuration_overlay.clone())?;
 
             table.append_to_body(row);
         }
@@ -246,7 +248,7 @@ impl ParagraphContentLoadingRule for TableParagraphLoadingRule {
 mod test {
     use std::{collections::BTreeMap, sync::{Arc, RwLock}};
 
-    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, Modifier}, Codex}, compiler::{compilable::{Compilable, GenericCompilable}, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_result_accessor::CompilationResultAccessor, compilation_rule::CompilationRule, Compiler}, dossier::document::Paragraph, loader::{loader_configuration::LoaderConfiguration, paragraph_content_loading_rule::ParagraphContentLoadingRule, Loader}, output_format::OutputFormat, resource::table::{self, Table, TableCell, TableCellAlignment}};
+    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, Modifier}, Codex}, compiler::{compilable::{Compilable, GenericCompilable}, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_result_accessor::CompilationResultAccessor, compilation_rule::CompilationRule, Compiler}, dossier::document::Paragraph, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_content_loading_rule::ParagraphContentLoadingRule, Loader}, output_format::OutputFormat, resource::table::{self, Table, TableCell, TableCellAlignment}};
 
     use super::TableParagraphLoadingRule;
 
@@ -283,7 +285,7 @@ mod test {
 
         let codex = codex();
         
-        let paragraphs = Loader::load_paragraphs_from_str(&nmd_text, &codex, &LoaderConfiguration::default()).unwrap();
+        let paragraphs = Loader::load_paragraphs_from_str(&nmd_text, &codex, &LoaderConfiguration::default(), Arc::new(RwLock::new(LoaderConfigurationOverLay::default()))).unwrap();
 
         assert_eq!(paragraphs.len(), 1);
 

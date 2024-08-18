@@ -1,7 +1,5 @@
 use std::collections::HashSet;
-
 use getset::{Getters, Setters};
-
 use crate::codex::modifier::ModifiersBucket;
 
 

@@ -9,8 +9,9 @@ use std::collections::HashSet;
 use std::io;
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::sync::{Arc, RwLock};
 use getset::{Getters, Setters};
-use loader_configuration::LoaderConfiguration;
+use loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay};
 use once_cell::sync::Lazy;
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
 use rayon::slice::ParallelSliceMut;
@@ -81,7 +82,7 @@ impl Loader {
     }
 
     /// Load a document from a raw string, so `document_name` must be provided
-    pub fn load_document_from_str(document_name: &str, content: &str, codex: &Codex, configuration: &LoaderConfiguration) -> Result<Document, LoadError> {
+    pub fn load_document_from_str(document_name: &str, content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<Document, LoadError> {
 
         log::info!("loading document '{}' from its content...", document_name);
 
@@ -185,7 +186,7 @@ impl Loader {
 
             let sub_content = content.get(end..next_start).unwrap();     // exclude heading
 
-            let paragraphs = Self::load_paragraphs_from_str(sub_content, codex, configuration)?;
+            let paragraphs = Self::load_paragraphs_from_str(sub_content, codex, configuration, configuration_overlay.clone())?;
 
             document_chapters.push(Chapter::new(heading, tags, paragraphs));
         }
@@ -204,7 +205,7 @@ impl Loader {
 
             let s = String::from(content.get(0..preamble_end).unwrap());
 
-            preamble = Self::load_paragraphs_from_str(&s, codex, configuration)?;
+            preamble = Self::load_paragraphs_from_str(&s, codex, configuration, configuration_overlay.clone())?;
         
         } else {
 
@@ -220,7 +221,7 @@ impl Loader {
     }
 
     /// Load a document from its path (`PathBuf`). The document have to exist.
-    pub fn load_document_from_path(path_buf: &PathBuf, codex: &Codex, configuration: &LoaderConfiguration) -> Result<Document, LoadError> {
+    pub fn load_document_from_path(path_buf: &PathBuf, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<Document, LoadError> {
 
         if !path_buf.exists() {
             return Err(LoadError::ResourceError(ResourceError::InvalidResourceVerbose(format!("{} not exists", path_buf.to_string_lossy())))) 
@@ -232,7 +233,7 @@ impl Loader {
 
         let document_name = resource.name();
 
-        match Self::load_document_from_str(document_name, &content, codex, configuration) {
+        match Self::load_document_from_str(document_name, &content, codex, configuration, configuration_overlay.clone()) {
             Ok(document) => {
                 return Ok(document)
             },
@@ -241,7 +242,7 @@ impl Loader {
     }
 
     /// Split a string in the corresponding vector of paragraphs
-    pub fn load_paragraphs_from_str(content: &str, codex: &Codex, configuration: &LoaderConfiguration) -> Result<Vec<Box<dyn ParagraphTrait>>, LoadError> {
+    pub fn load_paragraphs_from_str(content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<Vec<Box<dyn ParagraphTrait>>, LoadError> {
 
         if content.trim().is_empty() {
             log::debug!("skip paragraphs loading: empty content");
@@ -305,7 +306,7 @@ impl Loader {
 
                 if let Some(loading_rule) = codex.paragraph_loading_rules().get(codex_identifier) {
 
-                    let res = loading_rule.load(&raw_content, codex, configuration);
+                    let res = loading_rule.load(&raw_content, codex, configuration, configuration_overlay.clone());
 
                     if let Ok(paragraph) = res {
 
@@ -473,14 +474,14 @@ impl Loader {
     }
 
     /// Load dossier from its filesystem path
-    pub fn load_dossier_from_path_buf(path_buf: &PathBuf, codex: &Codex, configuration: &LoaderConfiguration) -> Result<Dossier, LoadError> {
+    pub fn load_dossier_from_path_buf(path_buf: &PathBuf, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<Dossier, LoadError> {
         let dossier_configuration = DossierConfiguration::try_from(path_buf)?;
 
-        Self::load_dossier_from_dossier_configuration(&dossier_configuration, codex, configuration)
+        Self::load_dossier_from_dossier_configuration(&dossier_configuration, codex, configuration, configuration_overlay.clone())
     }
 
     /// Load dossier from its filesystem path considering only a subset of documents
-    pub fn load_dossier_from_path_buf_only_documents(path_buf: &PathBuf, only_documents: &HashSet<String>, codex: &Codex, configuration: &LoaderConfiguration) -> Result<Dossier, LoadError> {
+    pub fn load_dossier_from_path_buf_only_documents(path_buf: &PathBuf, only_documents: &HashSet<String>, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<Dossier, LoadError> {
         let mut dossier_configuration = DossierConfiguration::try_from(path_buf)?;
 
         let d: Vec<String> = dossier_configuration.raw_documents_paths().iter()
@@ -495,11 +496,11 @@ impl Loader {
 
         dossier_configuration.set_raw_documents_paths(d);
 
-        Self::load_dossier_from_dossier_configuration(&dossier_configuration, codex, configuration)
+        Self::load_dossier_from_dossier_configuration(&dossier_configuration, codex, configuration, configuration_overlay.clone())
     }
 
     /// Load dossier from its dossier configuration
-    pub fn load_dossier_from_dossier_configuration(dossier_configuration: &DossierConfiguration, codex: &Codex, configuration: &LoaderConfiguration) -> Result<Dossier, LoadError> {
+    pub fn load_dossier_from_dossier_configuration(dossier_configuration: &DossierConfiguration, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<Dossier, LoadError> {
 
         // TODO: are really mandatory?
         if dossier_configuration.documents_paths().is_empty() {
@@ -517,7 +518,7 @@ impl Loader {
 
             dossier_configuration.documents_paths().par_iter()
             .map(|document_path| {
-                Self::load_document_from_path(&PathBuf::from(document_path), codex, configuration)
+                Self::load_document_from_path(&PathBuf::from(document_path), codex, configuration, configuration_overlay.clone())
             }).collect_into_vec(&mut documents_res);
             
             let error = documents_res.par_iter().find_any(|result| result.is_err());
@@ -538,7 +539,7 @@ impl Loader {
 
             for document_path in dossier_configuration.documents_paths() {
     
-                let document = Self::load_document_from_path(&PathBuf::from(document_path), codex, configuration)?;
+                let document = Self::load_document_from_path(&PathBuf::from(document_path), codex, configuration, configuration_overlay.clone())?;
     
                 documents.push(document)
             }

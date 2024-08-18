@@ -1,25 +1,18 @@
 use std::sync::{Arc, RwLock};
 use build_html::{Container, Html, HtmlContainer};
 use getset::{Getters, Setters};
-use once_cell::sync::Lazy;
-use regex::Regex;
-use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, compiler::{compilable::{Compilable, GenericCompilable}, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, list_bullet_configuration_record::{self, ListBulletConfigurationRecord}, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor, compilation_rule::{constants::{ESCAPE_HTML, SPACE_TAB_EQUIVALENCE}, CompilationRule}, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::ParagraphTrait, output_format::OutputFormat, resource::{image_resource::ImageResource, source::Source}, utility::{image_utility, nmd_unique_identifier::NmdUniqueIdentifier, text_utility}};
+use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::ParagraphTrait, output_format::OutputFormat, resource::{image_resource::ImageResource, source::Source}, utility::{image_utility, nmd_unique_identifier::NmdUniqueIdentifier}};
 
 
-static ALIGN_ITEM_PATTERN_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(ALIGN_ITEM_PATTERN).unwrap());
 
 const MULTI_IMAGE_PERMITTED_MODIFIER: &'static [StandardParagraphModifier] = &[StandardParagraphModifier::Image, StandardParagraphModifier::AbridgedImage];
-const DEFAULT_JUSTIFY_CONTENT: &str = "normal";
-const DEFAULT_ALIGN_SELF: &str = "center";
-const ALIGN_ITEM_PATTERN: &str = r":([\w-]*):";
-
 const SINGLE_IMAGE_CLASSES: [&str; 1] = ["image"];
 const ABRIDGED_IMAGE_CLASSES: [&str; 2] = ["image", "abridged-image"];
 
 #[derive(Debug)]
 pub struct MultiImage {
     
-    pub alignment: Option<String>,
+    pub alignment: String,
 
     /// (image resource, image alignment)
     pub images: Vec<(ImageParagraphContent, String)>, 
@@ -123,7 +116,7 @@ impl ImageParagraph {
 
     fn html_standard_compile_multi_image(multi_image: &mut MultiImage, nuid: Option<&NmdUniqueIdentifier>, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<String, CompilationError> {
 
-        let images_container_style: String = format!("display: flex; justify-content: {};", multi_image.alignment.as_ref().unwrap_or(&String::from(DEFAULT_JUSTIFY_CONTENT)));
+        let images_container_style: String = format!("display: flex; justify-content: {};", multi_image.alignment);
         let mut images_container = build_html::Container::new(build_html::ContainerType::Div)
                                             .with_attributes(vec![
                                                 ("style", images_container_style.as_str()),

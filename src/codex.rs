@@ -12,7 +12,8 @@ use modifier::Modifier;
 use self::modifier::standard_paragraph_modifier::StandardParagraphModifier;
 use self::modifier::standard_text_modifier::StandardTextModifier;
 use self::modifier::ModifierIdentifier;
-use crate::loader::paragraph_content_loading_rule::pass_through_paragraph_loading_rule::PassThroughParagraphLoadingRule;
+use crate::loader::paragraph_content_loading_rule::image_paragraph_loading_rule::ImageParagraphLoadingRule;
+use crate::loader::paragraph_content_loading_rule::list_paragraph_loading_rule::ListParagraphLoadingRule;
 use crate::loader::paragraph_content_loading_rule::replacement_rule_paragraph_loading_rule::ReplacementRuleParagraphLoadingRule;
 use crate::loader::paragraph_content_loading_rule::table_paragraph_loading_rule::TableParagraphLoadingRule;
 use crate::loader::paragraph_content_loading_rule::ParagraphContentLoadingRule;
@@ -568,15 +569,15 @@ impl Codex {
             ),
             (
                 StandardParagraphModifier::Image.identifier().clone(),
-                Box::new(HtmlImageRule::new(StandardParagraphModifier::Image.identifier()))
+                Box::new(ImageParagraphLoadingRule::SingleImage)
             ),
             (
                 StandardParagraphModifier::AbridgedImage.identifier().clone(),
-                Box::new(HtmlImageRule::new(StandardParagraphModifier::AbridgedImage.identifier()))
+                Box::new(ImageParagraphLoadingRule::AbridgedImage)
             ),
             (
                 StandardParagraphModifier::MultiImage.identifier().clone(),
-                Box::new(HtmlImageRule::new(StandardParagraphModifier::MultiImage.identifier()))
+                Box::new(ImageParagraphLoadingRule::MultiImage)
             ),
             (
                 StandardParagraphModifier::CodeBlock.identifier().clone(),
@@ -588,7 +589,7 @@ impl Codex {
             ),
             (
                 StandardParagraphModifier::List.identifier().clone(),
-                Box::new(PassThroughParagraphLoadingRule::ListParagraphLoadingRule),
+                Box::new(ListParagraphLoadingRule::new()),
             ),
             (
                 StandardParagraphModifier::FocusBlock.identifier().clone(),
