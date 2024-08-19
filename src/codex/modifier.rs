@@ -5,7 +5,6 @@ pub mod base_modifier;
 pub mod constants;
 
 
-use std::fmt;
 use regex::Regex;
 use crate::resource::bucket::Bucket;
 use self::base_modifier::BaseModifier;

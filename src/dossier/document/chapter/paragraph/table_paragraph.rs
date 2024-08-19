@@ -1,17 +1,16 @@
 use std::sync::{Arc, RwLock};
 use build_html::Container;
 use build_html::ContainerType;
+use build_html::Html;
 use build_html::HtmlContainer;
 use build_html::TableCell as HtmlTableCell;
 use build_html::TableRow as HtmlTableRow;
 use getset::{Getters, Setters};
-use rayon::iter::IntoParallelRefMutIterator;
-use rayon::iter::ParallelIterator;
 use crate::resource::table::TableCellAlignment;
-use crate::{codex::Codex, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::ParagraphTrait, output_format::OutputFormat, resource::{resource_reference::ResourceReference, table::{Table, TableCell}}, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use crate::{codex::Codex, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, resource::{resource_reference::ResourceReference, table::{Table, TableCell}}, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
-pub type TableParagraphContentRow = Vec<Box<dyn ParagraphTrait>>;
+pub type TableParagraphContentRow = Vec<Box<dyn Paragraph>>;
 pub type TableParagraphContent = Table<TableParagraphContentRow, TableParagraphContentRow, TableParagraphContentRow>;
 
 
@@ -51,7 +50,7 @@ impl TableParagraph {
         }
     }
 
-    fn load_html_row(html_row: &mut HtmlTableRow, cells: &Vec<TableCell<String>>, codex: &Codex, compilation_configuration: &CompilationConfiguration) -> Result<(), CompilationError> {
+    fn load_html_row(html_row: &mut HtmlTableRow, cells: &Vec<TableCell<String>>, _codex: &Codex, _compilation_configuration: &CompilationConfiguration) -> Result<(), CompilationError> {
 
         for cell in cells {
             match cell {
@@ -106,7 +105,7 @@ impl TableParagraph {
 
         let mut html_table = build_html::Table::new().with_attributes(html_table_attrs);
 
-        let mut compile_cells_fn = |cells: &mut Vec<TableCell<Vec<Box<dyn ParagraphTrait>>>>| -> Result<Vec<TableCell<String>>, CompilationError> {
+        let compile_cells_fn = |cells: &mut Vec<TableCell<Vec<Box<dyn Paragraph>>>>| -> Result<Vec<TableCell<String>>, CompilationError> {
             let mut result: Vec<TableCell<String>> = Vec::new();
 
             for cell in cells.iter_mut() {
@@ -214,6 +213,8 @@ impl TableParagraph {
             html_table.add_caption(html_caption);
         }
 
+        self.compiled_content = Some(CompilationResult::new_fixed(html_table.to_html_string()));
+
         Ok(())
     }
 }
@@ -234,7 +235,7 @@ impl CompilationResultAccessor for TableParagraph {
     }
 }
 
-impl ParagraphTrait for TableParagraph {
+impl Paragraph for TableParagraph {
     fn raw_content(&self) -> &String {
         &self.raw_content
     }
@@ -256,127 +257,69 @@ impl ParagraphTrait for TableParagraph {
 
 #[cfg(test)]
 mod test {
-//     use std::sync::{Arc, RwLock};
+    use std::sync::{Arc, RwLock};
 
-//     use crate::{codex::{codex_configuration::CodexConfiguration, modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, compiler::{compilable::{Compilable, GenericCompilable}, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_result_accessor::CompilationResultAccessor, compilation_rule::CompilationRule, Compiler}, dossier::document::Paragraph, output_format::OutputFormat, resource::table::{self, Table, TableCell, TableCellAlignment}};
+    use crate::{codex::Codex, compiler::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, dossier::document::chapter::paragraph::Paragraph, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_content_loading_rule::{table_paragraph_loading_rule::TableParagraphLoadingRule, ParagraphLoadingRule}}, output_format::OutputFormat};
 
-//     use super::HtmlTableRule;
+    fn load_table(nmd_text: &str, codex: &Codex) -> Box<dyn Paragraph> {
 
-//     #[test]
-//     fn head_body_foot() {
-//         let nmd_table = r#"
-// |                                                           | $x_1$ | $...$ | $x_n$ | $s_1$ | $...$ | $s_m$ | $a_1$ | $...$ |
-// |-----------------------------------------------------------|:-----:|:-----:|:-----:|:-----:|:-----:|-------|-------|:-----:|
-// | Riga avente $1$ nella colonna della variabile artificiale |  $0$  |  $0$  |  $0$  |  $0$  |  $0$  |  $0$  |  $1$  |  $0$  |
-// |---|
-// ||footer|        
-// "#.trim();
+        let rule = TableParagraphLoadingRule::new();
 
+        rule.load(nmd_text, &codex, &LoaderConfiguration::default(), Arc::new(RwLock::new(LoaderConfigurationOverLay::default()))).unwrap()
 
-//         let rule = HtmlTableRule::new();
-//         let codex = Codex::of_html(CodexConfiguration::default());
-//         let compilation_configuration = CompilationConfiguration::default();
-//         let mut compilation_configuration_overlay = CompilationConfigurationOverLay::default();
+    }
 
-//         compilation_configuration_overlay.set_document_name(Some("test".to_string()));
+    #[test]
+    fn head_body_foot() {
+        let nmd_text = r#"
+|                                                           | $x_1$ | $...$ | $x_n$ | $s_1$ | $...$ | $s_m$ | $a_1$ | $...$ |
+|-----------------------------------------------------------|:-----:|:-----:|:-----:|:-----:|:-----:|-------|-------|:-----:|
+| Riga avente $1$ nella colonna della variabile artificiale |  $0$  |  $0$  |  $0$  |  $0$  |  $0$  |  $0$  |  $1$  |  $0$  |
+|---|
+||footer|        
+"#.trim();
 
-//         let compilable: Box<dyn Compilable> = Box::new(GenericCompilable::from(nmd_table.to_string()));
+        let compilation_configuration = CompilationConfiguration::default();
+        let mut compilation_configuration_overlay = CompilationConfigurationOverLay::default();
+        let codex = Codex::of_html();
 
-//         let outcome = rule.compile(&compilable, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(compilation_configuration_overlay))).unwrap();
-//         let outcome = outcome.content();
+        compilation_configuration_overlay.set_document_name(Some("test".to_string()));
 
-//         assert!(outcome.contains("<thead"));
-//         assert!(outcome.contains("<tbody"));
-//         assert!(outcome.contains("<tfoot"));
-//     }
+        let mut paragraph = load_table(nmd_text, &codex);
+        
+        paragraph.compile(&OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(compilation_configuration_overlay))).unwrap();
+        
+        let outcome = paragraph.compilation_result().as_ref().unwrap().content();
+
+        assert!(outcome.contains("<thead"));
+        assert!(outcome.contains("<tbody"));
+        assert!(outcome.contains("<tfoot"));
+    }
 
     #[test]
     fn table_with_inner_image() {
 
-        todo!()
+        let nmd_text = concat!(
+            "\n\n",
+            "|h1|h2|\n",
+            "|---|---|\n",
+            "|**a**|![Simple image](https://en.wikipedia.org/wiki/Main_Page)|",
+            "\n\n"
+        );
 
-        // let nmd_text = concat!(
-        //     "\n\n",
-        //     "|h1|h2|\n",
-        //     "|---|---|\n",
-        //     "|**a**|![Simple image](https://en.wikipedia.org/wiki/Main_Page)|",
-        //     "\n\n"
-        // );
 
-        // let rule = HtmlTableRule::new();
-        // let codex = Codex::of_html(CodexConfiguration::default());
-        // let compilation_configuration = CompilationConfiguration::default();
-        // let mut compilation_configuration_overlay = CompilationConfigurationOverLay::default();
+        let compilation_configuration = CompilationConfiguration::default();
+        let mut compilation_configuration_overlay = CompilationConfigurationOverLay::default();
+        let codex = Codex::of_html();
 
-        // compilation_configuration_overlay.set_document_name(Some("test".to_string()));
+        compilation_configuration_overlay.set_document_name(Some("test".to_string()));
 
-        // let compilable: Box<dyn Compilable> = Box::new(GenericCompilable::from(nmd_text.to_string()));
+        let mut paragraph = load_table(nmd_text, &codex);
+        
+        paragraph.compile(&OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(compilation_configuration_overlay))).unwrap();
+        
+        let outcome = paragraph.compilation_result().as_ref().unwrap().content();
 
-        // let outcome = rule.compile(&compilable, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(compilation_configuration_overlay))).unwrap();
-        // let outcome = outcome.content();
-
-        // let expected_result = HtmlTableRule::build_html_table(
-        //     None,
-        //     None,
-        //     None,
-        //     None,
-        //     Table::new(
-        //         Some(vec![
-        //             TableCell::ContentCell {
-        //                 content: "h1".to_string(),
-        //                 alignment: TableCellAlignment::Center
-        //             },
-        //             TableCell::ContentCell {
-        //                 content: "h2".to_string(),
-        //                 alignment: TableCellAlignment::Center
-        //             },
-        //         ]),
-        //         vec![
-        //             vec![
-        //                 TableCell::ContentCell {
-        //                     content: Compiler::compile_str(
-        //                         "**a**",
-        //                         &OutputFormat::Html,
-        //                         &codex,
-        //                         &CompilationConfiguration::default(),
-        //                         Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))
-        //                     ).unwrap().content(),
-        //                     alignment: TableCellAlignment::Center
-        //                 },
-        //                 TableCell::ContentCell {
-        //                     content: {
-
-        //                         let mut p = Paragraph::new(
-        //                             "![Simple image](https://en.wikipedia.org/wiki/Main_Page)".to_string(),
-        //                             StandardParagraphModifier::Image.identifier()
-        //                         );
-
-        //                         let mut conf_over = CompilationConfigurationOverLay::default();
-
-        //                         conf_over.set_document_name(Some("test".to_string()));
-
-        //                         Compiler::compile_paragraph(
-        //                             &mut p,
-        //                             &OutputFormat::Html,
-        //                             &codex,
-        //                             &CompilationConfiguration::default(),
-        //                             Arc::new(RwLock::new(conf_over))
-        //                         ).unwrap();
-
-        //                         let r = p.compilation_result().clone().unwrap().content();
-
-        //                         r
-        //                     },
-        //                     alignment: TableCellAlignment::Center
-        //                 },
-        //             ]
-        //         ],
-        //         None
-        //     ),
-        //     &codex,
-        //     &CompilationConfiguration::default()
-        // );
-
-        // assert_eq!(outcome, expected_result);
+        assert!(outcome.contains("<img"))
     }
 }

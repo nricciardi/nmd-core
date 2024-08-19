@@ -2,11 +2,11 @@ use std::sync::{Arc, RwLock};
 use getset::{Getters, Setters};
 use once_cell::sync::Lazy;
 use regex::Regex;
-use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, compiler::{compilable::{Compilable, GenericCompilable}, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, list_bullet_configuration_record::{self, ListBulletConfigurationRecord}, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor, compilation_rule::{constants::{ESCAPE_HTML, SPACE_TAB_EQUIVALENCE}, CompilationRule}, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::ParagraphTrait, output_format::OutputFormat, utility::{nmd_unique_identifier::NmdUniqueIdentifier, text_utility}};
+use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, list_bullet_configuration_record::{self, ListBulletConfigurationRecord}, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor, compilation_rule::constants::{ESCAPE_HTML, SPACE_TAB_EQUIVALENCE}, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, utility::{nmd_unique_identifier::NmdUniqueIdentifier, text_utility}};
 
 
 static SEARCH_LIST_ITEM_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&StandardParagraphModifier::ListItem.modifier_pattern()).unwrap());
-static SEARCH_LIST_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&StandardParagraphModifier::List.modifier_pattern_with_paragraph_separator()).unwrap());
+static _SEARCH_LIST_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&StandardParagraphModifier::List.modifier_pattern_with_paragraph_separator()).unwrap());
 
 pub const LIST_ITEM_INDENTATION: &str = r#"<span class="list-item-indentation"></span>"#;
 
@@ -159,7 +159,7 @@ impl CompilationResultAccessor for ListParagraph {
     }
 }
 
-impl ParagraphTrait for ListParagraph {
+impl Paragraph for ListParagraph {
     fn raw_content(&self) -> &String {
         &self.raw_content
     }
@@ -181,6 +181,8 @@ impl ParagraphTrait for ListParagraph {
 #[cfg(test)]
 mod test {
 
+    use crate::loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_content_loading_rule::{list_paragraph_loading_rule::ListParagraphLoadingRule, ParagraphLoadingRule}};
+
     use super::*;
 
     #[test]
@@ -198,13 +200,19 @@ mod test {
 - element 3
 "#.trim();
        
-       let codex = Codex::of_html();
+        let codex = Codex::of_html();
+        
+        let rule = ListParagraphLoadingRule::new();
 
-       let mut list_paragraph = ListParagraph::new(nmd_text.to_string());
+        let mut paragraph = rule.load(nmd_text, &codex, &LoaderConfiguration::default(), Arc::new(RwLock::new(LoaderConfigurationOverLay::default()))).unwrap();
+        
+        paragraph.compile(&OutputFormat::Html, &codex, &CompilationConfiguration::default(), Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
 
-       list_paragraph.compile(&OutputFormat::Html, &codex, &CompilationConfiguration::default(), Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
+        let compiled_content = paragraph.compilation_result().as_ref().unwrap().content();
+        let li_n = Regex::new("<li").unwrap().find_iter(&compiled_content).count();
 
-       todo!()
+        assert_eq!(li_n, 9);
+
         // TODO
         // assert_eq!(
         //     list_paragraph.compilation_result().unwrap().content(),

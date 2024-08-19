@@ -1,6 +1,6 @@
 use regex::Regex;
 
-use super::{ModifiersBucket, Modifier, ModifierIdentifier, ModifierPattern};
+use super::{ModifiersBucket, Modifier, ModifierPattern};
 
 
 #[derive(Debug)]

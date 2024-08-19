@@ -3,14 +3,11 @@ pub mod dossier_configuration;
 
 pub use document::{Document, DocumentError};
 use getset::{Getters, MutGetters, Setters};
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
-
 use crate::resource::ResourceError;
-
 use self::dossier_configuration::DossierConfiguration;
-
 use super::{bibliography::Bibliography, table_of_contents::TableOfContents};
+use serde::Serialize;
 
 
 pub const ASSETS_DIR: &str = "assets";

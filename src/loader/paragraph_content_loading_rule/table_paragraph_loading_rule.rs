@@ -3,8 +3,8 @@ use std::sync::{Arc, RwLock};
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-use super::ParagraphContentLoadingRule;
-use crate::{codex::{modifier::constants::IDENTIFIER_PATTERN, Codex}, dossier::document::chapter::paragraph::{paragraph_content::ParagraphContent, replacement_rule_paragraph::ReplacementRuleParagraph, table_paragraph::{TableParagraph, TableParagraphContent, TableParagraphContentRow}, ParagraphTrait}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError, Loader}, resource::table::{Table, TableCell, TableCellAlignment}};
+use super::ParagraphLoadingRule;
+use crate::{codex::{modifier::constants::IDENTIFIER_PATTERN, Codex}, dossier::document::chapter::paragraph::{table_paragraph::{TableParagraph, TableParagraphContent, TableParagraphContentRow}, Paragraph}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError, Loader}, resource::table::{Table, TableCell, TableCellAlignment}};
 
 
 /// (caption, id, style)
@@ -121,11 +121,9 @@ impl TableParagraphLoadingRule {
                     cell.remove(cell.len() - 1);
                 }
 
-                let content = cell;
+                let paragraphs = Loader::load_paragraphs_from_str(&cell, codex, configuration, configuration_overlay.clone())?;
 
-                let content = Loader::load_paragraphs_from_str(&content, codex, configuration, configuration_overlay.clone())?;
-
-                cells.push(TableCell::ContentCell { content, alignment: align});
+                cells.push(TableCell::ContentCell { content: paragraphs, alignment: align});
             }
         }
 
@@ -163,8 +161,8 @@ impl TableParagraphLoadingRule {
     }
 }
 
-impl ParagraphContentLoadingRule for TableParagraphLoadingRule {
-    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<Box<dyn ParagraphTrait>, LoadError> {
+impl ParagraphLoadingRule for TableParagraphLoadingRule {
+    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<Box<dyn Paragraph>, LoadError> {
 
         let mut table: TableParagraphContent = Table::new_empty();
 
@@ -246,26 +244,28 @@ impl ParagraphContentLoadingRule for TableParagraphLoadingRule {
 
 #[cfg(test)]
 mod test {
-    use std::{collections::BTreeMap, sync::{Arc, RwLock}};
+    use std::{collections::HashMap, sync::{Arc, RwLock}};
 
-    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, Modifier}, Codex}, compiler::{compilable::{Compilable, GenericCompilable}, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_result_accessor::CompilationResultAccessor, compilation_rule::CompilationRule, Compiler}, dossier::document::Paragraph, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_content_loading_rule::ParagraphContentLoadingRule, Loader}, output_format::OutputFormat, resource::table::{self, Table, TableCell, TableCellAlignment}};
+    use indexmap::IndexMap;
+
+    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, Modifier}, Codex}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_content_loading_rule::ParagraphLoadingRule, Loader}};
 
     use super::TableParagraphLoadingRule;
 
     fn codex() -> Codex {
         Codex::new(
-            BTreeMap::new(),
-            BTreeMap::from([
+            IndexMap::new(),
+            IndexMap::from([
                 (
                     String::from("table"),
                     Box::new(Into::<BaseModifier>::into(StandardParagraphModifier::Table)) as Box<dyn Modifier>
                 )
             ]),
-            BTreeMap::new(),
-            BTreeMap::from([
+            HashMap::new(),
+            HashMap::from([
                 (
                     String::from("table"),
-                    Box::new(TableParagraphLoadingRule::new()) as Box<dyn ParagraphContentLoadingRule>
+                    Box::new(TableParagraphLoadingRule::new()) as Box<dyn ParagraphLoadingRule>
                 )
             ]),
         )
@@ -294,94 +294,5 @@ mod test {
         assert_eq!(table_paragraph.raw_content(), nmd_text);
     }
 
-    #[test]
-    fn table_with_inner_image() {
-
-        todo!()
-
-        // let nmd_text = concat!(
-        //     "\n\n",
-        //     "|h1|h2|\n",
-        //     "|---|---|\n",
-        //     "|**a**|![Simple image](https://en.wikipedia.org/wiki/Main_Page)|",
-        //     "\n\n"
-        // );
-
-        // let rule = HtmlTableRule::new();
-        // let codex = Codex::of_html(CodexConfiguration::default());
-        // let compilation_configuration = CompilationConfiguration::default();
-        // let mut compilation_configuration_overlay = CompilationConfigurationOverLay::default();
-
-        // compilation_configuration_overlay.set_document_name(Some("test".to_string()));
-
-        // let compilable: Box<dyn Compilable> = Box::new(GenericCompilable::from(nmd_text.to_string()));
-
-        // let outcome = rule.compile(&compilable, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(compilation_configuration_overlay))).unwrap();
-        // let outcome = outcome.content();
-
-        // let expected_result = HtmlTableRule::build_html_table(
-        //     None,
-        //     None,
-        //     None,
-        //     None,
-        //     Table::new(
-        //         Some(vec![
-        //             TableCell::ContentCell {
-        //                 content: "h1".to_string(),
-        //                 alignment: TableCellAlignment::Center
-        //             },
-        //             TableCell::ContentCell {
-        //                 content: "h2".to_string(),
-        //                 alignment: TableCellAlignment::Center
-        //             },
-        //         ]),
-        //         vec![
-        //             vec![
-        //                 TableCell::ContentCell {
-        //                     content: Compiler::compile_str(
-        //                         "**a**",
-        //                         &OutputFormat::Html,
-        //                         &codex,
-        //                         &CompilationConfiguration::default(),
-        //                         Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))
-        //                     ).unwrap().content(),
-        //                     alignment: TableCellAlignment::Center
-        //                 },
-        //                 TableCell::ContentCell {
-        //                     content: {
-
-        //                         let mut p = Paragraph::new(
-        //                             "![Simple image](https://en.wikipedia.org/wiki/Main_Page)".to_string(),
-        //                             StandardParagraphModifier::Image.identifier()
-        //                         );
-
-        //                         let mut conf_over = CompilationConfigurationOverLay::default();
-
-        //                         conf_over.set_document_name(Some("test".to_string()));
-
-        //                         Compiler::compile_paragraph(
-        //                             &mut p,
-        //                             &OutputFormat::Html,
-        //                             &codex,
-        //                             &CompilationConfiguration::default(),
-        //                             Arc::new(RwLock::new(conf_over))
-        //                         ).unwrap();
-
-        //                         let r = p.compilation_result().clone().unwrap().content();
-
-        //                         r
-        //                     },
-        //                     alignment: TableCellAlignment::Center
-        //                 },
-        //             ]
-        //         ],
-        //         None
-        //     ),
-        //     &codex,
-        //     &CompilationConfiguration::default()
-        // );
-
-        // assert_eq!(outcome, expected_result);
-    }
 }
 

@@ -1,6 +1,6 @@
 use std::sync::{Arc, RwLock};
-use super::ParagraphContentLoadingRule;
-use crate::{codex::Codex, compiler::compilation_rule::{replacement_rule::ReplacementRule, CompilationRule}, dossier::document::chapter::paragraph::{list_paragraph::ListParagraph, paragraph_content::ParagraphContent, replacement_rule_paragraph::ReplacementRuleParagraph, ParagraphTrait, SimpleParagraphConstructor}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError}};
+use super::ParagraphLoadingRule;
+use crate::{codex::Codex, dossier::document::chapter::paragraph::{list_paragraph::ListParagraph, Paragraph}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError}};
 
 
 #[derive(Debug)]
@@ -16,8 +16,8 @@ impl ListParagraphLoadingRule {
 }
 
 
-impl ParagraphContentLoadingRule for ListParagraphLoadingRule {
-    fn load(&self, raw_content: &str, _codex: &Codex, _configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<Box<dyn ParagraphTrait>, LoadError> {
+impl ParagraphLoadingRule for ListParagraphLoadingRule {
+    fn load(&self, raw_content: &str, _codex: &Codex, _configuration: &LoaderConfiguration, _configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<Box<dyn Paragraph>, LoadError> {
         Ok(Box::new(ListParagraph::new(raw_content.to_string())))
     }
 }

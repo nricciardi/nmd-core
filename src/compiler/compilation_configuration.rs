@@ -3,7 +3,7 @@ pub mod compilation_configuration_overlay;
 
 use std::{collections::HashMap, path::PathBuf};
 use getset::{CopyGetters, Getters, MutGetters, Setters};
-use crate::{bibliography::Bibliography, codex::{modifier::ModifiersBucket, CodexIdentifier}, resource::{bucket::Bucket, text_reference::TextReferenceMap}, theme::Theme};
+use crate::{bibliography::Bibliography, resource::text_reference::TextReferenceMap, theme::Theme};
 use self::list_bullet_configuration_record::ListBulletConfigurationRecord;
 
 

@@ -3,13 +3,13 @@ use std::{str::FromStr, sync::{Arc, RwLock}};
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-use super::ParagraphContentLoadingRule;
-use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, dossier::document::chapter::paragraph::{image_paragraph::{ImageParagraph, ImageParagraphContent, MultiImage}, list_paragraph::ListParagraph, ParagraphTrait}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError}, resource::{image_resource::ImageResource, resource_reference::ResourceReference, source::Source, ResourceError}};
+use super::ParagraphLoadingRule;
+use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, dossier::document::chapter::paragraph::{image_paragraph::{ImageParagraph, ImageParagraphContent, MultiImage}, Paragraph}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError}, resource::{image_resource::ImageResource, resource_reference::ResourceReference, source::Source, ResourceError}};
 
 
 static FIND_SINGLE_IMAGE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&StandardParagraphModifier::Image.modifier_pattern()).unwrap());
 static FIND_ABRIDGED_IMAGE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&StandardParagraphModifier::AbridgedImage.modifier_pattern()).unwrap());
-static FIND_MULTI_IMAGE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&StandardParagraphModifier::MultiImage.modifier_pattern()).unwrap());
+static _FIND_MULTI_IMAGE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&StandardParagraphModifier::MultiImage.modifier_pattern()).unwrap());
 static ALIGN_ITEM_PATTERN_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(ALIGN_ITEM_PATTERN).unwrap());
 
 const DEFAULT_MULTI_IMAGE_ALIGNMENT: &str = "normal";
@@ -27,7 +27,7 @@ pub enum ImageParagraphLoadingRule {
 
 impl ImageParagraphLoadingRule {
 
-    fn load_single_image(raw_content: &str, _codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<Option<ImageResource>, LoadError> {
+    fn load_single_image(raw_content: &str, _codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<ImageResource, LoadError> {
         
         let captures = FIND_SINGLE_IMAGE_REGEX.captures(raw_content);
 
@@ -64,17 +64,15 @@ impl ImageParagraphLoadingRule {
                                                                 .elaborating_relative_path_as_dossier_assets(configuration.input_location())
                                                                 .inferring_mime_type_or_nothing();
 
-                    return Ok(Some(image));
+                    return Ok(image);
                 }
             }
-
-            return Ok(None);
         }
 
         Err(LoadError::ResourceError(ResourceError::InvalidResourceVerbose(String::from("not valid image paragraph provided"))))
     }
 
-    fn load_abridged_image(raw_content: &str, _codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<Option<ImageResource>, LoadError> {
+    fn load_abridged_image(raw_content: &str, _codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<ImageResource, LoadError> {
 
         let captures = FIND_ABRIDGED_IMAGE_REGEX.captures(raw_content);
 
@@ -107,10 +105,8 @@ impl ImageParagraphLoadingRule {
                                                             .elaborating_relative_path_as_dossier_assets(configuration.input_location())
                                                             .inferring_mime_type_or_nothing();
 
-                return Ok(Some(image));
+                return Ok(image);
             }
-
-            return Ok(None);
         }
 
         Err(LoadError::ResourceError(ResourceError::InvalidResourceVerbose(String::from("not valid image paragraph provided"))))
@@ -150,7 +146,14 @@ impl ImageParagraphLoadingRule {
                     None => DEFAULT_ALIGN_SELF
                 };
 
-                if let Some(image) = Self::load_single_image(raw_image_line, codex, configuration, configuration_overlay.clone())? {
+                let maybe_single_image = Self::load_single_image(raw_image_line, codex, configuration, configuration_overlay.clone());
+                let maybe_abridged_image = Self::load_abridged_image(raw_image_line, codex, configuration, configuration_overlay.clone());
+
+                if maybe_single_image.is_err() && maybe_abridged_image.is_err() {
+                    return Err(LoadError::ResourceError(ResourceError::InvalidResourceVerbose(format!("{} must be a single image or an abridged image", raw_image_line))))
+                }
+
+                if let Ok(image) = maybe_single_image {
 
                     images.push((
                         ImageParagraphContent::SingleImage(image),
@@ -160,7 +163,7 @@ impl ImageParagraphLoadingRule {
                     continue;
                 }
 
-                if let Some(image) = Self::load_abridged_image(raw_image_line, codex, configuration, configuration_overlay.clone())? {
+                if let Ok(image) = maybe_abridged_image {
 
                     images.push((
                         ImageParagraphContent::AbridgedImage(image),
@@ -195,27 +198,17 @@ impl ImageParagraphLoadingRule {
 }
 
 
-impl ParagraphContentLoadingRule for ImageParagraphLoadingRule {
-    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<Box<dyn ParagraphTrait>, LoadError> {
+impl ParagraphLoadingRule for ImageParagraphLoadingRule {
+    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<Box<dyn Paragraph>, LoadError> {
         match *self {
-            Self::SingleImage => {
-
-                if let Some(image) = Self::load_single_image(raw_content, codex, configuration, configuration_overlay.clone())? {
-
-                    return Ok(Box::new(ImageParagraph::new(raw_content.to_string(), ImageParagraphContent::SingleImage(image))))
-                }
-
-                Err(LoadError::ResourceError(ResourceError::InvalidResourceVerbose(String::from("not valid image paragraph provided"))))
-            },
-            Self::AbridgedImage => {
-
-                if let Some(image) = Self::load_abridged_image(raw_content, codex, configuration, configuration_overlay.clone())? {
-
-                    return Ok(Box::new(ImageParagraph::new(raw_content.to_string(), ImageParagraphContent::AbridgedImage(image))))
-                }
-
-                Err(LoadError::ResourceError(ResourceError::InvalidResourceVerbose(String::from("not valid image paragraph provided"))))
-            },
+            Self::SingleImage => Ok(Box::new(ImageParagraph::new(
+                raw_content.to_string(),
+                ImageParagraphContent::SingleImage(Self::load_single_image(raw_content, codex, configuration, configuration_overlay.clone())?)
+            ))),
+            Self::AbridgedImage => Ok(Box::new(ImageParagraph::new(
+                raw_content.to_string(),
+                ImageParagraphContent::AbridgedImage(Self::load_abridged_image(raw_content, codex, configuration, configuration_overlay.clone())?)
+            ))),
             Self::MultiImage => {
 
                 if let Some(multi_image) = Self::load_multi_image(raw_content, codex, configuration, configuration_overlay.clone())? {
@@ -227,4 +220,32 @@ impl ParagraphContentLoadingRule for ImageParagraphLoadingRule {
             },
         }
     }
+}
+
+
+#[cfg(test)]
+mod test {
+    use std::sync::{Arc, RwLock};
+
+    use crate::{codex::Codex, loader::loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}};
+
+    use super::ImageParagraphLoadingRule;
+
+
+
+    #[test]
+    fn load_single_image() {
+
+        let src = "https://en.wikipedia.org/wiki/Main_Page";
+
+        let nmd_text = format!("![This is a *caption*]({})", src);
+
+        let codex = Codex::of_html();
+
+        let image = ImageParagraphLoadingRule::load_single_image(&nmd_text, &codex, &LoaderConfiguration::default(), Arc::new(RwLock::new(LoaderConfigurationOverLay::default()))).unwrap();
+    
+        assert_eq!(image.src().to_string(), src);
+    
+    }
+
 }

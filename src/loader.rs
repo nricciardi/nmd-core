@@ -21,7 +21,7 @@ use crate::codex::modifier::base_modifier::BaseModifier;
 use crate::codex::modifier::constants::{INCOMPATIBLE_CHAPTER_HEADING_REGEX, NEW_LINE};
 use crate::codex::modifier::standard_heading_modifier::StandardHeading;
 use crate::codex::modifier::Modifier;
-use crate::dossier::document::chapter::paragraph::ParagraphTrait;
+use crate::dossier::document::chapter::paragraph::Paragraph;
 use crate::resource::disk_resource::DiskResource;
 use crate::resource::{Resource, ResourceError};
 use super::codex::modifier::constants::CHAPTER_STYLE_PATTERN;
@@ -29,14 +29,10 @@ use super::codex::Codex;
 use super::dossier::document::chapter::chapter_tag::ChapterTag;
 use super::dossier::dossier_configuration::DossierConfiguration;
 use super::dossier::Dossier;
-use super::dossier::{document::{chapter::heading::{Heading, HeadingLevel}, Chapter, Paragraph}, Document};
+use super::dossier::{document::{chapter::heading::{Heading, HeadingLevel}, Chapter}, Document};
 
 
 static CHAPTER_STYLE_PATTERN_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(CHAPTER_STYLE_PATTERN).unwrap());
-
-static FIND_EXTENDED_VERSION_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"heading-[[:digit:]]+-extended-version").unwrap());
-static FIND_COMPACT_VERSION_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"heading-[[:digit:]]+-compact-version").unwrap());
-
 static DOUBLE_NEW_LINES: Lazy<String> = Lazy::new(|| format!("{}{}", NEW_LINE, NEW_LINE));
 static TRIPLE_NEW_LINES: Lazy<String> = Lazy::new(|| format!("{}{}{}", NEW_LINE, NEW_LINE, NEW_LINE));
 
@@ -197,7 +193,7 @@ impl Loader {
             preamble_end = chapter_borders[0].0;
         }
 
-        let preamble: Vec<Box<dyn ParagraphTrait>>;
+        let preamble: Vec<Box<dyn Paragraph>>;
         
         if preamble_end > 0 {      // => there is a preamble
             
@@ -242,7 +238,7 @@ impl Loader {
     }
 
     /// Split a string in the corresponding vector of paragraphs
-    pub fn load_paragraphs_from_str(content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<Vec<Box<dyn ParagraphTrait>>, LoadError> {
+    pub fn load_paragraphs_from_str(content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<Vec<Box<dyn Paragraph>>, LoadError> {
 
         if content.trim().is_empty() {
             log::debug!("skip paragraphs loading: empty content");
@@ -251,7 +247,7 @@ impl Loader {
 
         log::debug!("loading paragraph:\n{}", content);
 
-        let mut paragraphs: Vec<(usize, usize, Box<dyn ParagraphTrait>)> = Vec::new();
+        let mut paragraphs: Vec<(usize, usize, Box<dyn Paragraph>)> = Vec::new();
         let mut content = String::from(content);
 
         content = content.replace(&(*DOUBLE_NEW_LINES), &(*TRIPLE_NEW_LINES));
@@ -444,7 +440,7 @@ impl Loader {
                     return (Some(Heading::new(level, String::from(title))), tags);
                 },
 
-                StandardHeading::HeadingGeneralCompactVersion(_) => {
+                StandardHeading::HeadingGeneralExtendedVersion(_) => {
                     let level: u32 = content.chars().take_while(|&c| c == '#').count() as u32;
 
                     let matched = heading_modifier.modifier_pattern_regex().captures(content).unwrap();
@@ -456,7 +452,7 @@ impl Loader {
                     return (Some(Heading::new(level, String::from(title))), tags);
                 },
 
-                StandardHeading::HeadingGeneralExtendedVersion(_) => {
+                StandardHeading::HeadingGeneralCompactVersion(_) => {
                     let matched = heading_modifier.modifier_pattern_regex().captures(content).unwrap();
 
                     let level: HeadingLevel = matched.get(1).unwrap().as_str().parse().unwrap();
@@ -559,30 +555,28 @@ mod test {
     #[test]
     fn chapters_from_str() {
 
-        todo!()
+        let codex = Codex::of_html();
 
-//         let codex = Codex::of_html(CodexConfiguration::default());
+        let content: String = 
+r#"
+# title 1a
 
-//         let content: String = 
-// r#"
-// # title 1a
+paragraph 1a
 
-// paragraph 1a
+## title 2a
 
-// ## title 2a
+paragraph 2a
 
-// paragraph 2a
+# title 1b
 
-// # title 1b
+paragraph 1b
+"#.trim().to_string();
 
-// paragraph 1b
-// "#.trim().to_string();
+        let document = Loader::load_document_from_str("test", &content, &codex, &LoaderConfiguration::default(), Arc::new(RwLock::new(LoaderConfigurationOverLay::default()))).unwrap();
 
-//         let document = Loader::load_document_from_str("test", &content, &codex, &LoaderConfiguration::default()).unwrap();
+        assert_eq!(document.preamble().len(), 0);
 
-//         assert_eq!(document.preamble().len(), 0);
-
-//         assert_eq!(document.chapters().len(), 3);
+        assert_eq!(document.chapters().len(), 3);
 
 
         
@@ -590,35 +584,30 @@ mod test {
 
     #[test]
     fn paragraphs_from_str() {
+        let content = concat!(
+            "paragraph1",
+            "\n\n",
+            "paragraph2a\nparagraph2b",
+            "\n\n",
+            "paragraph3",
+        );
 
-        todo!()
+        let codex = Codex::of_html();
 
-        // let content = concat!(
-        //     "paragraph1",
-        //     "\n\n",
-        //     "paragraph2a\nparagraph2b",
-        //     "\n\n",
-        //     "paragraph3",
-        // );
+        let paragraphs = Loader::load_paragraphs_from_str(content, &codex, &LoaderConfiguration::default(), Arc::new(RwLock::new(LoaderConfigurationOverLay::default()))).unwrap();
 
-        // let codex = Codex::of_html(CodexConfiguration::default());
-
-        // let paragraphs = Loader::load_paragraphs_from_str(content, &codex, &LoaderConfiguration::default()).unwrap();
-
-        // assert_eq!(paragraphs.len(), 3)
+        assert_eq!(paragraphs.len(), 3)
     }
 
     #[test]
     fn load_dossier() {
 
-        todo!()
+        let dossier_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("test-resources").join("nmd-test-dossier-1");
 
-        // let dossier_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("test-resources").join("nmd-test-dossier-1");
+        let codex = Codex::of_html();
 
-        // let codex = Codex::of_html(CodexConfiguration::default());
+        let loader_configuration = LoaderConfiguration::default();
 
-        // let loader_configuration = LoaderConfiguration::default();
-
-        // let _dossier = Loader::load_dossier_from_path_buf(&dossier_path, &codex, &loader_configuration).unwrap();
+        let _dossier = Loader::load_dossier_from_path_buf(&dossier_path, &codex, &loader_configuration, Arc::new(RwLock::new(LoaderConfigurationOverLay::default()))).unwrap();
     }
 }

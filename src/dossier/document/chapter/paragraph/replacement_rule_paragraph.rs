@@ -1,6 +1,6 @@
 use std::sync::{Arc, RwLock};
 use getset::{Getters, Setters};
-use crate::{codex::Codex, compiler::{compilable::{Compilable, GenericCompilable}, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor, compilation_rule::CompilationRule, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::ParagraphTrait, output_format::OutputFormat, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use crate::{codex::Codex, compiler::{compilable::{Compilable, GenericCompilable}, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor, compilation_rule::CompilationRule, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 #[derive(Debug, Getters, Setters)]
@@ -54,7 +54,7 @@ impl CompilationResultAccessor for ReplacementRuleParagraph {
     }
 }
 
-impl ParagraphTrait for ReplacementRuleParagraph {
+impl Paragraph for ReplacementRuleParagraph {
     fn raw_content(&self) -> &String {
         &self.raw_content
     }

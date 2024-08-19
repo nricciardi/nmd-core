@@ -1,8 +1,6 @@
-use std::{fs::{self, File}, io::Read, path::PathBuf, str::FromStr};
+use std::{fs::{self}, path::PathBuf, str::FromStr};
 
-use base64::{engine::general_purpose::STANDARD, Engine};
 use getset::{Getters, MutGetters, Setters};
-use oxipng::Options;
 
 use crate::dossier;
 
@@ -160,7 +158,7 @@ impl FromStr for ImageResource {
     type Err = ResourceError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self::new(Source::from_str(s)?, None, None).inferring_mime_type()?)
+        Ok(Self::new(Source::from_str(s)?, None, None, None, None).inferring_mime_type_or_nothing())
     }
 }
 

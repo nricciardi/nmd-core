@@ -1,11 +1,9 @@
 use std::sync::{Arc, RwLock};
 use build_html::{Container, Html, HtmlContainer};
 use getset::{Getters, Setters};
-use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::ParagraphTrait, output_format::OutputFormat, resource::{image_resource::ImageResource, source::Source}, utility::{image_utility, nmd_unique_identifier::NmdUniqueIdentifier}};
+use crate::{codex::Codex, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, resource::{image_resource::ImageResource, source::Source}, utility::{image_utility, nmd_unique_identifier::NmdUniqueIdentifier}};
 
 
-
-const MULTI_IMAGE_PERMITTED_MODIFIER: &'static [StandardParagraphModifier] = &[StandardParagraphModifier::Image, StandardParagraphModifier::AbridgedImage];
 const SINGLE_IMAGE_CLASSES: [&str; 1] = ["image"];
 const ABRIDGED_IMAGE_CLASSES: [&str; 2] = ["image", "abridged-image"];
 
@@ -154,7 +152,7 @@ impl ImageParagraph {
         Ok(())
     }
 
-    fn html_fast_compile(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+    fn html_fast_compile(&mut self, _codex: &Codex, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
         
 
         match &self.content {
@@ -197,7 +195,7 @@ impl CompilationResultAccessor for ImageParagraph {
     }
 }
 
-impl ParagraphTrait for ImageParagraph {
+impl Paragraph for ImageParagraph {
     fn raw_content(&self) -> &String {
         &self.raw_content
     }

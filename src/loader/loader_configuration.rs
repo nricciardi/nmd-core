@@ -1,13 +1,24 @@
 use std::path::PathBuf;
+use getset::{CopyGetters, Getters, Setters};
 
-use getset::{Getters, Setters};
 
-
-#[derive(Debug, Getters, Setters, Default)]
+#[derive(Debug, Getters, CopyGetters, Setters)]
 pub struct LoaderConfiguration {
     
     #[getset(get = "pub", set = "pub")]
     input_location: PathBuf,
+
+    #[getset(get_copy = "pub", set = "pub")]
+    strict_focus_block_check: bool,
+}
+
+impl Default for LoaderConfiguration {
+    fn default() -> Self {
+        Self {
+            input_location: PathBuf::from("."),
+            strict_focus_block_check: false
+        }
+    }
 }
 
 

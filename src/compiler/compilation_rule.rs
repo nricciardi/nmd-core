@@ -1,7 +1,4 @@
 pub mod replacement_rule;
-pub mod html_image_rule;
-pub mod html_list_rule;
-pub mod html_extended_block_quote_rule;
 pub mod html_greek_letter_rule;
 pub mod reference_rule;
 pub mod html_cite_rule;
@@ -13,7 +10,7 @@ use regex::{Match, Regex};
 
 use crate::{codex::Codex, output_format::OutputFormat};
 
-use super::{compilable::{Compilable, CompilableContent}, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult};
+use super::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult};
 
 
 pub trait CompilationRule: Send + Sync + Debug {
