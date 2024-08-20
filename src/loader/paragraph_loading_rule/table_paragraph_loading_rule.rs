@@ -1,5 +1,3 @@
-use std::sync::{Arc, RwLock};
-
 use once_cell::sync::Lazy;
 use regex::Regex;
 
@@ -86,7 +84,7 @@ impl TableParagraphLoadingRule {
         Some(alignments)
     }
 
-    fn build_row(row: &Vec<String>, alignments: &Vec<TableCellAlignment>, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<Vec<TableCell<TableParagraphContentRow>>, LoadError> {
+    fn build_row(row: &Vec<String>, alignments: &Vec<TableCellAlignment>, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Vec<TableCell<TableParagraphContentRow>>, LoadError> {
 
         let mut cells: Vec<TableCell<TableParagraphContentRow>> = Vec::new();
 
@@ -162,7 +160,7 @@ impl TableParagraphLoadingRule {
 }
 
 impl ParagraphLoadingRule for TableParagraphLoadingRule {
-    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<Box<dyn Paragraph>, LoadError> {
+    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Box<dyn Paragraph>, LoadError> {
 
         let mut table: TableParagraphContent = Table::new_empty();
 
@@ -244,11 +242,11 @@ impl ParagraphLoadingRule for TableParagraphLoadingRule {
 
 #[cfg(test)]
 mod test {
-    use std::{collections::HashMap, sync::{Arc, RwLock}};
+    use std::collections::HashMap;
 
     use indexmap::IndexMap;
 
-    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, Modifier}, Codex}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_content_loading_rule::ParagraphLoadingRule, Loader}};
+    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, Modifier}, Codex}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_loading_rule::ParagraphLoadingRule, Loader}};
 
     use super::TableParagraphLoadingRule;
 
@@ -285,7 +283,7 @@ mod test {
 
         let codex = codex();
         
-        let paragraphs = Loader::load_paragraphs_from_str(&nmd_text, &codex, &LoaderConfiguration::default(), Arc::new(RwLock::new(LoaderConfigurationOverLay::default()))).unwrap();
+        let paragraphs = Loader::load_paragraphs_from_str(&nmd_text, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
 
         assert_eq!(paragraphs.len(), 1);
 

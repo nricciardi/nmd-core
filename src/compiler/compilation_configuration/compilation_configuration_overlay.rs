@@ -4,7 +4,7 @@ use crate::codex::modifier::ModifiersBucket;
 
 
 
-#[derive(Debug, Getters, Setters, Default)]
+#[derive(Debug, Getters, Setters, Default, Clone)]
 pub struct CompilationConfigurationOverLay {
 
     #[getset(get = "pub", set = "pub")]

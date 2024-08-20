@@ -1,4 +1,3 @@
-use std::sync::{Arc, RwLock};
 use once_cell::sync::Lazy;
 use regex::Regex;
 
@@ -22,8 +21,8 @@ impl BlockQuoteParagraphLoadingRule {
         Self {}
     }
 
-    fn inner_load(&self, raw_content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<ExtendedBlockQuoteParagraph, LoadError> {
-        let mut lines: Vec<&str> = raw_content.lines().collect();
+    fn inner_load(&self, raw_content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<ExtendedBlockQuoteParagraph, LoadError> {
+        let mut lines: Vec<&str> = raw_content.trim().lines().collect();
 
         let extended_block_quote_type: String;
 
@@ -48,7 +47,7 @@ impl BlockQuoteParagraphLoadingRule {
 
                 } else {
 
-                    log::error!("invalid line in focus (quote) block: {}", line);
+                    // log::error!("invalid line in focus (quote) block: {}", line);
                     return Err(LoadError::ElaborationError("invalid line in focus (quote) block".to_string()))
                 }
             }
@@ -74,7 +73,7 @@ impl BlockQuoteParagraphLoadingRule {
 
 
 impl ParagraphLoadingRule for BlockQuoteParagraphLoadingRule {
-    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<Box<dyn Paragraph>, LoadError> {
+    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Box<dyn Paragraph>, LoadError> {
         
         Ok(Box::new(self.inner_load(raw_content, codex, configuration, configuration_overlay.clone())?))
     }
@@ -83,10 +82,8 @@ impl ParagraphLoadingRule for BlockQuoteParagraphLoadingRule {
 
 #[cfg(test)]
 mod test {
-    use std::sync::{Arc, RwLock};
 
     use crate::{codex::Codex, loader::loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}};
-
     use super::{BlockQuoteParagraphLoadingRule, DEFAULT_TYPE};
 
 
@@ -101,7 +98,7 @@ mod test {
 
         let rule = BlockQuoteParagraphLoadingRule::new();
 
-        let paragraph = rule.inner_load(&nmd_text, &Codex::of_html(), &LoaderConfiguration::default(), Arc::new(RwLock::new(LoaderConfigurationOverLay::default()))).unwrap();    
+        let paragraph = rule.inner_load(&nmd_text, &Codex::of_html(), &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();    
     
         assert_eq!(paragraph.extended_quote_type(), DEFAULT_TYPE);
 

@@ -73,10 +73,10 @@ Develop [check list](DEVELOP.md)
 
 ### Known issues
 
-- [ ] Paragraphs and text are not parsed in tables
+- [x] Paragraphs and text are not parsed in tables
 - [ ] Nested text modifiers could be compiled wrongly (e.g. `*this is a **phrase** with some bold*.`)
 - [ ] List with empty lines between two items
-- [ ] Missed `"tab"` as modifier
+- [ ] Missed `tab` as modifier
 - [ ] Missed style for simples quotes
 - [ ] Text between two list items
 

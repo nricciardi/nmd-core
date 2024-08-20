@@ -1,9 +1,5 @@
-use std::sync::{Arc, RwLock};
-
 use getset::{Getters, Setters};
-
 use crate::{codex::Codex, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor, self_compile::SelfCompile, Compiler}, output_format::OutputFormat, utility::nmd_unique_identifier::NmdUniqueIdentifier};
-
 use super::Paragraph;
 
 
@@ -41,7 +37,7 @@ impl ExtendedBlockQuoteParagraph {
 }
 
 impl SelfCompile for ExtendedBlockQuoteParagraph {
-    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
         
         let mut compilation_result = CompilationResult::new_empty();
 
@@ -93,9 +89,8 @@ impl Paragraph for ExtendedBlockQuoteParagraph {
 
 #[cfg(test)]
 mod test {
-    use std::sync::{Arc, RwLock};
 
-    use crate::{codex::Codex, compiler::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_content_loading_rule::{block_quote_paragraph_loading_rule::BlockQuoteParagraphLoadingRule, ParagraphLoadingRule}}, output_format::OutputFormat};
+    use crate::{codex::Codex, compiler::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_loading_rule::{block_quote_paragraph_loading_rule::BlockQuoteParagraphLoadingRule, ParagraphLoadingRule}}, output_format::OutputFormat};
 
     #[test]
     fn compile() {
@@ -109,9 +104,9 @@ mod test {
         let codex = Codex::of_html();
         let rule = BlockQuoteParagraphLoadingRule::new();
 
-        let mut paragraph = rule.load(&nmd_text, &codex, &LoaderConfiguration::default(), Arc::new(RwLock::new(LoaderConfigurationOverLay::default()))).unwrap();    
+        let mut paragraph = rule.load(&nmd_text, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();    
     
-        paragraph.compile(&OutputFormat::Html, &codex, &CompilationConfiguration::default(), Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
+        paragraph.compile(&OutputFormat::Html, &codex, &CompilationConfiguration::default(), CompilationConfigurationOverLay::default()).unwrap();
     }
 
 }

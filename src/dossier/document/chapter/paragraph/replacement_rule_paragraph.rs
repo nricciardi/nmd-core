@@ -1,4 +1,3 @@
-use std::sync::{Arc, RwLock};
 use getset::{Getters, Setters};
 use crate::{codex::Codex, compiler::{compilable::{Compilable, GenericCompilable}, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor, compilation_rule::CompilationRule, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
@@ -33,7 +32,7 @@ impl ReplacementRuleParagraph {
 }
 
 impl SelfCompile for ReplacementRuleParagraph {
-    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
         
         let input: Box<dyn Compilable> = Box::new(GenericCompilable::new(self.raw_content.clone(), self.nuid.clone()));
 

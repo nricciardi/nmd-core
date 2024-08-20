@@ -1,10 +1,7 @@
 use std::fmt::Debug;
-use std::sync::{Arc, RwLock};
-
 use getset::{CopyGetters, Getters, MutGetters, Setters};
 use log;
 use regex::{Captures, Regex, Replacer};
-
 use crate::codex::Codex;
 use crate::compiler::compilable::Compilable;
 use crate::compiler::compilation_configuration::compilation_configuration_overlay::CompilationConfigurationOverLay;
@@ -15,7 +12,6 @@ use crate::compiler::compilation_rule::constants::DOUBLE_NEW_LINE_REGEX;
 use crate::output_format::OutputFormat;
 use crate::resource::resource_reference::ResourceReference;
 use crate::utility::text_utility;
-
 use super::CompilationRule;
 
 
@@ -121,7 +117,7 @@ impl Debug for ReplacementRule<String> {
 impl CompilationRule for ReplacementRule<String> {
 
     /// Compile the content using internal search and replacement pattern
-    fn standard_compile(&self, compilable: &Box<dyn Compilable>, _format: &OutputFormat, _codex: &Codex, _compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, compilable: &Box<dyn Compilable>, _format: &OutputFormat, _codex: &Codex, _compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationResult, CompilationError> {
 
         log::debug!("compile:\n{:#?}\nusing '{}'->'{:?}'", compilable, self.search_pattern(), self.replacer_parts);
 
@@ -141,7 +137,7 @@ impl CompilationRule for ReplacementRule<String> {
 
                     let reference = captures.get(reference_at.clone()).unwrap().as_str();
 
-                    let reference = ResourceReference::of(reference, compilation_configuration_overlay.read().unwrap().document_name().as_ref())?;
+                    let reference = ResourceReference::of(reference, compilation_configuration_overlay.document_name().as_ref())?;
     
                     let reference = reference.build();
 
@@ -232,7 +228,7 @@ impl<F> CompilationRule for ReplacementRule<F>
 where F: 'static + Sync + Send + Fn(&Captures) -> String {
 
     /// Compile the content using internal search and replacement pattern
-    fn standard_compile(&self, compilable: &Box<dyn Compilable>, _format: &OutputFormat, _codex: &Codex, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, compilable: &Box<dyn Compilable>, _format: &OutputFormat, _codex: &Codex, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationResult, CompilationError> {
 
         log::debug!("compile:\n{:#?}\nusing '{}'", compilable, self.search_pattern());
 

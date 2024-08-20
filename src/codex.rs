@@ -12,12 +12,12 @@ use modifier::base_modifier::BaseModifier;
 use modifier::Modifier;
 use self::modifier::standard_paragraph_modifier::StandardParagraphModifier;
 use self::modifier::standard_text_modifier::StandardTextModifier;
-use crate::loader::paragraph_content_loading_rule::block_quote_paragraph_loading_rule::BlockQuoteParagraphLoadingRule;
-use crate::loader::paragraph_content_loading_rule::image_paragraph_loading_rule::ImageParagraphLoadingRule;
-use crate::loader::paragraph_content_loading_rule::list_paragraph_loading_rule::ListParagraphLoadingRule;
-use crate::loader::paragraph_content_loading_rule::replacement_rule_paragraph_loading_rule::ReplacementRuleParagraphLoadingRule;
-use crate::loader::paragraph_content_loading_rule::table_paragraph_loading_rule::TableParagraphLoadingRule;
-use crate::loader::paragraph_content_loading_rule::ParagraphLoadingRule;
+use crate::loader::paragraph_loading_rule::block_quote_paragraph_loading_rule::BlockQuoteParagraphLoadingRule;
+use crate::loader::paragraph_loading_rule::image_paragraph_loading_rule::ImageParagraphLoadingRule;
+use crate::loader::paragraph_loading_rule::list_paragraph_loading_rule::ListParagraphLoadingRule;
+use crate::loader::paragraph_loading_rule::replacement_rule_paragraph_loading_rule::ReplacementRuleParagraphLoadingRule;
+use crate::loader::paragraph_loading_rule::table_paragraph_loading_rule::TableParagraphLoadingRule;
+use crate::loader::paragraph_loading_rule::ParagraphLoadingRule;
 use crate::output_format::OutputFormat;
 use super::compiler::compilation_rule::constants::ESCAPE_HTML;
 use super::compiler::compilation_rule::html_cite_rule::HtmlCiteRule;
@@ -71,32 +71,6 @@ impl Codex {
     }
 
     /// Create a new `Codex`
-    /// 
-    /// # Example
-    /// ```
-    /// use std::collections::HashMap;
-    /// use crate::nmd_core::codex::Codex;
-    /// use crate::nmd_core::codex::codex_configuration::CodexConfiguration;
-    /// use crate::nmd_core::codex::modifier::standard_paragraph_modifier::StandardParagraphModifier;
-    /// use crate::nmd_core::compiler::compilation_rule::{CompilationRule, constants::ESCAPE_HTML, replacement_rule::{ReplacementRule, ReplacementRuleReplacerPart}};
-    /// 
-    /// let codex = Codex::new(
-    ///     CodexConfiguration::default(),
-    ///     HashMap::new(),
-    ///     HashMap::new(),
-    ///     HashMap::from([
-    ///         (
-    ///             StandardParagraphModifier::CommonParagraph.identifier().clone(),
-    ///             Box::new(ReplacementRule::new(StandardParagraphModifier::CommonParagraph.modifier_pattern_with_paragraph_separator().clone(), vec![
-    ///                         ReplacementRuleReplacerPart::new_fixed(String::from(r#"<p class="paragraph" data-nuid="$nuid">"#)),
-    ///                         ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-    ///                         ReplacementRuleReplacerPart::new_fixed(String::from(r#"</p>"#)),
-    ///            ])) as Box<dyn CompilationRule>
-    ///         )
-    ///     ]),
-    ///     HashMap::new(),
-    /// );
-    /// ```
     pub fn new(text_modifiers: CodexModifiersMap, paragraph_modifiers: CodexModifiersMap,
                 text_compilation_rules: CodexCompilationRulesMap, paragraph_loading_rules: CodexLoadingRulesMap,) -> Self {
 

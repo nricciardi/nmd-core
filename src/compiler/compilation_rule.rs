@@ -5,11 +5,9 @@ pub mod html_cite_rule;
 pub mod constants;
 
 
-use std::{fmt::Debug, sync::{Arc, RwLock}};
+use std::fmt::Debug;
 use regex::{Match, Regex};
-
 use crate::{codex::Codex, output_format::OutputFormat};
-
 use super::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult};
 
 
@@ -29,15 +27,15 @@ pub trait CompilationRule: Send + Sync + Debug {
     }
 
     /// Compile string
-    fn standard_compile(&self, compilable: &Box<dyn Compilable>, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError>;
+    fn standard_compile(&self, compilable: &Box<dyn Compilable>, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationResult, CompilationError>;
 
     /// Compile string avoid time consuming operations (incomplete compilation)
-    fn fast_compile(&self, compilable: &Box<dyn Compilable>, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
+    fn fast_compile(&self, compilable: &Box<dyn Compilable>, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationResult, CompilationError> {
         self.standard_compile(compilable, format, codex, compilation_configuration, compilation_configuration_overlay)
     }
 
     /// Standard or fast compilation based on `CompilationConfiguration` `fast_draft()`
-    fn compile(&self, compilable: &Box<dyn Compilable>, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
+    fn compile(&self, compilable: &Box<dyn Compilable>, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationResult, CompilationError> {
 
         if compilation_configuration.fast_draft() {
             return self.fast_compile(compilable, format, codex, compilation_configuration, compilation_configuration_overlay)

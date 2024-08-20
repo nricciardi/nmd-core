@@ -1,4 +1,3 @@
-use std::sync::{Arc, RwLock};
 use build_html::{Container, Html, HtmlContainer};
 use getset::{Getters, Setters};
 use crate::{codex::Codex, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, resource::{image_resource::ImageResource, source::Source}, utility::{image_utility, nmd_unique_identifier::NmdUniqueIdentifier}};
@@ -53,7 +52,7 @@ impl ImageParagraph {
         }
     }
 
-    fn html_standard_compile_single_or_abridged_image(content: &mut ImageParagraphContent, nuid: Option<&NmdUniqueIdentifier>, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<String, CompilationError> {
+    fn html_standard_compile_single_or_abridged_image(content: &mut ImageParagraphContent, nuid: Option<&NmdUniqueIdentifier>, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<String, CompilationError> {
 
         let img_classes = match &content {
             ImageParagraphContent::SingleImage(_) => SINGLE_IMAGE_CLASSES.to_vec(),
@@ -112,7 +111,7 @@ impl ImageParagraph {
         
     }
 
-    fn html_standard_compile_multi_image(multi_image: &mut MultiImage, nuid: Option<&NmdUniqueIdentifier>, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<String, CompilationError> {
+    fn html_standard_compile_multi_image(multi_image: &mut MultiImage, nuid: Option<&NmdUniqueIdentifier>, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<String, CompilationError> {
 
         let images_container_style: String = format!("display: flex; justify-content: {};", multi_image.alignment);
         let mut images_container = build_html::Container::new(build_html::ContainerType::Div)
@@ -138,7 +137,7 @@ impl ImageParagraph {
         Ok(images_container.to_html_string())
     }
 
-    fn html_standard_compile(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+    fn html_standard_compile(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
         
         self.compiled_content = Some(match self.content {
             ImageParagraphContent::SingleImage(_) | ImageParagraphContent::AbridgedImage(_) => {
@@ -152,7 +151,7 @@ impl ImageParagraph {
         Ok(())
     }
 
-    fn html_fast_compile(&mut self, _codex: &Codex, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+    fn html_fast_compile(&mut self, _codex: &Codex, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
         
 
         match &self.content {
@@ -173,14 +172,14 @@ impl ImageParagraph {
 
 
 impl SelfCompile for ImageParagraph {
-    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
         
         match format {
             OutputFormat::Html => self.html_standard_compile(codex, compilation_configuration, compilation_configuration_overlay.clone()),
         }
     }
 
-    fn fast_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+    fn fast_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
         
         match format {
             OutputFormat::Html => self.html_fast_compile(codex, compilation_configuration, compilation_configuration_overlay.clone()),

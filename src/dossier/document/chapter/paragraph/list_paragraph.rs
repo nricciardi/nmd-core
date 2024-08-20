@@ -1,4 +1,3 @@
-use std::sync::{Arc, RwLock};
 use getset::{Getters, Setters};
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -66,7 +65,7 @@ impl ListParagraph {
         String::from(bullet)
     }
 
-    fn html_standard_compile(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+    fn html_standard_compile(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
         let mut compilation_result = CompilationResult::new_empty();
 
         let nuid_attr: String;
@@ -144,7 +143,7 @@ impl ListParagraph {
 }
 
 impl SelfCompile for ListParagraph {
-    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
         
         match format {
             OutputFormat::Html => self.html_standard_compile(codex, compilation_configuration, compilation_configuration_overlay.clone()),
@@ -181,7 +180,7 @@ impl Paragraph for ListParagraph {
 #[cfg(test)]
 mod test {
 
-    use crate::loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_content_loading_rule::{list_paragraph_loading_rule::ListParagraphLoadingRule, ParagraphLoadingRule}};
+    use crate::loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_loading_rule::{list_paragraph_loading_rule::ListParagraphLoadingRule, ParagraphLoadingRule}};
 
     use super::*;
 
@@ -204,9 +203,9 @@ mod test {
         
         let rule = ListParagraphLoadingRule::new();
 
-        let mut paragraph = rule.load(nmd_text, &codex, &LoaderConfiguration::default(), Arc::new(RwLock::new(LoaderConfigurationOverLay::default()))).unwrap();
+        let mut paragraph = rule.load(nmd_text, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
         
-        paragraph.compile(&OutputFormat::Html, &codex, &CompilationConfiguration::default(), Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
+        paragraph.compile(&OutputFormat::Html, &codex, &CompilationConfiguration::default(), CompilationConfigurationOverLay::default()).unwrap();
 
         let compiled_content = paragraph.compilation_result().as_ref().unwrap().content();
         let li_n = Regex::new("<li").unwrap().find_iter(&compiled_content).count();

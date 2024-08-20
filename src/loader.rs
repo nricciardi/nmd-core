@@ -2,14 +2,13 @@
 
 
 pub mod loader_configuration;
-pub mod paragraph_content_loading_rule;
+pub mod paragraph_loading_rule;
 
 
 use std::collections::HashSet;
 use std::io;
 use std::path::PathBuf;
 use std::str::FromStr;
-use std::sync::{Arc, RwLock};
 use getset::{Getters, Setters};
 use loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay};
 use once_cell::sync::Lazy;
@@ -23,6 +22,7 @@ use crate::codex::modifier::standard_heading_modifier::StandardHeading;
 use crate::codex::modifier::Modifier;
 use crate::dossier::document::chapter::paragraph::Paragraph;
 use crate::resource::disk_resource::DiskResource;
+use crate::resource::resource_reference::ResourceReferenceError;
 use crate::resource::{Resource, ResourceError};
 use super::codex::modifier::constants::CHAPTER_STYLE_PATTERN;
 use super::codex::Codex;
@@ -41,6 +41,9 @@ static TRIPLE_NEW_LINES: Lazy<String> = Lazy::new(|| format!("{}{}{}", NEW_LINE,
 pub enum LoadError {
     #[error(transparent)]
     ResourceError(#[from] ResourceError),
+
+    #[error(transparent)]
+    ResourceReferenceError(#[from] ResourceReferenceError),
 
     #[error("elaboration error: {0}")]
     ElaborationError(String),
@@ -78,9 +81,11 @@ impl Loader {
     }
 
     /// Load a document from a raw string, so `document_name` must be provided
-    pub fn load_document_from_str(document_name: &str, content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<Document, LoadError> {
+    pub fn load_document_from_str(document_name: &str, content: &str, codex: &Codex, configuration: &LoaderConfiguration, mut configuration_overlay: LoaderConfigurationOverLay) -> Result<Document, LoadError> {
 
         log::info!("loading document '{}' from its content...", document_name);
+
+        configuration_overlay.set_document_name(Some(document_name.to_string()));
 
         let content = String::from(content);
 
@@ -217,7 +222,7 @@ impl Loader {
     }
 
     /// Load a document from its path (`PathBuf`). The document have to exist.
-    pub fn load_document_from_path(path_buf: &PathBuf, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<Document, LoadError> {
+    pub fn load_document_from_path(path_buf: &PathBuf, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Document, LoadError> {
 
         if !path_buf.exists() {
             return Err(LoadError::ResourceError(ResourceError::InvalidResourceVerbose(format!("{} not exists", path_buf.to_string_lossy())))) 
@@ -238,7 +243,7 @@ impl Loader {
     }
 
     /// Split a string in the corresponding vector of paragraphs
-    pub fn load_paragraphs_from_str(content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<Vec<Box<dyn Paragraph>>, LoadError> {
+    pub fn load_paragraphs_from_str(content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Vec<Box<dyn Paragraph>>, LoadError> {
 
         if content.trim().is_empty() {
             log::debug!("skip paragraphs loading: empty content");
@@ -267,7 +272,7 @@ impl Loader {
 
             log::debug!("test paragraph modifier '{}': {:?}", codex_identifier, search_pattern);
 
-            paragraph_modifier.modifier_pattern_regex().find_iter(content.clone().as_str()).for_each(|m| {
+            for m in paragraph_modifier.modifier_pattern_regex().find_iter(content.clone().as_str()) {
 
                 let matched_str = String::from(&content[m.start()..m.end()]);
 
@@ -290,42 +295,32 @@ impl Loader {
 
                 if let Some(p) = overlap_paragraph {     // => overlap
                     log::debug!("paragraph discarded because there is an overlap between {} and {} using pattern {:?}:\n{:#?}\n", start, end, search_pattern, p);
-                    return
+                    continue;
                 }
 
                 if matched_str.is_empty() {
                     log::debug!("paragraph discarded because empty");
-                    return;
+                    continue;
                 }
 
                 let raw_content = matched_str.replace(&(*TRIPLE_NEW_LINES), &(*DOUBLE_NEW_LINES));
 
                 if let Some(loading_rule) = codex.paragraph_loading_rules().get(codex_identifier) {
 
-                    let res = loading_rule.load(&raw_content, codex, configuration, configuration_overlay.clone());
+                    let paragraph = loading_rule.load(&raw_content, codex, configuration, configuration_overlay.clone())?;
 
-                    if let Ok(paragraph) = res {
-
-                        if !paragraph.is_empty() {
-                            log::debug!("added paragraph to paragraphs list:\n{:#?}", paragraph);
-                            
-                            paragraphs.push((start, end, paragraph));
-                        }
-
-                    } else {
-
-                        let err = res.err().unwrap().to_string();
-
-                        log::error!("paragraph content loading error: {}", err);
-                        panic!("paragraph content loading error: {}", err)
+                    if !paragraph.is_empty() {
+                        log::debug!("added paragraph to paragraphs list:\n{:#?}", paragraph);
+                        
+                        paragraphs.push((start, end, paragraph));
                     }
 
                 } else {
-                    log::error!("paragraph content loading rule not found for {}", codex_identifier);
-                    panic!("paragraph content loading rule not found for {}", codex_identifier)
+
+                    return Err(LoadError::ElaborationError(format!("paragraph content loading rule not found for {}", codex_identifier)))
                 }
 
-            });
+            };
         }
 
         paragraphs.par_sort_by(|a, b| a.0.cmp(&b.1));
@@ -470,14 +465,14 @@ impl Loader {
     }
 
     /// Load dossier from its filesystem path
-    pub fn load_dossier_from_path_buf(path_buf: &PathBuf, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<Dossier, LoadError> {
+    pub fn load_dossier_from_path_buf(path_buf: &PathBuf, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Dossier, LoadError> {
         let dossier_configuration = DossierConfiguration::try_from(path_buf)?;
 
         Self::load_dossier_from_dossier_configuration(&dossier_configuration, codex, configuration, configuration_overlay.clone())
     }
 
     /// Load dossier from its filesystem path considering only a subset of documents
-    pub fn load_dossier_from_path_buf_only_documents(path_buf: &PathBuf, only_documents: &HashSet<String>, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<Dossier, LoadError> {
+    pub fn load_dossier_from_path_buf_only_documents(path_buf: &PathBuf, only_documents: &HashSet<String>, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Dossier, LoadError> {
         let mut dossier_configuration = DossierConfiguration::try_from(path_buf)?;
 
         let d: Vec<String> = dossier_configuration.raw_documents_paths().iter()
@@ -496,7 +491,7 @@ impl Loader {
     }
 
     /// Load dossier from its dossier configuration
-    pub fn load_dossier_from_dossier_configuration(dossier_configuration: &DossierConfiguration, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<Dossier, LoadError> {
+    pub fn load_dossier_from_dossier_configuration(dossier_configuration: &DossierConfiguration, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Dossier, LoadError> {
 
         // TODO: are really mandatory?
         if dossier_configuration.documents_paths().is_empty() {
@@ -572,7 +567,7 @@ paragraph 2a
 paragraph 1b
 "#.trim().to_string();
 
-        let document = Loader::load_document_from_str("test", &content, &codex, &LoaderConfiguration::default(), Arc::new(RwLock::new(LoaderConfigurationOverLay::default()))).unwrap();
+        let document = Loader::load_document_from_str("test", &content, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
 
         assert_eq!(document.preamble().len(), 0);
 
@@ -594,7 +589,7 @@ paragraph 1b
 
         let codex = Codex::of_html();
 
-        let paragraphs = Loader::load_paragraphs_from_str(content, &codex, &LoaderConfiguration::default(), Arc::new(RwLock::new(LoaderConfigurationOverLay::default()))).unwrap();
+        let paragraphs = Loader::load_paragraphs_from_str(content, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
 
         assert_eq!(paragraphs.len(), 3)
     }
@@ -608,6 +603,6 @@ paragraph 1b
 
         let loader_configuration = LoaderConfiguration::default();
 
-        let _dossier = Loader::load_dossier_from_path_buf(&dossier_path, &codex, &loader_configuration, Arc::new(RwLock::new(LoaderConfigurationOverLay::default()))).unwrap();
+        let _dossier = Loader::load_dossier_from_path_buf(&dossier_path, &codex, &loader_configuration, LoaderConfigurationOverLay::default()).unwrap();
     }
 }

@@ -1,4 +1,3 @@
-use std::sync::{Arc, RwLock};
 use build_html::Container;
 use build_html::ContainerType;
 use build_html::Html;
@@ -87,12 +86,12 @@ impl TableParagraph {
         Ok(())
     }
 
-    fn html_standard_compile(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+    fn html_standard_compile(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
         let mut html_table_attrs: Vec<(String, String)> = vec![(String::from("class"), String::from("table"))];
 
         if let Some(ref id) = self.raw_id {
 
-            html_table_attrs.push((String::from("id"), ResourceReference::of_internal(&id, compilation_configuration_overlay.read().unwrap().document_name().as_ref())?.build_without_internal_sharp()));
+            html_table_attrs.push((String::from("id"), ResourceReference::of_internal(&id, compilation_configuration_overlay.document_name().as_ref())?.build_without_internal_sharp()));
         }
 
         if let Some(ref style) = self.raw_style {
@@ -220,7 +219,7 @@ impl TableParagraph {
 }
 
 impl SelfCompile for TableParagraph {
-    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
         
         match format {
             OutputFormat::Html => self.html_standard_compile(codex, compilation_configuration, compilation_configuration_overlay.clone()),
@@ -257,15 +256,14 @@ impl Paragraph for TableParagraph {
 
 #[cfg(test)]
 mod test {
-    use std::sync::{Arc, RwLock};
 
-    use crate::{codex::Codex, compiler::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, dossier::document::chapter::paragraph::Paragraph, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_content_loading_rule::{table_paragraph_loading_rule::TableParagraphLoadingRule, ParagraphLoadingRule}}, output_format::OutputFormat};
+    use crate::{codex::Codex, compiler::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, dossier::document::chapter::paragraph::Paragraph, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_loading_rule::{table_paragraph_loading_rule::TableParagraphLoadingRule, ParagraphLoadingRule}}, output_format::OutputFormat};
 
     fn load_table(nmd_text: &str, codex: &Codex) -> Box<dyn Paragraph> {
 
         let rule = TableParagraphLoadingRule::new();
 
-        rule.load(nmd_text, &codex, &LoaderConfiguration::default(), Arc::new(RwLock::new(LoaderConfigurationOverLay::default()))).unwrap()
+        rule.load(nmd_text, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap()
 
     }
 
@@ -287,7 +285,7 @@ mod test {
 
         let mut paragraph = load_table(nmd_text, &codex);
         
-        paragraph.compile(&OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(compilation_configuration_overlay))).unwrap();
+        paragraph.compile(&OutputFormat::Html, &codex, &compilation_configuration, compilation_configuration_overlay).unwrap();
         
         let outcome = paragraph.compilation_result().as_ref().unwrap().content();
 
@@ -316,7 +314,7 @@ mod test {
 
         let mut paragraph = load_table(nmd_text, &codex);
         
-        paragraph.compile(&OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(compilation_configuration_overlay))).unwrap();
+        paragraph.compile(&OutputFormat::Html, &codex, &compilation_configuration, compilation_configuration_overlay).unwrap();
         
         let outcome = paragraph.compilation_result().as_ref().unwrap().content();
 

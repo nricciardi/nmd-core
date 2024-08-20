@@ -11,7 +11,7 @@ pub mod compilable;
 pub mod self_compile;
 
 
-use std::{sync::{Arc, RwLock}, time::Instant};
+use std::time::Instant;
 use compilable::{Compilable, GenericCompilable};
 use compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration};
 use compilation_error::CompilationError;
@@ -36,23 +36,23 @@ pub struct Compiler {
 impl Compiler {
 
     /// Compile a dossier
-    pub fn compile_dossier(dossier: &mut Dossier, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+    pub fn compile_dossier(dossier: &mut Dossier, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, mut compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
 
         log::info!("compile dossier {} with ({} documents, parallelization: {})", dossier.name(), dossier.documents().len(), compilation_configuration.parallelization());
 
-        compilation_configuration_overlay.write().unwrap().set_dossier_name(Some(dossier.name().clone()));
+        compilation_configuration_overlay.set_dossier_name(Some(dossier.name().clone()));
 
         let fast_draft = compilation_configuration.fast_draft();
 
         if compilation_configuration.parallelization() {
 
-            let compilation_configuration_overlay = Arc::clone(&compilation_configuration_overlay);
+            let compile_only_documents = compilation_configuration_overlay.compile_only_documents();
 
             let maybe_fails = dossier.documents_mut().par_iter_mut()
                 .filter(|document| {
                     if fast_draft {
     
-                        if let Some(subset) = compilation_configuration_overlay.read().unwrap().compile_only_documents() {
+                        if let Some(subset) = compile_only_documents {
 
                             let skip = !subset.contains(document.name());
         
@@ -70,7 +70,7 @@ impl Compiler {
 
                     let now = Instant::now();
 
-                    let res = Self::compile_document(document, format, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay));
+                    let res = Self::compile_document(document, format, codex, compilation_configuration, compilation_configuration_overlay.clone());
 
                     log::info!("document '{}' compiled in {} ms", document.name(), now.elapsed().as_millis());
 
@@ -83,12 +83,15 @@ impl Compiler {
                 }
             
         } else {
+
+            let compile_only_documents = compilation_configuration_overlay.compile_only_documents();
+
             let maybe_fails = dossier.documents_mut().iter_mut()
                 .filter(|document| {
 
                     if fast_draft {
 
-                        if let Some(subset) = compilation_configuration_overlay.read().unwrap().compile_only_documents() {
+                        if let Some(subset) = compile_only_documents {
 
                             let skip = !subset.contains(document.name());
         
@@ -105,7 +108,7 @@ impl Compiler {
                 .map(|document| {
                     let now = Instant::now();
 
-                    let res = Self::compile_document(document, format, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay));
+                    let res = Self::compile_document(document, format, codex, compilation_configuration, compilation_configuration_overlay.clone());
 
                     log::info!("document '{}' compiled in {} ms", document.name(), now.elapsed().as_millis());
 
@@ -138,7 +141,7 @@ impl Compiler {
                 headings
             );
 
-            Self::compile_table_of_contents(&mut table_of_contents, format, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay))?;
+            Self::compile_table_of_contents(&mut table_of_contents, format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
         
             dossier.set_table_of_contents(Some(table_of_contents));
         }
@@ -149,7 +152,7 @@ impl Compiler {
                 dossier.configuration().bibliography().records().clone()
             );
 
-            Self::compile_bibliography(&mut bibliography, format, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay))?;
+            Self::compile_bibliography(&mut bibliography, format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
         
             dossier.set_bibliography(Some(bibliography));
         }
@@ -158,13 +161,13 @@ impl Compiler {
     }
 
     /// Compile document
-    pub fn compile_document(document: &mut Document, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+    pub fn compile_document(document: &mut Document, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, mut compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
 
         let parallelization = compilation_configuration.parallelization();
 
         log::info!("compile {} chapters of document: '{}'", document.chapters().len(), document.name());
 
-        compilation_configuration_overlay.write().unwrap().set_document_name(Some(document.name().clone()));
+        compilation_configuration_overlay.set_document_name(Some(document.name().clone()));
 
         if parallelization {
 
@@ -182,7 +185,7 @@ impl Compiler {
             let maybe_one_failed: Option<Result<(), CompilationError>> = document.chapters_mut().par_iter_mut()
                 .map(|chapter| {
 
-                    Self::compile_chapter(chapter, format, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay))
+                    Self::compile_chapter(chapter, format, codex, compilation_configuration, compilation_configuration_overlay.clone())
                 
                 }).find_any(|result| result.is_err());
 
@@ -206,7 +209,7 @@ impl Compiler {
             let maybe_one_failed: Option<Result<(), CompilationError>> = document.chapters_mut().iter_mut()
                 .map(|chapter| {
 
-                    Self::compile_chapter(chapter, format, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay))
+                    Self::compile_chapter(chapter, format, codex, compilation_configuration, compilation_configuration_overlay.clone())
                 
                 }).find(|result| result.is_err());
 
@@ -220,9 +223,9 @@ impl Compiler {
     }
 
     /// Compile chapter
-    pub fn compile_chapter(chapter: &mut Chapter, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+    pub fn compile_chapter(chapter: &mut Chapter, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
 
-        Self::compile_heading(chapter.heading_mut(), format, codex, compilation_configuration, Arc::clone(&compilation_configuration_overlay))?;
+        Self::compile_heading(chapter.heading_mut(), format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
 
         log::debug!("compile chapter:\n{:#?}", chapter);
 
@@ -263,10 +266,9 @@ impl Compiler {
     }
 
     /// Compile heading
-    pub fn compile_heading(heading: &mut Heading, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+    pub fn compile_heading(heading: &mut Heading, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
 
-        let cco = compilation_configuration_overlay.write().unwrap();
-        let document_name = cco.document_name().as_ref();
+        let document_name = compilation_configuration_overlay.document_name().as_ref();
 
         if document_name.is_none() {
             return Err(CompilationError::DocumentNameNotFound)
@@ -323,7 +325,7 @@ impl Compiler {
     }
 
     /// Compile table of contents
-    pub fn compile_table_of_contents(table_of_contents: &mut TableOfContents, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+    pub fn compile_table_of_contents(table_of_contents: &mut TableOfContents, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
         
         if table_of_contents.headings().is_empty() {
             
@@ -390,7 +392,7 @@ impl Compiler {
                                     format,
                                     codex,
                                     compilation_configuration,
-                                    Arc::clone(&compilation_configuration_overlay)
+                                    compilation_configuration_overlay.clone()
                                 )?);
 
                     if let Some(_) = heading.resource_reference() {
@@ -417,7 +419,7 @@ impl Compiler {
     }
 
     /// Compile bibliography
-    pub fn compile_bibliography(bibliography: &mut Bibliography, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<(), CompilationError> {
+    pub fn compile_bibliography(bibliography: &mut Bibliography, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
         
         log::info!("compiling bibliography...");
 
@@ -483,9 +485,9 @@ impl Compiler {
     }
 
     /// Compile a string
-    pub fn compile_str(content: &str, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: Arc<RwLock<CompilationConfigurationOverLay>>) -> Result<CompilationResult, CompilationError> {
+    pub fn compile_str(content: &str, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationResult, CompilationError> {
 
-        let excluded_modifiers = compilation_configuration_overlay.read().unwrap().excluded_modifiers().clone();
+        let excluded_modifiers = compilation_configuration_overlay.excluded_modifiers().clone();
 
         log::debug!("start to compile content:\n{}\nexcluding: {:?}", content, excluded_modifiers);
 
@@ -620,10 +622,8 @@ impl Compiler {
 
 #[cfg(test)]
 mod test {
-    use std::sync::{Arc, RwLock};
-
+    
     use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::constants::ESCAPE_HTML}, dossier::document::chapter::paragraph::{replacement_rule_paragraph::ReplacementRuleParagraph, Paragraph}, output_format::OutputFormat};
-
     use super::{compilation_rule::replacement_rule::{ReplacementRule, ReplacementRuleReplacerPart}, Compiler};
 
 
@@ -633,11 +633,20 @@ mod test {
         let codex = Codex::of_html();
         let compilation_configuration = CompilationConfiguration::default();
 
-        let content = "Text **bold text** `a **bold text** which must be not parsed`";
+        let content = "A piece of **bold text**, *italic text*, `a **bold text** which must be not parsed` and *nested **bold text***";
 
-        let outcome = Compiler::compile_str(content, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
+        let outcome = Compiler::compile_str(content, &OutputFormat::Html, &codex, &compilation_configuration, CompilationConfigurationOverLay::default()).unwrap();
 
-        assert_eq!(outcome.content(), r#"Text <strong class="bold">bold text</strong> <code class="language-markup inline-code">a **bold text** which must be not parsed</code>"#)
+        
+
+        assert_eq!(outcome.content(), concat!(
+            "A piece of ",
+            r#"<strong class="bold">bold text</strong>, "#,
+            r#"<em class="italic">italic text</em>, "#,
+            r#"<code class="language-markup inline-code">a **bold text** which must be not parsed</code>"#,
+            r#" and "#,
+            r#"<em class="italic">nested <strong class="bold">bold text</strong></em>"#,
+        ));
     }
 
     #[test]
@@ -656,7 +665,7 @@ mod test {
 
         paragraph.set_nuid(Some("test-nuid".to_string()));
 
-        paragraph.compile(&OutputFormat::Html, &codex, &CompilationConfiguration::default(), Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
+        paragraph.compile(&OutputFormat::Html, &codex, &CompilationConfiguration::default(), CompilationConfigurationOverLay::default()).unwrap();
         
         assert_eq!(paragraph.compilation_result().clone().unwrap().content(), concat!(
             r#"<p class="paragraph" data-nuid="test-nuid">"#,

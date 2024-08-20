@@ -22,7 +22,7 @@ impl Default for LoaderConfiguration {
 }
 
 
-#[derive(Debug, Getters, Setters, Default)]
+#[derive(Debug, Getters, Setters, Default, Clone)]
 pub struct LoaderConfigurationOverLay {
 
     #[getset(get = "pub", set = "pub")]

@@ -7,11 +7,11 @@ pub mod block_quote_paragraph_loading_rule;
 
 use crate::{codex::Codex, dossier::document::chapter::paragraph::Paragraph};
 use super::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError};
-use std::{fmt::Debug, sync::{Arc, RwLock}};
+use std::fmt::Debug;
 
 
 pub trait ParagraphLoadingRule: Debug + Send + Sync {
 
-    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: Arc<RwLock<LoaderConfigurationOverLay>>) -> Result<Box<dyn Paragraph>, LoadError>;
+    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Box<dyn Paragraph>, LoadError>;
 
 }
