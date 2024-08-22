@@ -27,21 +27,21 @@ pub trait CompilationRule: Send + Sync + Debug {
     }
 
     /// Compile string
-    fn standard_compile(&self, compilable: &Box<dyn Compilable>, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationResult, CompilationError>;
+    fn standard_compile(&self, compilable: &Box<dyn Compilable>, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationResult, CompilationError>;
 
     /// Compile string avoid time consuming operations (incomplete compilation)
-    fn fast_compile(&self, compilable: &Box<dyn Compilable>, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationResult, CompilationError> {
-        self.standard_compile(compilable, format, codex, compilation_configuration, compilation_configuration_overlay)
+    fn fast_compile(&self, compilable: &Box<dyn Compilable>, format: &OutputFormat,  compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationResult, CompilationError> {
+        self.standard_compile(compilable, format, compilation_configuration, compilation_configuration_overlay)
     }
 
     /// Standard or fast compilation based on `CompilationConfiguration` `fast_draft()`
-    fn compile(&self, compilable: &Box<dyn Compilable>, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationResult, CompilationError> {
+    fn compile(&self, compilable: &Box<dyn Compilable>, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationResult, CompilationError> {
 
         if compilation_configuration.fast_draft() {
-            return self.fast_compile(compilable, format, codex, compilation_configuration, compilation_configuration_overlay)
+            return self.fast_compile(compilable, format, compilation_configuration, compilation_configuration_overlay)
         }
 
-        self.standard_compile(compilable, format, codex, compilation_configuration, compilation_configuration_overlay)
+        self.standard_compile(compilable, format, compilation_configuration, compilation_configuration_overlay)
     }
 
 

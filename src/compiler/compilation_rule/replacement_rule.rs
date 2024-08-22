@@ -2,7 +2,6 @@ use std::fmt::Debug;
 use getset::{CopyGetters, Getters, MutGetters, Setters};
 use log;
 use regex::{Captures, Regex, Replacer};
-use crate::codex::Codex;
 use crate::compiler::compilable::Compilable;
 use crate::compiler::compilation_configuration::compilation_configuration_overlay::CompilationConfigurationOverLay;
 use crate::compiler::compilation_configuration::CompilationConfiguration;
@@ -117,7 +116,7 @@ impl Debug for ReplacementRule<String> {
 impl CompilationRule for ReplacementRule<String> {
 
     /// Compile the content using internal search and replacement pattern
-    fn standard_compile(&self, compilable: &Box<dyn Compilable>, _format: &OutputFormat, _codex: &Codex, _compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, compilable: &Box<dyn Compilable>, _format: &OutputFormat, _compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationResult, CompilationError> {
 
         log::debug!("compile:\n{:#?}\nusing '{}'->'{:?}'", compilable, self.search_pattern(), self.replacer_parts);
 
@@ -161,7 +160,7 @@ impl CompilationRule for ReplacementRule<String> {
             let matched_content = captures.get(0).unwrap();
 
             if last_match < matched_content.start() {
-                outcome.add_mutable_part(content[last_match..matched_content.start()].to_string());
+                outcome.add_compilable_part(content[last_match..matched_content.start()].to_string());
             }
 
             last_match = matched_content.end();
@@ -181,13 +180,13 @@ impl CompilationRule for ReplacementRule<String> {
     
                 } else {
     
-                    outcome.add_mutable_part(compilation_result);
+                    outcome.add_compilable_part(compilation_result);
                 }
             }   
         }
 
         if last_match < content.len() {
-            outcome.add_mutable_part(content[last_match..content.len()].to_string());
+            outcome.add_compilable_part(content[last_match..content.len()].to_string());
         }
 
         if let Some(newline_fix_pattern) = self.newline_fix_pattern.as_ref() {
@@ -197,7 +196,7 @@ impl CompilationRule for ReplacementRule<String> {
         
                 match part {
                     CompilationResultPart::Fixed { content: _ } => *part = CompilationResultPart::Fixed { content: new_result },
-                    CompilationResultPart::Mutable { content: _ } => *part = CompilationResultPart::Mutable { content: new_result },
+                    CompilationResultPart::Compilable { content: _ } => *part = CompilationResultPart::Compilable { content: new_result },
                 };
             }
         }
@@ -228,7 +227,7 @@ impl<F> CompilationRule for ReplacementRule<F>
 where F: 'static + Sync + Send + Fn(&Captures) -> String {
 
     /// Compile the content using internal search and replacement pattern
-    fn standard_compile(&self, compilable: &Box<dyn Compilable>, _format: &OutputFormat, _codex: &Codex, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, compilable: &Box<dyn Compilable>, _format: &OutputFormat, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationResult, CompilationError> {
 
         log::debug!("compile:\n{:#?}\nusing '{}'", compilable, self.search_pattern());
 
@@ -246,7 +245,7 @@ where F: 'static + Sync + Send + Fn(&Captures) -> String {
 
             } else {
 
-                result.add_mutable_part(parsed_content);
+                result.add_compilable_part(parsed_content);
             }
         }
 
@@ -259,7 +258,7 @@ where F: 'static + Sync + Send + Fn(&Captures) -> String {
         
             match last_element {
                 CompilationResultPart::Fixed { content: _ } => result.parts_mut().insert(last_index, CompilationResultPart::Fixed { content: new_parsed_content }),
-                CompilationResultPart::Mutable { content: _ } => result.parts_mut().insert(last_index, CompilationResultPart::Mutable { content: new_parsed_content }),
+                CompilationResultPart::Compilable { content: _ } => result.parts_mut().insert(last_index, CompilationResultPart::Compilable { content: new_parsed_content }),
             };
         }
 

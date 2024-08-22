@@ -12,21 +12,15 @@ pub mod self_compile;
 
 
 use std::time::Instant;
-use compilable::{Compilable, GenericCompilable};
+use compilable::Compilable;
 use compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration};
 use compilation_error::CompilationError;
 use compilation_result::{CompilationResult, CompilationResultPart};
-use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
-use crate::{bibliography::{Bibliography, BIBLIOGRAPHY_FICTITIOUS_DOCUMENT}, codex::modifier::ModifiersBucket, dossier::{document::{chapter::heading::Heading, Chapter}, Document, Dossier}, output_format::OutputFormat, resource::{bucket::Bucket, resource_reference::ResourceReference}, table_of_contents::{TableOfContents, TOC_INDENTATION}};
+use compilation_rule::CompilationRule;
+use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, IntoParallelRefMutIterator, ParallelIterator};
+use crate::{bibliography::{Bibliography, BIBLIOGRAPHY_FICTITIOUS_DOCUMENT}, codex::{modifier::ModifiersBucket, CodexIdentifier}, dossier::{document::{chapter::heading::Heading, Chapter}, Document, Dossier}, output_format::OutputFormat, resource::{bucket::Bucket, resource_reference::ResourceReference}, table_of_contents::{TableOfContents, TOC_INDENTATION}};
 use super::codex::Codex;
 
-
-
-#[derive(Debug)]
-enum Segment {
-    Match(String),
-    NonMatch(String),
-}
 
 
 #[derive(Debug)]
@@ -293,7 +287,7 @@ impl Compiler {
 
                 let outcome = CompilationResult::new(vec![
                     CompilationResultPart::Fixed { content: format!(r#"<h{} class="heading-{}" id="{}" {}>"#, heading.level(), heading.level(), id.build_without_internal_sharp(), nuid_attr) },
-                    CompilationResultPart::Mutable { content: compiled_title.content() },
+                    CompilationResultPart::Compilable { content: compiled_title.content() },
                     CompilationResultPart::Fixed { content: format!(r#"</h{}>"#, heading.level()) },
                 ]);
 
@@ -497,12 +491,14 @@ impl Compiler {
             return Ok(CompilationResult::new_fixed(content.to_string()))
         }
 
-        let mut content_parts: Vec<CompilationResultPart> = vec![CompilationResultPart::Mutable{ content: String::from(content) }];
-        let mut content_parts_additional_excluded_modifiers: Vec<ModifiersBucket> = vec![ModifiersBucket::None];
+        let mut content_parts: Vec<(CompilationResultPart, ModifiersBucket)> = vec![
+            (
+                CompilationResultPart::Compilable{ content: String::from(content) },
+                ModifiersBucket::None
+            )
+        ];
 
         for (codex_identifier, text_modifier) in codex.text_modifiers() {
-
-            assert_eq!(content_parts.len(), content_parts_additional_excluded_modifiers.len());
 
             if excluded_modifiers.contains(codex_identifier) {
 
@@ -519,103 +515,128 @@ impl Compiler {
 
             let text_rule = text_rule.unwrap();
 
-            let mut new_content_parts: Vec<CompilationResultPart> = Vec::new();
-            let mut new_content_parts_additional_excluded_modifiers: Vec<ModifiersBucket> = Vec::new();
-            
-            for (content_part_index, content_part) in content_parts.iter().enumerate() {
-
-                let current_excluded_modifiers = &content_parts_additional_excluded_modifiers[content_part_index];
-
-                let mut no_match_fn = || {
-                        
-                    new_content_parts.push(content_part.clone());
-                    new_content_parts_additional_excluded_modifiers.push(current_excluded_modifiers.clone());
-                };
-
-                if let CompilationResultPart::Fixed { content } = content_part {
-
-                    log::debug!("{:?} is skipped for because '{}' fixed", text_modifier, content);
-
-                    no_match_fn();
-                    continue;
-                }
-
-                if current_excluded_modifiers.contains(codex_identifier) {
-                    log::debug!("{:?} is skipped for '{}'", text_modifier, content_part.content());
-
-                    no_match_fn();
-                    continue;
-                }
-
-                let matches = text_rule.find_iter(&content_part.content());
-
-                if matches.len() == 0 {
-                    log::debug!("'{}' => no matches with {:?}", content_part.content(), text_rule);
-                    
-                    no_match_fn();
-                    continue;
-                }
-
-                log::debug!("'{}' => there is a match with {:#?}", content_part.content(), text_rule);
-
-                let mut last_end = 0;
-
-                let mut elaborate_segment_fn = |segment: Segment| -> Result<(), CompilationError> {
-                    match segment {
-                        Segment::Match(m) => {
-
-                            let compilable: Box<dyn Compilable> = Box::new(GenericCompilable::from(m));
-                            
-                            let outcome = text_rule.compile(&compilable, format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
-
-                            for part in Into::<Vec<CompilationResultPart>>::into(outcome) {
-
-                                new_content_parts.push(part);
-            
-                                let new_current_excluded_modifiers = current_excluded_modifiers.clone() + text_modifier.incompatible_modifiers().clone();
-            
-                                new_content_parts_additional_excluded_modifiers.push(new_current_excluded_modifiers);
-                            
-                            }
-                        },
-                        Segment::NonMatch(s) => {
-                            new_content_parts.push(CompilationResultPart::Mutable { content: s.clone() });
-                            new_content_parts_additional_excluded_modifiers.push(current_excluded_modifiers.clone());
-
-                        },
-                    }
-
-                    Ok(())
-                };
-
-                for mat in matches {
-
-                    if mat.start() > last_end {
-                        let segment = Segment::NonMatch(content_part.content()[last_end..mat.start()].to_string());
-
-                        elaborate_segment_fn(segment)?;
-                    }
-
-                    let segment = Segment::Match(mat.as_str().to_string());
-
-                    elaborate_segment_fn(segment)?;
-
-                    last_end = mat.end();
-                }
-
-                if last_end < content_part.content().len() {
-                    let segment = Segment::NonMatch(content_part.content()[last_end..].to_string());
-
-                    elaborate_segment_fn(segment)?;
-                }
-            }
-
-            content_parts = new_content_parts;
-            content_parts_additional_excluded_modifiers = new_content_parts_additional_excluded_modifiers;
-            
+            Self::compile_compilation_parts_with_compilation_rule(&mut content_parts, (codex_identifier, text_rule), format, compilation_configuration, compilation_configuration_overlay.clone())?;
         }
         
-        Ok(CompilationResult::new(content_parts))
+        Ok(CompilationResult::new(content_parts.into_par_iter().map(|(part, _)| part).collect()))
+    }
+
+    pub fn compile_compilation_parts_with_compilation_rule(parts_and_excluded_modifiers: &mut Vec<(CompilationResultPart, ModifiersBucket)>, (rule_identifier, rule): (&CodexIdentifier, &Box<dyn CompilationRule>), format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
+        
+        let compilable_parts: Vec<&(CompilationResultPart, ModifiersBucket)> = parts_and_excluded_modifiers.par_iter()
+                                            .filter(|(part, excluded_modifiers)| {
+                                                match part {
+                                                    CompilationResultPart::Fixed { content: _ } => false,
+                                                    CompilationResultPart::Compilable { content: _ } => {
+                                                        if excluded_modifiers.contains(rule_identifier) {
+                                                            return false;
+                                                        } else {
+                                                            return true;
+                                                        }
+                                                    },
+                                                }
+                                            })
+                                            .collect();
+        
+        let compilable_parts_content: Vec<&str> = compilable_parts.par_iter()
+                                                                        .map(|(part, _)| part.content().as_str())
+                                                                        .collect();
+
+        let compilable_content: String = compilable_parts_content.join("");
+
+        let matches = rule.find_iter(&compilable_content);
+
+        if matches.len() == 0 {
+            log::debug!("'{}' => no matches with {:?}", compilable_content, rule);
+            
+            return Ok(());
+        }
+
+        log::debug!("'{}' => there is a match with {:#?}", compilable_content, rule);
+
+        let mut parts_index: usize = 0;
+        let mut current_position_in_compilable_content: usize = 0;
+
+        // return the part end border in the compilable content, this is useful because
+        // for parts in which there is the match end the end border cannot be calculated
+        // summing content part length 
+        let mut next_compilable_part_border_position_in_compilable_content = 0;
+
+        'match_loop: for matc in matches {
+
+            let match_start = matc.start();
+            let match_end = matc.end();
+
+            'parts_loop: loop {
+
+                let (part, excluded_modifiers) = &parts_and_excluded_modifiers[parts_index];
+
+                parts_index += 1;       // for next iteration
+
+                match part {
+                    CompilationResultPart::Fixed { content: _ } => continue 'parts_loop,
+                    CompilationResultPart::Compilable { content: _ } => {
+
+                        next_compilable_part_border_position_in_compilable_content += part.content().len();
+
+                        if next_compilable_part_border_position_in_compilable_content < match_start {
+
+                            // there is no match in this part
+
+                            current_position_in_compilable_content = next_compilable_part_border_position_in_compilable_content;
+
+                            continue 'parts_loop;
+                        }
+
+                        // ...part has a match
+
+                        if next_compilable_part_border_position_in_compilable_content >= match_end {
+                            // this is the part where end matching
+
+                            current_position_in_compilable_content = match_end;
+
+                            // let's consider this part again for next match
+                            parts_index -= 1;
+                            next_compilable_part_border_position_in_compilable_content -= part.content().len();
+
+                            continue 'match_loop;
+
+                        } else {
+                            // this is the part where start matching
+
+                            let mut parts_to_add: Vec<(CompilationResultPart, ModifiersBucket)> = Vec::new();
+                        
+                            // === pre-matched part ==
+                            let pre_matched_part = &compilable_content[current_position_in_compilable_content..match_start];
+    
+                            if !pre_matched_part.is_empty() {
+                                parts_to_add.push((
+                                    CompilationResultPart::Compilable { content: pre_matched_part.to_string() },
+                                    excluded_modifiers.clone()
+                                ));
+                            }
+    
+                            // === matched part ===
+                            current_position_in_compilable_content = next_compilable_part_border_position_in_compilable_content;
+    
+                            let matched_part = Box::new(String::from(&compilable_content[match_start..match_end])) as Box<dyn Compilable>;
+    
+                            let compilation_result = rule.compile(&matched_part, format, compilation_configuration, compilation_configuration_overlay.clone())?;
+    
+                            let updated_excluded_modifiers: ModifiersBucket = excluded_modifiers.clone().insert(rule_identifier.clone());
+    
+                            Into::<Vec<CompilationResultPart>>::into(compilation_result).into_iter().for_each(|p| parts_to_add.push((p, updated_excluded_modifiers.clone())));
+    
+                            println!("parts index: {}; parts_to_add: {:?}", parts_index, parts_to_add);
+                            // replace old part with parts to add
+                            parts_and_excluded_modifiers.splice(parts_index..parts_index, parts_to_add);
+                        }
+                    },
+                }
+            } 
+        }
+
+        Ok(())
     }
 
 }

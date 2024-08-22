@@ -12,6 +12,16 @@ pub trait Compilable: Debug {
     fn nuid(&self) -> Option<&NmdUniqueIdentifier>;
 }
 
+impl Compilable for String {
+    fn compilable_content(&self) -> &CompilableContent {
+        &self
+    }
+
+    fn nuid(&self) -> Option<&NmdUniqueIdentifier> {
+        None
+    }
+}
+
 
 #[derive(Debug, Getters, Setters)]
 pub struct GenericCompilable {

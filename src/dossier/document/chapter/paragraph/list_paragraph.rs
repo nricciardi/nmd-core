@@ -112,7 +112,7 @@ impl ListParagraph {
                         compilation_result.add_fixed_part(r#"<span class="list-item-bullet">"#.to_string());
                         compilation_result.add_fixed_part(bullet);
                         compilation_result.add_fixed_part(r#"</span><span class="list-item-content">"#.to_string());
-                        compilation_result.add_mutable_part(content);
+                        compilation_result.add_compilable_part(content);
                         compilation_result.add_fixed_part(r#"</span></li>"#.to_string());
 
                     }
@@ -134,7 +134,7 @@ impl ListParagraph {
 
         compilation_result.add_fixed_part("</ul>".to_string());
 
-        compilation_result.apply_compile_function_to_mutable_parts(|mutable_part| Compiler::compile_str(&mutable_part.content(), &OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone()))?;
+        compilation_result.apply_compile_function(|mutable_part| Compiler::compile_str(&mutable_part.content(), &OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone()))?;
 
         self.compiled_content = Some(compilation_result);
         

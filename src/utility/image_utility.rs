@@ -107,7 +107,7 @@ pub fn compile_image_resource_in_html(image: &ImageResource, img_classes: Vec<&s
     if let Some(c) = image.caption() {
 
         compilation_result.add_fixed_part(String::from(r#"<figcaption class="image-caption">"#));
-        compilation_result.add_mutable_part(c.clone());
+        compilation_result.add_compilable_part(c.clone());
         compilation_result.add_fixed_part(String::from(r#"</figcaption>"#));
     }
 

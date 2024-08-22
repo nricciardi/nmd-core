@@ -53,7 +53,7 @@ impl SelfCompile for ExtendedBlockQuoteParagraph {
 
         compilation_result.add_fixed_part(String::from("</div></div>"));
 
-        compilation_result.apply_compile_function_to_mutable_parts(|mutable_part| Compiler::compile_str(&mutable_part.content(), &OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone()))?;
+        compilation_result.apply_compile_function(|mutable_part| Compiler::compile_str(&mutable_part.content(), &OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone()))?;
 
         self.compiled_content = Some(compilation_result);
 

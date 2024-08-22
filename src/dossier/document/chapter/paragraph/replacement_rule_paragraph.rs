@@ -36,9 +36,9 @@ impl SelfCompile for ReplacementRuleParagraph {
         
         let input: Box<dyn Compilable> = Box::new(GenericCompilable::new(self.raw_content.clone(), self.nuid.clone()));
 
-        let mut compilation_result = self.compilation_rule.compile(&input, format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
+        let mut compilation_result = self.compilation_rule.compile(&input, format, compilation_configuration, compilation_configuration_overlay.clone())?;
         
-        compilation_result.apply_compile_function_to_mutable_parts(|mutable_part| Compiler::compile_str(&mutable_part.content(), format, codex, compilation_configuration, compilation_configuration_overlay.clone()))?;
+        compilation_result.apply_compile_function(|mutable_part| Compiler::compile_str(&mutable_part.content(), format, codex, compilation_configuration, compilation_configuration_overlay.clone()))?;
 
         self.compiled_content = Some(compilation_result);
 

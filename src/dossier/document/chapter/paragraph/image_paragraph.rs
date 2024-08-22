@@ -72,7 +72,7 @@ impl ImageParagraph {
 
                         let mut image_html_tag = image_utility::compile_image_resource_in_html(image, img_classes, nuid)?;
 
-                        image_html_tag.apply_compile_function_to_mutable_parts(|mutable_part| Compiler::compile_str(&mutable_part.content(), &OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone()))?;
+                        image_html_tag.apply_compile_function(|mutable_part| Compiler::compile_str(&mutable_part.content(), &OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone()))?;
 
                         return Ok(image_html_tag.content())
                     },
@@ -89,7 +89,7 @@ impl ImageParagraph {
 
                         let mut image_html_tag = image_utility::compile_image_resource_in_html(image, img_classes, nuid)?;
 
-                        image_html_tag.apply_compile_function_to_mutable_parts(|mutable_part| Compiler::compile_str(&mutable_part.content(), &OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone()))?;
+                        image_html_tag.apply_compile_function(|mutable_part| Compiler::compile_str(&mutable_part.content(), &OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone()))?;
 
                         return Ok(image_html_tag.content())
                     },
@@ -97,7 +97,7 @@ impl ImageParagraph {
 
                         let mut image_html_tag = image_utility::compile_image_resource_in_html(image, img_classes, nuid)?;
 
-                        image_html_tag.apply_compile_function_to_mutable_parts(|mutable_part| Compiler::compile_str(&mutable_part.content(), &OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone()))?;
+                        image_html_tag.apply_compile_function(|mutable_part| Compiler::compile_str(&mutable_part.content(), &OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone()))?;
 
                         return Ok(image_html_tag.content())
                     },

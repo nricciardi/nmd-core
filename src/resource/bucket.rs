@@ -18,6 +18,18 @@ impl<T: PartialEq> Bucket<T> {
             Self::None => false,
         }
     }
+
+    pub fn insert(mut self, item: T) -> Self {
+        return match self {
+            Self::All => Self::All,
+            Self::List(ref mut list) => {
+                list.push(item);
+
+                self
+            },
+            Self::None => Self::List(vec![item]),
+        }
+    }
 }
 
 impl<T: Clone> Add for Bucket<T> {
@@ -39,5 +51,11 @@ impl<T: Clone> Add for Bucket<T> {
             },
             Self::None => return self
         }
+    }
+}
+
+impl<T> From<T> for Bucket<T> {
+    fn from(value: T) -> Self {
+        Self::List(vec![value])
     }
 }
