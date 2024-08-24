@@ -1,7 +1,9 @@
 use std::ops::Add;
 
+use serde::Serialize;
 
-#[derive(Debug, PartialEq, Clone, Default)]
+
+#[derive(Debug, PartialEq, Clone, Default, Serialize)]
 pub enum Bucket<T> {
     All,
     List(Vec<T>),

@@ -1,12 +1,12 @@
 use getset::{CopyGetters, Getters, Setters};
-use serde::{Deserialize, Serialize};
-use crate::{compiler::{compilable::{Compilable, CompilableContent}, compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor}, resource::resource_reference::ResourceReference, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use serde::Serialize;
+use crate::{codex::modifier::ModifiersBucket, compiler::{compilable::{Compilable, CompilableContent}, compilation_result::{CompilationResult, CompilationResultPart, CompilationResultPartType, CompilationResultParts}, compilation_result_accessor::CompilationResultAccessor}, resource::resource_reference::ResourceReference, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 pub type HeadingLevel = u32;
 
 
-#[derive(Debug, Getters, CopyGetters, Setters, Clone, Serialize, Deserialize)]
+#[derive(Debug, Getters, CopyGetters, Setters, Clone, Serialize)]
 pub struct Heading {
 
     #[getset(get_copy = "pub", set = "pub")]
@@ -23,6 +23,8 @@ pub struct Heading {
 
     #[getset(get = "pub", set = "pub")]
     nuid: Option<NmdUniqueIdentifier>,
+
+    compilable_content: CompilableContent,
 }
 
 impl Heading {
@@ -30,10 +32,16 @@ impl Heading {
 
         Self {
             level,
-            title,
+            title: title.clone(),
             compilation_result: None,
             resource_reference: None,
             nuid: None,
+            compilable_content: CompilationResultParts::from([
+                CompilationResultPart::new(
+                    title,
+                    CompilationResultPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
+                )
+            ])
         }
     }
 }
@@ -46,7 +54,7 @@ impl CompilationResultAccessor for Heading {
 
 impl Compilable for Heading {
     fn compilable_content(&self) -> &CompilableContent {
-        &self.title
+        &self.compilable_content
     }
 
     fn nuid(&self) -> Option<&NmdUniqueIdentifier> {

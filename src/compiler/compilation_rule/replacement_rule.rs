@@ -118,92 +118,94 @@ impl CompilationRule for ReplacementRule<String> {
     /// Compile the content using internal search and replacement pattern
     fn standard_compile(&self, compilable: &Box<dyn Compilable>, _format: &OutputFormat, _compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationResult, CompilationError> {
 
-        log::debug!("compile:\n{:#?}\nusing '{}'->'{:?}'", compilable, self.search_pattern(), self.replacer_parts);
+        todo!()
 
-        let content = compilable.compilable_content();
+        // log::debug!("compile:\n{:#?}\nusing '{}'->'{:?}'", compilable, self.search_pattern(), self.replacer_parts);
 
-        let mut outcome = CompilationResult::new_empty();
-        let mut last_match = 0;
+        // let content = compilable.compilable_content();
 
-        for captures in self.search_pattern_regex.captures_iter(content) {
+        // let mut outcome = CompilationResult::new_empty();
+        // let mut last_match = 0;
 
-            let mut replacers = self.replacer_parts.clone(); 
+        // for captures in self.search_pattern_regex.captures_iter(content) {
 
-            // replace references
-            for index in 0..self.replacer_parts.len() {
+        //     let mut replacers = self.replacer_parts.clone(); 
 
-                for reference_at in self.replacer_parts[index].references_at() {
+        //     // replace references
+        //     for index in 0..self.replacer_parts.len() {
 
-                    let reference = captures.get(reference_at.clone()).unwrap().as_str();
+        //         for reference_at in self.replacer_parts[index].references_at() {
 
-                    let reference = ResourceReference::of(reference, compilation_configuration_overlay.document_name().as_ref())?;
+        //             let reference = captures.get(reference_at.clone()).unwrap().as_str();
+
+        //             let reference = ResourceReference::of(reference, compilation_configuration_overlay.document_name().as_ref())?;
     
-                    let reference = reference.build();
+        //             let reference = reference.build();
 
-                    let r = replacers[index].replacer().replace(&format!("${}", reference_at), &reference);
-                    replacers[index].set_replacer(r);
+        //             let r = replacers[index].replacer().replace(&format!("${}", reference_at), &reference);
+        //             replacers[index].set_replacer(r);
 
-                    let r = replacers[index].replacer().replace(&format!("${{{}}}", reference_at), &reference);
-                    replacers[index].set_replacer(r);
+        //             let r = replacers[index].replacer().replace(&format!("${{{}}}", reference_at), &reference);
+        //             replacers[index].set_replacer(r);
 
-                    log::debug!("id: '{}', new replacer: {:?}", reference, replacers[index]);
-                }
+        //             log::debug!("id: '{}', new replacer: {:?}", reference, replacers[index]);
+        //         }
 
-                if let Some(nuid) = compilable.nuid() {
+        //         if let Some(nuid) = compilable.nuid() {
 
-                    let r = replacers[index].replacer().replace(&self.nuid_placeholder, nuid);
+        //             let r = replacers[index].replacer().replace(&self.nuid_placeholder, nuid);
 
-                    replacers[index].set_replacer(r);
-                }
-            }
+        //             replacers[index].set_replacer(r);
+        //         }
+        //     }
 
-            let matched_content = captures.get(0).unwrap();
+        //     let matched_content = captures.get(0).unwrap();
 
-            if last_match < matched_content.start() {
-                outcome.add_compilable_part(content[last_match..matched_content.start()].to_string());
-            }
+        //     if last_match < matched_content.start() {
+        //         outcome.add_compilable_part(content[last_match..matched_content.start()].to_string());
+        //     }
 
-            last_match = matched_content.end();
+        //     last_match = matched_content.end();
 
-            for replacer in replacers {
-                let compilation_result = self.search_pattern_regex.replace_all(matched_content.as_str(), replacer.replacer());
+        //     for replacer in replacers {
+        //         let compilation_result = self.search_pattern_regex.replace_all(matched_content.as_str(), replacer.replacer());
 
-                let mut compilation_result = compilation_result.to_string();
+        //         let mut compilation_result = compilation_result.to_string();
 
-                if let Some(post_replacing) = replacer.post_replacing() {
-                    compilation_result = text_utility::replace(&compilation_result, post_replacing);
-                }
+        //         if let Some(post_replacing) = replacer.post_replacing() {
+        //             compilation_result = text_utility::replace(&compilation_result, post_replacing);
+        //         }
                 
-                if replacer.fixed {
+        //         if replacer.fixed {
 
-                    outcome.add_fixed_part(compilation_result);
+        //             outcome.add_fixed_part(compilation_result);
     
-                } else {
+        //         } else {
     
-                    outcome.add_compilable_part(compilation_result);
-                }
-            }   
-        }
+        //             outcome.add_compilable_part(compilation_result);
+        //         }
+        //     }   
+        // }
 
-        if last_match < content.len() {
-            outcome.add_compilable_part(content[last_match..content.len()].to_string());
-        }
+        // if last_match < content.len() {
+        //     outcome.add_compilable_part(content[last_match..content.len()].to_string());
+        // }
 
-        if let Some(newline_fix_pattern) = self.newline_fix_pattern.as_ref() {
+        // if let Some(newline_fix_pattern) = self.newline_fix_pattern.as_ref() {
 
-            for part in outcome.parts_mut().iter_mut() {
-                let new_result = DOUBLE_NEW_LINE_REGEX.replace_all(&part.content(), newline_fix_pattern).to_string();
+        //     for part in outcome.parts_mut().iter_mut() {
+        //         let new_result = DOUBLE_NEW_LINE_REGEX.replace_all(&part.content(), newline_fix_pattern).to_string();
         
-                match part {
-                    CompilationResultPart::Fixed { content: _ } => *part = CompilationResultPart::Fixed { content: new_result },
-                    CompilationResultPart::Compilable { content: _ } => *part = CompilationResultPart::Compilable { content: new_result },
-                };
-            }
-        }
+        //         match part {
+        //             CompilationResultPart::Fixed { content: _ } => *part = CompilationResultPart::Fixed { content: new_result },
+        //             CompilationResultPart::Compilable { content: _ } => *part = CompilationResultPart::Compilable { content: new_result },
+        //         };
+        //     }
+        // }
 
-        log::debug!("result:\n{:?}", outcome);
+        // log::debug!("result:\n{:?}", outcome);
         
-        Ok(outcome)
+        // Ok(outcome)
     }
     
     fn search_pattern(&self) -> &String {
@@ -229,42 +231,44 @@ where F: 'static + Sync + Send + Fn(&Captures) -> String {
     /// Compile the content using internal search and replacement pattern
     fn standard_compile(&self, compilable: &Box<dyn Compilable>, _format: &OutputFormat, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationResult, CompilationError> {
 
-        log::debug!("compile:\n{:#?}\nusing '{}'", compilable, self.search_pattern());
+        todo!()
 
-        let content = compilable.compilable_content();
+        // log::debug!("compile:\n{:#?}\nusing '{}'", compilable, self.search_pattern());
 
-        let mut result = CompilationResult::new_empty();
+        // let content = compilable.compilable_content();
 
-        for replacer in &self.replacer_parts {
+        // let mut result = CompilationResult::new_empty();
 
-            let parsed_content = self.search_pattern_regex.replace_all(content, replacer.replacer()).to_string();
+        // for replacer in &self.replacer_parts {
 
-            if replacer.fixed {
+        //     let parsed_content = self.search_pattern_regex.replace_all(content, replacer.replacer()).to_string();
 
-                result.add_fixed_part(parsed_content);
+        //     if replacer.fixed {
 
-            } else {
+        //         result.add_fixed_part(parsed_content);
 
-                result.add_compilable_part(parsed_content);
-            }
-        }
+        //     } else {
 
-        if let Some(newline_fix_pattern) = self.newline_fix_pattern.as_ref() {
+        //         result.add_compilable_part(parsed_content);
+        //     }
+        // }
 
-            let last_index = result.parts().len() - 1;
-            let last_element = result.parts().get(last_index).unwrap();
+        // if let Some(newline_fix_pattern) = self.newline_fix_pattern.as_ref() {
 
-            let new_parsed_content = DOUBLE_NEW_LINE_REGEX.replace_all(&last_element.content(), newline_fix_pattern).to_string();
+        //     let last_index = result.parts().len() - 1;
+        //     let last_element = result.parts().get(last_index).unwrap();
+
+        //     let new_parsed_content = DOUBLE_NEW_LINE_REGEX.replace_all(&last_element.content(), newline_fix_pattern).to_string();
         
-            match last_element {
-                CompilationResultPart::Fixed { content: _ } => result.parts_mut().insert(last_index, CompilationResultPart::Fixed { content: new_parsed_content }),
-                CompilationResultPart::Compilable { content: _ } => result.parts_mut().insert(last_index, CompilationResultPart::Compilable { content: new_parsed_content }),
-            };
-        }
+        //     match last_element {
+        //         CompilationResultPart::Fixed { content: _ } => result.parts_mut().insert(last_index, CompilationResultPart::Fixed { content: new_parsed_content }),
+        //         CompilationResultPart::Compilable { content: _ } => result.parts_mut().insert(last_index, CompilationResultPart::Compilable { content: new_parsed_content }),
+        //     };
+        // }
 
-        log::debug!("result:\n{:?}", result);
+        // log::debug!("result:\n{:?}", result);
         
-        Ok(result)
+        // Ok(result)
     }
 
     fn search_pattern(&self) -> &String {

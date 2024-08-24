@@ -1,9 +1,10 @@
 use std::{convert::Infallible, fmt::Debug, str::FromStr};
 use getset::{Getters, Setters};
-use crate::utility::nmd_unique_identifier::NmdUniqueIdentifier;
+use crate::{codex::modifier::ModifiersBucket, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use super::compilation_result::{CompilationResultPart, CompilationResultParts};
 
 
-pub type CompilableContent = String;
+pub type CompilableContent = CompilationResultParts;
 
 
 pub trait Compilable: Debug {
@@ -12,7 +13,8 @@ pub trait Compilable: Debug {
     fn nuid(&self) -> Option<&NmdUniqueIdentifier>;
 }
 
-impl Compilable for String {
+
+impl Compilable for CompilationResultParts {
     fn compilable_content(&self) -> &CompilableContent {
         &self
     }
@@ -49,22 +51,22 @@ impl Compilable for GenericCompilable {
     }
 }
 
-impl FromStr for GenericCompilable {
-    type Err = Infallible;
+// impl FromStr for GenericCompilable {
+//     type Err = Infallible;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self {
-            content: s.to_string(),
-            nuid: None
-        })
-    }
-}
+//     fn from_str(s: &str) -> Result<Self, Self::Err> {
+//         Ok(Self {
+//             content: s.to_string(),
+//             nuid: None
+//         })
+//     }
+// }
 
-impl From<String> for GenericCompilable {
-    fn from(value: String) -> Self {
-        Self {
-            content: value,
-            nuid: None
-        }
-    }
-}
+// impl From<String> for GenericCompilable {
+//     fn from(value: String) -> Self {
+//         Self {
+//             content: value,
+//             nuid: None
+//         }
+//     }
+// }

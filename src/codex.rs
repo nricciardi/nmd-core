@@ -4,7 +4,7 @@
 pub mod modifier;
 
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use getset::{Getters, Setters};
 use indexmap::IndexMap;
@@ -84,23 +84,46 @@ impl Codex {
         }
     }
 
+    /// Remove all modifiers and rules except those passed 
+    pub fn retain(&mut self, identifiers: HashSet<CodexIdentifier>) {
+
+        self.text_modifiers.retain(|id, _| identifiers.contains(id));
+        self.paragraph_modifiers.retain(|id, _| identifiers.contains(id));
+
+        self.text_compilation_rules.retain(|id, _| identifiers.contains(id));
+        self.paragraph_loading_rules.retain(|id, _| identifiers.contains(id));
+    }
+
+
+    /// Remove modifiers and rules 
+    pub fn remove(&mut self, identifiers: HashSet<CodexIdentifier>) {
+        identifiers.iter().for_each(|id: &CodexIdentifier| {
+
+            self.text_modifiers.shift_remove(id);
+            self.paragraph_modifiers.shift_remove(id);
+
+            self.text_compilation_rules.remove(id);
+            self.paragraph_loading_rules.remove(id);
+        });
+    }
+
 
     /// Standard HTML `Codex`
     pub fn of_html() -> Self {
 
-        let mut text_modifiers: CodexModifiersMap = IndexMap::new();
+        let mut text_modifiers: CodexModifiersMap = CodexModifiersMap::new();
 
         StandardTextModifier::ordered().into_iter().for_each(|tm| {
             text_modifiers.insert(tm.identifier(), Box::new(Into::<BaseModifier>::into(tm)) as Box<dyn Modifier>);
         });
 
-        let mut paragraph_modifiers: CodexModifiersMap = IndexMap::new();
+        let mut paragraph_modifiers: CodexModifiersMap = CodexModifiersMap::new();
 
         StandardParagraphModifier::ordered().into_iter().for_each(|tm| {
             paragraph_modifiers.insert(tm.identifier(), Box::new(Into::<BaseModifier>::into(tm)) as Box<dyn Modifier>);
         });
 
-        let text_rules: CodexCompilationRulesMap = HashMap::from([
+        let text_rules: CodexCompilationRulesMap = CodexCompilationRulesMap::from([
             (
                 StandardTextModifier::Todo.identifier().clone(),
                 Box::new(ReplacementRule::new(StandardTextModifier::Todo.modifier_pattern().clone(), vec![
@@ -123,9 +146,9 @@ impl Codex {
                 StandardTextModifier::Bookmark.identifier().clone(),
                 Box::new(ReplacementRule::new(StandardTextModifier::Bookmark.modifier_pattern().clone(), vec![
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="bookmark"><div class="bookmark-title">"#)),
-                    ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
+                    ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),     // TODO: fixed part but compiled
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div><div class="bookmark-description">"#)),
-                    ReplacementRuleReplacerPart::new_mutable(String::from(r#"$2"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
+                    ReplacementRuleReplacerPart::new_mutable(String::from(r#"$2"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),     // TODO: fixed part but compiled
                     ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div></div>"#)),
                 ]))
             ),
@@ -328,7 +351,7 @@ impl Codex {
             ),
         ]);
 
-        let paragraph_rules: CodexLoadingRulesMap = HashMap::from([
+        let paragraph_rules: CodexLoadingRulesMap = CodexLoadingRulesMap::from([
            (
                 StandardParagraphModifier::Table.identifier(),
                 Box::new(TableParagraphLoadingRule::new()) as Box<dyn ParagraphLoadingRule>

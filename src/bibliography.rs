@@ -3,14 +3,14 @@ pub mod bibliography_record;
 use std::collections::BTreeMap;
 use bibliography_record::BibliographyRecord;
 use getset::{Getters, Setters};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use crate::{compiler::{compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor}, dossier::dossier_configuration::dossier_configuration_bibliography::DossierConfigurationBibliography, resource::resource_reference::{ResourceReference, ResourceReferenceError}};
 
 
 pub const BIBLIOGRAPHY_FICTITIOUS_DOCUMENT: &str = "bibliography";
 
 
-#[derive(Debug, Clone, Getters, Setters, Serialize, Deserialize)]
+#[derive(Debug, Clone, Getters, Setters, Serialize)]
 pub struct Bibliography {
 
     #[getset(get = "pub", set = "pub")]

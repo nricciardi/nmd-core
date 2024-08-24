@@ -1,5 +1,5 @@
 use oxipng::Options;
-use crate::{compiler::compilation_result::CompilationResult, resource::{image_resource::ImageResource, source::Source, ResourceError}};
+use crate::{codex::modifier::ModifiersBucket, compiler::compilation_result::CompilationResult, resource::{image_resource::ImageResource, source::Source, ResourceError}};
 use super::nmd_unique_identifier::NmdUniqueIdentifier;
 
 
@@ -104,10 +104,10 @@ pub fn compile_image_resource_in_html(image: &ImageResource, img_classes: Vec<&s
     compilation_result.add_fixed_part(format!(r#"<img src="{}" class="{}" />"#, src, img_classes.join(" ")));
 
 
-    if let Some(c) = image.caption() {
+    if let Some(caption) = image.caption() {
 
         compilation_result.add_fixed_part(String::from(r#"<figcaption class="image-caption">"#));
-        compilation_result.add_compilable_part(c.clone());
+        compilation_result.add_compilable_part(caption.clone(), ModifiersBucket::None);
         compilation_result.add_fixed_part(String::from(r#"</figcaption>"#));
     }
 
