@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fmt::Debug};
-use regex::{Captures, Regex};
-use crate::{codex::modifier::standard_text_modifier::StandardTextModifier, compiler::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult}, output_format::OutputFormat};
-use super::CompilationRule;
+use regex::Regex;
+use crate::{codex::modifier::standard_text_modifier::StandardTextModifier, compiler::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_result::{CompilationResultPart, CompilationResultPartType, CompilationResultParts}}, output_format::OutputFormat};
+use super::{CompilationRule, CompilationRuleResult};
 
 
 pub struct HtmlGreekLettersRule {
@@ -111,28 +111,47 @@ impl CompilationRule for HtmlGreekLettersRule {
         &self.search_pattern
     }
 
-    fn standard_compile(&self, compilable: &Box<dyn Compilable>, _format: &OutputFormat, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, compilable: &Compilable, _format: &OutputFormat, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> CompilationRuleResult {
 
-        let content = compilable.compilable_content();
-        
-        let compiled_content = self.search_pattern_regex.replace_all(content, |capture: &Captures| {
+        let mut compiled_parts = CompilationResultParts::new();
 
-            if let Some(greek_ref) = capture.get(1) {
+        for matc in self.search_pattern_regex.captures_iter(&compilable.compilable_content()) {
 
-                let res = format!(r#"<span class="greek">${}$</span>"#, self.replace_with_greek_letters(greek_ref.as_str()));
+            if let Some(greek_ref) = matc.get(1) {
+                
+                let reference_part = CompilationResultPart::new(
+                    format!(r#"<span class="greek">${}$</span>"#, self.replace_with_greek_letters(greek_ref.as_str())),
+                    CompilationResultPartType::Fixed
+                );
 
-                log::debug!("compile '{}' into '{}'", content, res);
-
-                return res;
+                compiled_parts.push(reference_part);
             }
 
-            log::error!("no greek letters found in '{}' ({})", content, capture.get(1).unwrap().as_str());
+            log::error!("no greek letters found in '{}' ({})", compilable.compilable_content(), matc.get(0).unwrap().as_str());
+            
+            // TODO: strict option with panic
+        }
 
-            panic!("no greek letters found");
-        });
+        // let content = compilable.compilable_content();
+        
+        // let compiled_content = self.search_pattern_regex.replace_all(content, |capture: &Captures| {
+
+        //     if let Some(greek_ref) = capture.get(1) {
+
+        //         let res = format!(r#"<span class="greek">${}$</span>"#, self.replace_with_greek_letters(greek_ref.as_str()));
+
+        //         log::debug!("compile '{}' into '{}'", content, res);
+
+        //         return res;
+        //     }
+
+        //     log::error!("no greek letters found in '{}' ({})", content, capture.get(1).unwrap().as_str());
+
+        //     panic!("no greek letters found");
+        // });
 
         
-        Ok(CompilationResult::new_fixed(compiled_content.to_string()))
+        // Ok(CompilationResult::new_fixed(compiled_content.to_string()))
     }
     
     fn search_pattern_regex(&self) -> &Regex {

@@ -1,7 +1,7 @@
 use std::fmt::Debug;
-use regex::{Captures, Regex};
-use crate::{codex::modifier::standard_text_modifier::StandardTextModifier, compiler::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult}, output_format::OutputFormat};
-use super::CompilationRule;
+use regex::Regex;
+use crate::{codex::modifier::standard_text_modifier::StandardTextModifier, compiler::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_result::{CompilationResultPart, CompilationResultPartType, CompilationResultParts}}, output_format::OutputFormat};
+use super::{CompilationRule, CompilationRuleResult};
 
 
 pub struct ReferenceRule {
@@ -30,23 +30,49 @@ impl CompilationRule for ReferenceRule {
         &self.search_pattern
     }
 
-    fn standard_compile(&self, compilable: &Box<dyn Compilable>, _format: &OutputFormat, compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationResult, CompilationError> {
-        
-        let content = compilable.compilable_content();
+    fn standard_compile(&self, compilable: &Compilable, _format: &OutputFormat, compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> CompilationRuleResult {
 
-        let compilation_result = self.search_pattern_regex.replace_all(content, |capture: &Captures| {
+        let mut compiled_parts = CompilationResultParts::new();
 
-            let reference_key = capture.get(1).unwrap().as_str();
+        for matc in self.search_pattern_regex.captures_iter(&compilable.compilable_content()) {
+
+            let reference_key = matc.get(1).unwrap().as_str();
 
             if let Some(reference) = compilation_configuration.references().get(reference_key) {
-                return String::from(reference)
-            } else {
-                log::error!("reference '{}' ('{}') not found: no replacement will be applied", reference_key, capture.get(0).unwrap().as_str());
-                return String::from(content);
-            }
-        });
 
-        Ok(CompilationResult::new_fixed(compilation_result.to_string()))
+                let reference_part = CompilationResultPart::new(
+                    reference.clone(),
+                    CompilationResultPartType::Fixed
+                );
+
+                compiled_parts.push(reference_part);
+
+            } else {
+
+                log::error!("reference '{}' ('{}') not found: no replacement will be applied", reference_key, matc.get(0).unwrap().as_str());
+
+                // TODO: strict option with panic
+            }
+
+        }
+
+        Ok(compiled_parts)
+
+        // let content = compilable.compilable_content();
+
+        // let compilation_result = self.search_pattern_regex.replace_all(content, |capture: &Captures| {
+
+        //     let reference_key = capture.get(1).unwrap().as_str();
+
+        //     if let Some(reference) = compilation_configuration.references().get(reference_key) {
+        //         return String::from(reference)
+        //     } else {
+        //         log::error!("reference '{}' ('{}') not found: no replacement will be applied", reference_key, capture.get(0).unwrap().as_str());
+        //         return String::from(content);
+        //     }
+        // });
+
+        // Ok(CompilationResult::new_fixed(compilation_result.to_string()))
     }
     
     fn search_pattern_regex(&self) -> &Regex {

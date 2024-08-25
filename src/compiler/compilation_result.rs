@@ -10,7 +10,7 @@ pub enum CompilationResultPartType {
     Compilable{ incompatible_modifiers: ModifiersBucket },
 }
 
-#[derive(Debug, Getters, Setters, Clone, Serialize)]
+#[derive(Debug, Getters, Setters, MutGetters, Clone, Serialize)]
 pub struct CompilationResultPart {
 
     #[getset(get_mut = "pub", get = "pub", set = "pub")]

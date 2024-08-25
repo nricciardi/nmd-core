@@ -1,7 +1,7 @@
 use std::fmt::Debug;
-use regex::{Captures, Regex};
-use crate::{codex::modifier::standard_text_modifier::StandardTextModifier, compiler::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult}, output_format::OutputFormat};
-use super::CompilationRule;
+use regex::Regex;
+use crate::{codex::modifier::standard_text_modifier::StandardTextModifier, compiler::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_result::{CompilationResultPart, CompilationResultPartType, CompilationResultParts}}, output_format::OutputFormat};
+use super::{CompilationRule, CompilationRuleResult};
 
 
 pub struct HtmlCiteRule {
@@ -30,35 +30,68 @@ impl CompilationRule for HtmlCiteRule {
         &self.search_pattern
     }
 
-    fn standard_compile(&self, compilable: &Box<dyn Compilable>, _format: &OutputFormat, compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationResult, CompilationError> {
+    fn standard_compile(&self, compilable: &Compilable, _format: &OutputFormat, compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> CompilationRuleResult {
         
-        let content = compilable.compilable_content();
+        let mut compiled_parts = CompilationResultParts::new();
 
-        let compiled_content = self.search_pattern_regex.replace_all(content, |capture: &Captures| {
+        for matc in self.search_pattern_regex.captures_iter(&compilable.compilable_content()) {
 
-            let bib_key = capture.get(1).unwrap().as_str();
+            let bib_key = matc.get(1).unwrap().as_str();
 
             if let Some(bibliography) = compilation_configuration.bibliography() {
-                
                 if let Some(n) = bibliography.get_n_from_key(bib_key) {
                     if let Some(reference) = bibliography.get_reference_from_key(bib_key) {
                         if let Ok(reference) = reference {
-                            return format!(r#"<a class="cite" href="{}">{}</a>"#, reference.build(), n);
+                            
+                            let reference_part = CompilationResultPart::new(
+                                format!(r#"<a class="cite" href="{}">{}</a>"#, reference.build(), n),
+                                CompilationResultPartType::Fixed
+                            );
+            
+                            compiled_parts.push(reference_part);
                         }
                     }
                 }
 
-                log::error!("bibliography record with key: '{}' ('{}') not found: no replacement will be applied", bib_key, capture.get(0).unwrap().as_str());
+                log::error!("bibliography record with key: '{}' ('{}') not found: no replacement will be applied", bib_key, matc.get(0).unwrap().as_str());
                 
             } else {
 
-                log::error!("bibliography '{}' ('{}') not found: no replacement will be applied", bib_key, capture.get(0).unwrap().as_str());
+                log::error!("bibliography '{}' ('{}') not found: no replacement will be applied", bib_key, matc.get(0).unwrap().as_str());
+
+                // TODO: strict option with panic
             }
 
-            return String::from(content);
-        });
+        }
 
-        Ok(CompilationResult::new_fixed(compiled_content.to_string()))
+
+        // let content = compilable.compilable_content();
+
+        // let compiled_content = self.search_pattern_regex.replace_all(content, |capture: &Captures| {
+
+        //     let bib_key = capture.get(1).unwrap().as_str();
+
+        //     if let Some(bibliography) = compilation_configuration.bibliography() {
+                
+        //         if let Some(n) = bibliography.get_n_from_key(bib_key) {
+        //             if let Some(reference) = bibliography.get_reference_from_key(bib_key) {
+        //                 if let Ok(reference) = reference {
+        //                     return format!(r#"<a class="cite" href="{}">{}</a>"#, reference.build(), n);
+        //                 }
+        //             }
+        //         }
+
+        //         log::error!("bibliography record with key: '{}' ('{}') not found: no replacement will be applied", bib_key, capture.get(0).unwrap().as_str());
+                
+        //     } else {
+
+        //         log::error!("bibliography '{}' ('{}') not found: no replacement will be applied", bib_key, capture.get(0).unwrap().as_str());
+        //     }
+
+        //     return String::from(content);
+        // });
+
+        // Ok(CompilationResult::new_fixed(compiled_content.to_string()))
     }
     
     fn search_pattern_regex(&self) -> &Regex {

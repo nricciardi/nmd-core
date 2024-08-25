@@ -1,5 +1,4 @@
 pub mod replacement_rule;
-pub mod new_replacement_rule;
 pub mod html_greek_letter_rule;
 pub mod reference_rule;
 pub mod html_cite_rule;
@@ -9,7 +8,10 @@ pub mod constants;
 use std::fmt::Debug;
 use regex::{Match, Regex};
 use crate::output_format::OutputFormat;
-use super::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult};
+use super::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::{CompilationResult, CompilationResultParts}};
+
+
+pub type CompilationRuleResult = Result<CompilationResultParts, CompilationError>;
 
 
 pub trait CompilationRule: Send + Sync + Debug {
@@ -28,15 +30,15 @@ pub trait CompilationRule: Send + Sync + Debug {
     }
 
     /// Compile string
-    fn standard_compile(&self, compilable: &Box<dyn Compilable>, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationResult, CompilationError>;
+    fn standard_compile(&self, compilable: &Compilable, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> CompilationRuleResult;
 
     /// Compile string avoid time consuming operations (incomplete compilation)
-    fn fast_compile(&self, compilable: &Box<dyn Compilable>, format: &OutputFormat,  compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationResult, CompilationError> {
+    fn fast_compile(&self, compilable: &Compilable, format: &OutputFormat,  compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> CompilationRuleResult {
         self.standard_compile(compilable, format, compilation_configuration, compilation_configuration_overlay)
     }
 
     /// Standard or fast compilation based on `CompilationConfiguration` `fast_draft()`
-    fn compile(&self, compilable: &Box<dyn Compilable>, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationResult, CompilationError> {
+    fn compile(&self, compilable: &Compilable, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> CompilationRuleResult {
 
         if compilation_configuration.fast_draft() {
             return self.fast_compile(compilable, format, compilation_configuration, compilation_configuration_overlay)
