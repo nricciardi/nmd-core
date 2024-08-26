@@ -1,6 +1,5 @@
 use getset::{Getters, MutGetters, Setters};
 use serde::Serialize;
-
 use crate::codex::modifier::ModifiersBucket;
 
 
@@ -75,7 +74,7 @@ impl CompilationResult {
     pub fn content(&self) -> String {
         let mut c = String::new();
 
-        &self.parts.iter().for_each(|part| c.push_str(part.content()));
+        self.parts.iter().for_each(|part| c.push_str(part.content()));
 
         c
     }

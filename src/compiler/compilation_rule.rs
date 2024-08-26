@@ -11,7 +11,7 @@ use crate::output_format::OutputFormat;
 use super::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::{CompilationResult, CompilationResultParts}};
 
 
-pub type CompilationRuleResult = Result<CompilationResultParts, CompilationError>;
+pub type CompilationRuleResult = Result<Compilable, CompilationError>;
 
 
 pub trait CompilationRule: Send + Sync + Debug {

@@ -14,23 +14,21 @@ use crate::utility::text_utility;
 use super::{CompilationRule, CompilationRuleResult};
 
 
-type Closure = dyn Fn(Captures, CompilationResultParts, &OutputFormat, &CompilationConfiguration, CompilationConfigurationOverLay) -> CompilationResultParts;
+type Closure = dyn Sync + Send + Fn(&Captures, &Compilable, &OutputFormat, &CompilationConfiguration, CompilationConfigurationOverLay) -> Result<Compilable, CompilationError>;
 
 pub trait ReplacementRuleReplacerPart: Debug + Sync + Send {
 
-    fn compile(&self, captures: Captures, compilable: CompilationResultParts, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> CompilationResultParts;
+    fn compile(&self, captures: &Captures, compilable: &Compilable, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<Compilable, CompilationError>;
 }
 
-pub struct ClosureReplacementRuleReplacerPart<F>
-where F: Fn(Captures, CompilationResultParts, &OutputFormat, &CompilationConfiguration, CompilationConfigurationOverLay) -> CompilationResultParts {
+pub struct ClosureReplacementRuleReplacerPart {
 
-    closure: F,
+    closure: Box<Closure>,
 }
 
-impl<F> ClosureReplacementRuleReplacerPart<F>
-where F: Fn(Captures, CompilationResultParts, &OutputFormat, &CompilationConfiguration, CompilationConfigurationOverLay) -> CompilationResultParts {
+impl ClosureReplacementRuleReplacerPart {
 
-    pub fn new(closure: F) -> Self {
+    pub fn new(closure: Box<Closure>) -> Self {
         Self {
             closure
         }
@@ -38,24 +36,48 @@ where F: Fn(Captures, CompilationResultParts, &OutputFormat, &CompilationConfigu
 
 }
 
-impl<F> Debug for ClosureReplacementRuleReplacerPart<F>
-where F: Fn(Captures, CompilationResultParts, &OutputFormat, &CompilationConfiguration, CompilationConfigurationOverLay) -> CompilationResultParts {
+impl Debug for ClosureReplacementRuleReplacerPart {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ClosureReplacementRuleReplacerPart").field("closure", &self.closure).finish()
+        f.debug_struct("ClosureReplacementRuleReplacerPart").finish()
     }
 }
 
-impl<F> ReplacementRuleReplacerPart for ClosureReplacementRuleReplacerPart<F>
-where F: Sync + Send + Fn(Captures, CompilationResultParts, &OutputFormat, &CompilationConfiguration, CompilationConfigurationOverLay) -> CompilationResultParts {
-
-    fn compile(&self, captures: Captures, compilable: CompilationResultParts, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> CompilationResultParts {
+impl ReplacementRuleReplacerPart for ClosureReplacementRuleReplacerPart {
+    fn compile(&self, captures: &Captures, compilable: &Compilable, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<Compilable, CompilationError> {
         todo!()
     }
 }
 
+#[derive(Debug, Getters, Setters)]
+pub struct FixedReplacementRuleReplacerPart {
+
+    #[getset(get = "pub", set = "pub")]
+    content: String
+}
+
+impl FixedReplacementRuleReplacerPart {
+
+    pub fn new(content: String) -> Self {
+        Self {
+            content
+        }
+    }
+
+}
+
+impl ReplacementRuleReplacerPart for FixedReplacementRuleReplacerPart {
+    fn compile(&self, captures: &Captures, compilable: &Compilable, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<Compilable, CompilationError> {
+        Ok(Compilable::new(CompilationResultParts::from([
+            CompilationResultPart::new(self.content.clone(), CompilationResultPartType::Fixed)
+        ]), None))
+    }
+}
+
+
+
 
 /// Rule to replace a NMD text based on a specific pattern matching rule
-#[derive(Debug, Getters, Setters, Clone)]
+#[derive(Debug, Getters, Setters)]
 pub struct ReplacementRule {
 
     #[getset(set)]
@@ -108,15 +130,13 @@ impl CompilationRule for ReplacementRule {
 
         for captures in self.search_pattern_regex.captures_iter(&compilable.compilable_content()) {
 
-            for replacer_part in self.replacer_parts {
+            for replacer_part in &self.replacer_parts {
 
-                let m = captures.get(0).unwrap();
-
-                let parts_to_compile = compilable.parts_slice(m.start(), m.end());
-
-                compiled_parts.append(&mut replacer_part.compile(captures, parts_to_compile, format, compilation_configuration, compilation_configuration_overlay.clone()))
+                compiled_parts.append(&mut replacer_part.compile(&captures, compilable, format, compilation_configuration, compilation_configuration_overlay.clone())?.into())
             }   
         }
+
+        Ok(Compilable::new(compiled_parts, None))
 
         // log::debug!("compile:\n{:#?}\nusing '{}'->'{:?}'", compilable, self.search_pattern(), self.replacer_parts);
 
@@ -220,42 +240,62 @@ impl CompilationRule for ReplacementRule {
 #[cfg(test)]
 mod test {
 
-    // use crate::{codex::{codex_configuration::CodexConfiguration, modifier::{standard_heading_modifier::StandardHeading, standard_paragraph_modifier::StandardParagraphModifier, standard_text_modifier::StandardTextModifier}}, compiler::compilable::GenericCompilable};
+    use crate::{codex::modifier::ModifiersBucket, compiler::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_result::{CompilationResultPart, CompilationResultPartType, CompilationResultParts}, compilation_rule::{replacement_rule::{ClosureReplacementRuleReplacerPart, FixedReplacementRuleReplacerPart, ReplacementRule, ReplacementRuleReplacerPart}, CompilationRule}}, output_format::OutputFormat};
 
-    // use super::*;
 
-    // #[test]
-    // fn bold_parsing() {
+    #[test]
+    fn bold_parsing() {
 
-    //     let codex = Codex::of_html(CodexConfiguration::default());
+        // valid pattern with a valid text modifier
+        let replacement_rule = ReplacementRule::new(String::from("bold-rule"), vec![
+            Box::new(FixedReplacementRuleReplacerPart::new(String::from("<strong>"))) as Box<dyn ReplacementRuleReplacerPart>,
+            Box::new(ClosureReplacementRuleReplacerPart::new(Box::new(|captures, compilable, _, _, _| {
+                
+                let capture1 = captures.get(1).unwrap();
+                
+                let slice = compilable.parts_slice(capture1.start(), capture1.end())?;
 
-    //     // valid pattern with a valid text modifier
-    //     let parsing_rule = ReplacementRule::new(StandardTextModifier::BoldStarVersion.modifier_pattern().clone(), vec![
-    //         ReplacementRuleReplacerPart::new_fixed(String::from("<strong>")),
-    //         ReplacementRuleReplacerPart::new_mutable(String::from("$1")),
-    //         ReplacementRuleReplacerPart::new_fixed(String::from("</strong>")),
-    //     ]);
+                Ok(Compilable::new(slice, None))
+            }))),
+            Box::new(FixedReplacementRuleReplacerPart::new(String::from("</strong>"))),
+        ]);
 
-    //     let text_to_parse = r"A piece of **bold text** and **bold text2**";
-    //     let compilation_configuration = CompilationConfiguration::default();
+        let text_to_compile = r"A piece of **bold text** and **bold text2**";
+        let compilation_configuration = CompilationConfiguration::default();
 
-    //     let compilable: Box<dyn Compilable> = Box::new(GenericCompilable::from(text_to_parse.to_string()));
+        let compilable = Compilable::new(
+            CompilationResultParts::from([
+                CompilationResultPart::new(
+                    text_to_compile.to_string(),
+                    CompilationResultPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
+                )
+            ]),
+            None
+        );
         
-    //     let parsed_text = parsing_rule.compile(&compilable, &OutputFormat::Html,&codex, &compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
+        let outcome = replacement_rule.compile(&compilable, &OutputFormat::Html, &compilation_configuration, CompilationConfigurationOverLay::default()).unwrap();
 
-    //     assert_eq!(parsed_text.content(), r"A piece of <strong>bold text</strong> and <strong>bold text2</strong>");
+        assert_eq!(outcome.content(), r"<strong>bold text</strong><strong>bold text2</strong>");
 
-    //     // without text modifier
-    //     let text_to_parse = r"A piece of text without bold text";
+        // without text modifier
+        let text_to_compile = r"A piece of text without bold text";
 
-    //     let compilable: Box<dyn Compilable> = Box::new(GenericCompilable::from(text_to_parse.to_string()));
+        let compilable = Compilable::new(
+            CompilationResultParts::from([
+                CompilationResultPart::new(
+                    text_to_compile.to_string(),
+                    CompilationResultPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
+                )
+            ]),
+            None
+        );
 
-    //     let parsed_text = parsing_rule.compile(&compilable, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
+        let outcome = replacement_rule.compile(&compilable, &OutputFormat::Html, &compilation_configuration, CompilationConfigurationOverLay::default()).unwrap();
 
-    //     assert_eq!(parsed_text.content(), r"A piece of text without bold text");
+        assert_eq!(outcome.content(), r"");
 
 
-    // }
+    }
 
     // #[test]
     // fn heading_parsing() {

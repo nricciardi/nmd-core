@@ -1,5 +1,5 @@
 use getset::{Getters, Setters};
-use crate::{codex::{modifier::ModifiersBucket, Codex}, compiler::{compilable::{Compilable, CompilableContent, Compilable}, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::{CompilationResult, CompilationResultPart, CompilationResultPartType}, compilation_result_accessor::CompilationResultAccessor, compilation_rule::CompilationRule, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use crate::{codex::Codex, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor, compilation_rule::CompilationRule, self_compile::SelfCompile}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 #[derive(Debug, Getters, Setters)]
@@ -34,23 +34,25 @@ impl ReplacementRuleParagraph {
 impl SelfCompile for ReplacementRuleParagraph {
     fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
         
-        let input: Box<dyn Compilable> = Box::new(Compilable::new(
-            CompilableContent::from([
-                CompilationResultPart::new(
-                    self.raw_content.clone(),
-                    CompilationResultPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
-                )
-            ]),
-            self.nuid.clone()
-        ));
+        // let input: Box<dyn Compilable> = Box::new(Compilable::new(
+        //     CompilableContent::from([
+        //         CompilationResultPart::new(
+        //             self.raw_content.clone(),
+        //             CompilationResultPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
+        //         )
+        //     ]),
+        //     self.nuid.clone()
+        // ));
 
-        let mut compilation_result = self.compilation_rule.compile(&input, format, compilation_configuration, compilation_configuration_overlay.clone())?;
+        // let mut compilation_result = self.compilation_rule.compile(&input, format, compilation_configuration, compilation_configuration_overlay.clone())?;
         
-        compilation_result.apply_compile_function(|mutable_part| Compiler::compile_str(&mutable_part.content(), format, codex, compilation_configuration, compilation_configuration_overlay.clone()))?;
+        // compilation_result.apply_compile_function(|mutable_part| Compiler::compile_str(&mutable_part.content(), format, codex, compilation_configuration, compilation_configuration_overlay.clone()))?;
 
-        self.compiled_content = Some(compilation_result);
+        // self.compiled_content = Some(compilation_result);
 
-        Ok(())
+        // Ok(())
+
+        todo!()
     }
 }
 

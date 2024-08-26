@@ -64,6 +64,7 @@ impl CompilationRule for HtmlCiteRule {
 
         }
 
+        Ok(Compilable::new(compiled_parts, None))
 
         // let content = compilable.compilable_content();
 

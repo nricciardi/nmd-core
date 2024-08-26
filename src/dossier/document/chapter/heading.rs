@@ -1,6 +1,6 @@
 use getset::{CopyGetters, Getters, Setters};
 use serde::Serialize;
-use crate::{codex::modifier::ModifiersBucket, compiler::{compilable::{Compilable, CompilableContent}, compilation_result::{CompilationResult, CompilationResultPart, CompilationResultPartType, CompilationResultParts}, compilation_result_accessor::CompilationResultAccessor}, resource::resource_reference::ResourceReference, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use crate::{codex::modifier::ModifiersBucket, compiler::{compilable::Compilable, compilation_result::{CompilationResult, CompilationResultPart, CompilationResultPartType, CompilationResultParts}, compilation_result_accessor::CompilationResultAccessor}, resource::resource_reference::ResourceReference, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 pub type HeadingLevel = u32;
@@ -24,7 +24,7 @@ pub struct Heading {
     #[getset(get = "pub", set = "pub")]
     nuid: Option<NmdUniqueIdentifier>,
 
-    compilable_content: CompilableContent,
+    // compilable_content: CompilableContent,
 }
 
 impl Heading {
@@ -36,12 +36,12 @@ impl Heading {
             compilation_result: None,
             resource_reference: None,
             nuid: None,
-            compilable_content: CompilationResultParts::from([
-                CompilationResultPart::new(
-                    title,
-                    CompilationResultPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
-                )
-            ])
+            // compilable_content: CompilationResultParts::from([
+            //     CompilationResultPart::new(
+            //         title,
+            //         CompilationResultPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
+            //     )
+            // ])
         }
     }
 }
@@ -52,12 +52,12 @@ impl CompilationResultAccessor for Heading {
     }
 }
 
-impl Compilable for Heading {
-    fn compilable_content(&self) -> &CompilableContent {
-        &self.compilable_content
-    }
+// impl Compilable for Heading {
+//     fn compilable_content(&self) -> &CompilableContent {
+//         &self.compilable_content
+//     }
 
-    fn nuid(&self) -> Option<&NmdUniqueIdentifier> {
-        self.nuid.as_ref()
-    }
-}
+//     fn nuid(&self) -> Option<&NmdUniqueIdentifier> {
+//         self.nuid.as_ref()
+//     }
+// }

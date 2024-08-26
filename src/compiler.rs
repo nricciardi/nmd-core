@@ -868,25 +868,27 @@ mod test {
     #[test]
     fn compile_paragraph() {
 
-        let codex = Codex::of_html();
+        todo!()
 
-        let mut paragraph = Box::new(ReplacementRuleParagraph::new(
-            "\n\ntest\n\n".to_string(),
-            Box::new(ReplacementRule::new(StandardParagraphModifier::CommonParagraph.modifier_pattern_with_paragraph_separator().clone(), vec![
-                ReplacementRuleReplacerPart::new_fixed(String::from(r#"<p class="paragraph" data-nuid="$nuid">"#)),
-                ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-                ReplacementRuleReplacerPart::new_fixed(String::from(r#"</p>"#)),
-            ]))
-        )) as Box<dyn Paragraph>;
+        // let codex = Codex::of_html();
 
-        paragraph.set_nuid(Some("test-nuid".to_string()));
+        // let mut paragraph = Box::new(ReplacementRuleParagraph::new(
+        //     "\n\ntest\n\n".to_string(),
+        //     Box::new(ReplacementRule::new(StandardParagraphModifier::CommonParagraph.modifier_pattern_with_paragraph_separator().clone(), vec![
+        //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"<p class="paragraph" data-nuid="$nuid">"#)),
+        //         ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
+        //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"</p>"#)),
+        //     ]))
+        // )) as Box<dyn Paragraph>;
 
-        paragraph.compile(&OutputFormat::Html, &codex, &CompilationConfiguration::default(), CompilationConfigurationOverLay::default()).unwrap();
+        // paragraph.set_nuid(Some("test-nuid".to_string()));
+
+        // paragraph.compile(&OutputFormat::Html, &codex, &CompilationConfiguration::default(), CompilationConfigurationOverLay::default()).unwrap();
         
-        assert_eq!(paragraph.compilation_result().clone().unwrap().content(), concat!(
-            r#"<p class="paragraph" data-nuid="test-nuid">"#,
-            "test",
-            r#"</p>"#
-        ))
+        // assert_eq!(paragraph.compilation_result().clone().unwrap().content(), concat!(
+        //     r#"<p class="paragraph" data-nuid="test-nuid">"#,
+        //     "test",
+        //     r#"</p>"#
+        // ))
     }
 }

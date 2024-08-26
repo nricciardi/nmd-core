@@ -1,6 +1,8 @@
 use thiserror::Error;
 use crate::{loader::LoadError, resource::{resource_reference::ResourceReferenceError, ResourceError}};
 
+use super::compilable::CompilableError;
+
 
 #[derive(Error, Debug)]
 pub enum CompilationError {
@@ -26,7 +28,7 @@ pub enum CompilationError {
     ResourceError(#[from] ResourceError),
 
     #[error(transparent)]
-    LoadError(#[from] LoadError),
+    CompilableError(#[from] CompilableError),
 
     #[error("unknown error occurs")]
     Unknown,

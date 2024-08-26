@@ -56,7 +56,7 @@ impl CompilationRule for ReferenceRule {
 
         }
 
-        Ok(compiled_parts)
+        Ok(Compilable::new(compiled_parts, None))
 
         // let content = compilable.compilable_content();
 

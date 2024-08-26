@@ -132,6 +132,8 @@ impl CompilationRule for HtmlGreekLettersRule {
             // TODO: strict option with panic
         }
 
+        Ok(Compilable::new(compiled_parts, None))
+
         // let content = compilable.compilable_content();
         
         // let compiled_content = self.search_pattern_regex.replace_all(content, |capture: &Captures| {

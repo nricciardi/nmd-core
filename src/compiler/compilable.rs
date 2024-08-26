@@ -12,14 +12,10 @@ pub enum CompilableError {
 
 
 #[derive(Debug, Getters, Setters)]
-pub struct Compilable {
+pub struct Compilable {             // TODO: change name
 
     #[getset(get = "pub")]
     parts: CompilationResultParts,
-
-    /// content usable in regex. It's the string obtained concatenating compilable parts 
-    #[getset(get = "pub")]
-    compilable_content: String,
 
     #[getset(get = "pub")]
     nuid: Option<NmdUniqueIdentifier>
@@ -28,26 +24,42 @@ pub struct Compilable {
 impl Compilable {
     pub fn new(parts: CompilationResultParts, nuid: Option<NmdUniqueIdentifier>) -> Self {
 
+        Self {
+            parts,
+            nuid
+        }
+    }
+
+    /// content usable in regex. It's the string obtained concatenating compilable parts
+    pub fn compilable_content(&self) -> String {
+
         let mut compilable_content = String::new();
 
-        parts.compilable_content().iter().for_each(|part| {
+        self.parts.iter().for_each(|part| {
             match part.part_type() {
                 CompilationResultPartType::Fixed => (),
                 CompilationResultPartType::Compilable { incompatible_modifiers: _ } => compilable_content.push_str(&part.content()),
             }
         });
 
-        Self {
-            parts,
-            compilable_content,
-            nuid
-        }
+        compilable_content
+    }
+
+    pub fn content(&self) -> String {
+
+        let mut content = String::new();
+
+        self.parts.iter().for_each(|part| content.push_str(part.content()));
+
+        content
     }
 
     pub fn parts_slice(&self, start: usize, end: usize) -> Result<CompilationResultParts, CompilableError> {
 
-        if end > self.compilable_content.len() {
-            return Err(CompilableError::ContentOverflow(self.compilable_content.clone(), start, end))
+        let compilable_content = self.compilable_content();
+
+        if end > compilable_content.len() {
+            return Err(CompilableError::ContentOverflow(compilable_content, start, end))
         }
 
         let mut parts_slice = CompilationResultParts::new();
@@ -57,7 +69,7 @@ impl Compilable {
 
         let mut slice_found = false;
 
-        for part in self.parts {
+        for part in &self.parts {
 
             match part.part_type() {
                 CompilationResultPartType::Fixed => {
@@ -67,17 +79,17 @@ impl Compilable {
                         continue;
                     }
                 },
-                CompilationResultPartType::Compilable { incompatible_modifiers } => {
+                CompilationResultPartType::Compilable { incompatible_modifiers: _ } => {
 
                     end_part_position_in_compilable_content = start_part_position_in_compilable_content + part.content().len();
 
-
                     if start_part_position_in_compilable_content <= start {
                         
-                        let part = part.clone();
+                        let part = CompilationResultPart::new(
+                            compilable_content[start..end_part_position_in_compilable_content.min(end)].to_string(),
+                            part.part_type().clone()
+                        );
                         
-                        part.set_content(part.content()[(start - start_part_position_in_compilable_content)..end_part_position_in_compilable_content.min(end)]);
-
                         parts_slice.push(part);
 
                         if end < end_part_position_in_compilable_content {         // start and end are in the same part
@@ -88,13 +100,14 @@ impl Compilable {
                     }
 
                     if end < end_part_position_in_compilable_content {
-                        
-                        let part = part.clone();
-                        
-                        part.set_content(part.content()[start_part_position_in_compilable_content..end]);
 
-                        parts_slice.push(part);
+                        let part = CompilationResultPart::new(
+                            compilable_content[start_part_position_in_compilable_content..end].to_string(),
+                            part.part_type().clone()
+                        );
                         
+                        parts_slice.push(part);
+
                         break;              
                     }
                     
@@ -105,6 +118,12 @@ impl Compilable {
         }
 
         Ok(parts_slice)
+    }
+}
+
+impl Into<CompilationResultParts> for Compilable {
+    fn into(self) -> CompilationResultParts {
+        self.parts  
     }
 }
 
@@ -145,7 +164,7 @@ mod test {
             ),
             CompilationResultPart::new(
                 String::from("this is the fixed part"),
-                CompilationResultPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
+                CompilationResultPartType::Fixed
             ),
             CompilationResultPart::new(
                 String::from("end of the content"),
@@ -157,19 +176,19 @@ mod test {
         let start2: usize = 25;
 
         let end1: usize = 16;
-        let end2: usize = 37;
+        let end2: usize = 38;
 
         let parts_slice = compilable.parts_slice(start1, end1).unwrap();
 
         assert_eq!(parts_slice.len(), 1);
-        assert_eq!(parts_slice[0].content(), String::from("is a string"));
+        assert_eq!(parts_slice[0].content(), &String::from("is a string"));
 
         let parts_slice = compilable.parts_slice(start2, end2).unwrap();
 
         assert_eq!(parts_slice.len(), 3);
-        assert_eq!(parts_slice[0].content(), String::from("characters"));
-        assert_eq!(parts_slice[1].content(), String::from("this is the fixed part"));
-        assert_eq!(parts_slice[2].content(), String::from("end"));
+        assert_eq!(parts_slice[0].content(), &String::from("characters"));
+        assert_eq!(parts_slice[1].content(), &String::from("this is the fixed part"));
+        assert_eq!(parts_slice[2].content(), &String::from("end"));
     }
 
 }

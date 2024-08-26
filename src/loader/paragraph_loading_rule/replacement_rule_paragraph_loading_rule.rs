@@ -4,12 +4,12 @@ use crate::{codex::Codex, compiler::compilation_rule::replacement_rule::Replacem
 
 #[derive(Debug)]
 pub struct ReplacementRuleParagraphLoadingRule {
-    compilation_rule: ReplacementRule<String>,
+    compilation_rule: ReplacementRule,
 }
 
 impl ReplacementRuleParagraphLoadingRule {
     
-    pub fn new(compilation_rule: ReplacementRule<String>,) -> Self {
+    pub fn new(compilation_rule: ReplacementRule,) -> Self {
         Self {
             compilation_rule,
         }
@@ -18,6 +18,9 @@ impl ReplacementRuleParagraphLoadingRule {
 
 impl ParagraphLoadingRule for ReplacementRuleParagraphLoadingRule {
     fn load(&self, raw_content: &str, _codex: &Codex, _configuration: &LoaderConfiguration, _configuration_overlay: LoaderConfigurationOverLay) -> Result<Box<dyn Paragraph>, LoadError> {
-        Ok(Box::new(ReplacementRuleParagraph::new(raw_content.to_string(), Box::new(self.compilation_rule.clone()))))
+        
+        todo!()
+        
+        // Ok(Box::new(ReplacementRuleParagraph::new(raw_content.to_string(), Box::new(self.compilation_rule.clone()))))
     }
 }
