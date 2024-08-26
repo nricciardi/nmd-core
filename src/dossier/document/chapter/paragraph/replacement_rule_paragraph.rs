@@ -1,5 +1,5 @@
 use getset::{Getters, Setters};
-use crate::{codex::Codex, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor, compilation_rule::CompilationRule, self_compile::SelfCompile}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use crate::{codex::Codex, compilable_text::CompilableText, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compilation_rule::CompilationRule, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 #[derive(Debug, Getters, Setters)]
@@ -14,7 +14,7 @@ pub struct ReplacementRuleParagraph {
     compilation_rule: Box<dyn CompilationRule>,
 
     #[getset(set = "pub")]
-    compiled_content: Option<CompilationResult>,
+    compiled_content: Option<CompilableText>,
 
 }
 
@@ -57,9 +57,9 @@ impl SelfCompile for ReplacementRuleParagraph {
 }
 
 
-impl CompilationResultAccessor for ReplacementRuleParagraph {
-    fn compilation_result(&self) -> &Option<CompilationResult> {
-        &self.compiled_content
+impl CompiledTextAccessor for ReplacementRuleParagraph {
+    fn compiled_text(&self) -> Option<&CompilableText> {
+        self.compiled_content.as_ref()
     }
 }
 

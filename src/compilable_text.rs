@@ -1,7 +1,10 @@
-use getset::{Getters, Setters};
+pub mod compilable_text_part;
+
+
+use compilable_text_part::{CompilableTextPart, CompilableTextPartType};
+use getset::{Getters, MutGetters, Setters};
+use serde::Serialize;
 use thiserror::Error;
-use crate::utility::nmd_unique_identifier::NmdUniqueIdentifier;
-use super::compilation_result::{CompilationResultPart, CompilationResultPartType, CompilationResultParts};
 
 
 #[derive(Error, Debug)]
@@ -11,22 +14,25 @@ pub enum CompilableError {
 }
 
 
-#[derive(Debug, Getters, Setters)]
-pub struct Compilable {             // TODO: change name
+#[derive(Debug, Clone, Getters, MutGetters, Setters, Serialize)]
+pub struct CompilableText {
 
-    #[getset(get = "pub")]
-    parts: CompilationResultParts,
-
-    #[getset(get = "pub")]
-    nuid: Option<NmdUniqueIdentifier>
+    #[getset(get = "pub", get_mut = "pub")]
+    parts: Vec<CompilableTextPart>,
 }
 
-impl Compilable {
-    pub fn new(parts: CompilationResultParts, nuid: Option<NmdUniqueIdentifier>) -> Self {
+impl CompilableText {
+
+    pub fn new_empty() -> Self {
+        Self {
+            parts: Vec::new()
+        }
+    }
+
+    pub fn new(parts: Vec<CompilableTextPart>) -> Self {
 
         Self {
             parts,
-            nuid
         }
     }
 
@@ -37,14 +43,15 @@ impl Compilable {
 
         self.parts.iter().for_each(|part| {
             match part.part_type() {
-                CompilationResultPartType::Fixed => (),
-                CompilationResultPartType::Compilable { incompatible_modifiers: _ } => compilable_content.push_str(&part.content()),
+                CompilableTextPartType::Fixed => (),
+                CompilableTextPartType::Compilable { incompatible_modifiers: _ } => compilable_content.push_str(&part.content()),
             }
         });
 
         compilable_content
     }
 
+    /// string generated using all parts contents 
     pub fn content(&self) -> String {
 
         let mut content = String::new();
@@ -54,7 +61,8 @@ impl Compilable {
         content
     }
 
-    pub fn parts_slice(&self, start: usize, end: usize) -> Result<CompilationResultParts, CompilableError> {
+    /// parts between two position in `compilable_content`
+    pub fn parts_slice(&self, start: usize, end: usize) -> Result<Vec<CompilableTextPart>, CompilableError> {
 
         let compilable_content = self.compilable_content();
 
@@ -62,7 +70,7 @@ impl Compilable {
             return Err(CompilableError::ContentOverflow(compilable_content, start, end))
         }
 
-        let mut parts_slice = CompilationResultParts::new();
+        let mut parts_slice = Vec::new();
 
         let mut start_part_position_in_compilable_content: usize = 0; 
         let mut end_part_position_in_compilable_content: usize;
@@ -72,20 +80,20 @@ impl Compilable {
         for part in &self.parts {
 
             match part.part_type() {
-                CompilationResultPartType::Fixed => {
+                CompilableTextPartType::Fixed => {
                     if slice_found {
                         parts_slice.push(part.clone());
 
                         continue;
                     }
                 },
-                CompilationResultPartType::Compilable { incompatible_modifiers: _ } => {
+                CompilableTextPartType::Compilable { incompatible_modifiers: _ } => {
 
                     end_part_position_in_compilable_content = start_part_position_in_compilable_content + part.content().len();
 
                     if start_part_position_in_compilable_content <= start {
                         
-                        let part = CompilationResultPart::new(
+                        let part = CompilableTextPart::new(
                             compilable_content[start..end_part_position_in_compilable_content.min(end)].to_string(),
                             part.part_type().clone()
                         );
@@ -101,7 +109,7 @@ impl Compilable {
 
                     if end < end_part_position_in_compilable_content {
 
-                        let part = CompilationResultPart::new(
+                        let part = CompilableTextPart::new(
                             compilable_content[start_part_position_in_compilable_content..end].to_string(),
                             part.part_type().clone()
                         );
@@ -121,9 +129,15 @@ impl Compilable {
     }
 }
 
-impl Into<CompilationResultParts> for Compilable {
-    fn into(self) -> CompilationResultParts {
+impl Into<Vec<CompilableTextPart>> for CompilableText {
+    fn into(self) -> Vec<CompilableTextPart> {
         self.parts  
+    }
+}
+
+impl Into<String> for CompilableText {
+    fn into(self) -> String {
+        self.content()
     }
 }
 
@@ -150,27 +164,27 @@ impl Into<CompilationResultParts> for Compilable {
 
 #[cfg(test)]
 mod test {
-    use crate::{codex::modifier::ModifiersBucket, compiler::compilation_result::{CompilationResultPart, CompilationResultPartType}};
+    use crate::{codex::modifier::ModifiersBucket, compilable_text::compilable_text_part::{CompilableTextPart, CompilableTextPartType}};
 
-    use super::Compilable;
+    use super::CompilableText;
 
 
     #[test]
     fn parts_between_positions() {
-        let compilable = Compilable::new(vec![
-            CompilationResultPart::new(
+        let compilable = CompilableText::new(vec![
+            CompilableTextPart::new(
                 String::from("this is a string with 35 characters"),
-                CompilationResultPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
+                CompilableTextPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
             ),
-            CompilationResultPart::new(
+            CompilableTextPart::new(
                 String::from("this is the fixed part"),
-                CompilationResultPartType::Fixed
+                CompilableTextPartType::Fixed
             ),
-            CompilationResultPart::new(
+            CompilableTextPart::new(
                 String::from("end of the content"),
-                CompilationResultPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
+                CompilableTextPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
             ),
-        ], None);
+        ]);
 
         let start1: usize = 5;
         let start2: usize = 25;

@@ -1,4 +1,3 @@
-pub mod paragraph_content;
 pub mod replacement_rule_paragraph;
 pub mod table_paragraph;
 pub mod list_paragraph;
@@ -8,7 +7,7 @@ pub mod block_quote_paragraph;
 
 use std::fmt::Display;
 use thiserror::Error;
-use crate::{compiler::{compilation_result_accessor::CompilationResultAccessor, self_compile::SelfCompile}, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use crate::{compiler::{compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile}, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 #[derive(Error, Debug)]
@@ -31,7 +30,7 @@ pub type ParagraphType = String;
 /// a `compiled_content` (which is the corresponding compilation result) of the paragraph.
 /// 
 /// In addiction, each `Paragraph` has an optional `nuid`.    
-pub trait Paragraph: std::fmt::Debug + SelfCompile + CompilationResultAccessor + Sync + Send {
+pub trait Paragraph: std::fmt::Debug + SelfCompile + CompiledTextAccessor + Sync + Send {
     
     fn raw_content(&self) -> &String;
 

@@ -1,4 +1,5 @@
 pub mod dossier;
+pub mod compilable_text;
 pub mod output_format;
 pub mod assembler;
 pub mod dumpable;

@@ -1,6 +1,6 @@
 use build_html::{Container, Html, HtmlContainer};
 use getset::{Getters, Setters};
-use crate::{codex::Codex, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, resource::{image_resource::ImageResource, source::Source}, utility::{image_utility, nmd_unique_identifier::NmdUniqueIdentifier}};
+use crate::{codex::Codex, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, resource::{image_resource::ImageResource, source::Source}, utility::{image_utility, nmd_unique_identifier::NmdUniqueIdentifier}};
 
 
 const SINGLE_IMAGE_CLASSES: [&str; 1] = ["image"];
@@ -188,8 +188,8 @@ impl SelfCompile for ImageParagraph {
 }
 
 
-impl CompilationResultAccessor for ImageParagraph {
-    fn compilation_result(&self) -> &Option<CompilationResult> {
+impl CompiledTextAccessor for ImageParagraph {
+    fn compiled_text(&self) -> &Option<CompilationResult> {
         &self.compiled_content
     }
 }

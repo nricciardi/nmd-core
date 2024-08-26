@@ -1,6 +1,6 @@
 use getset::{CopyGetters, Getters, Setters};
 use serde::Serialize;
-use crate::{codex::modifier::ModifiersBucket, compiler::{compilable::Compilable, compilation_result::{CompilationResult, CompilationResultPart, CompilationResultPartType, CompilationResultParts}, compilation_result_accessor::CompilationResultAccessor}, resource::resource_reference::ResourceReference, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use crate::{compilable_text::CompilableText, compiler::compiled_text_accessor::CompiledTextAccessor, resource::resource_reference::ResourceReference, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 pub type HeadingLevel = u32;
@@ -16,7 +16,7 @@ pub struct Heading {
     title: String,
 
     #[getset(set = "pub")]
-    compilation_result: Option<CompilationResult>,
+    compilation_result: Option<CompilableText>,
 
     #[getset(get = "pub", set = "pub")]
     resource_reference: Option<ResourceReference>,
@@ -46,9 +46,9 @@ impl Heading {
     }
 }
 
-impl CompilationResultAccessor for Heading {
-    fn compilation_result(&self) -> &Option<CompilationResult> {
-        &self.compilation_result
+impl CompiledTextAccessor for Heading {
+    fn compiled_text(&self) -> Option<&CompilableText> {
+        self.compilation_result.as_ref()
     }
 }
 

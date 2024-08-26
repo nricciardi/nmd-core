@@ -3,41 +3,11 @@ use serde::Serialize;
 use crate::codex::modifier::ModifiersBucket;
 
 
-#[derive(Debug, Clone, Serialize)]
-pub enum CompilationResultPartType {
-    Fixed,
-    Compilable{ incompatible_modifiers: ModifiersBucket },
-}
-
-#[derive(Debug, Getters, Setters, MutGetters, Clone, Serialize)]
-pub struct CompilationResultPart {
-
-    #[getset(get_mut = "pub", get = "pub", set = "pub")]
-    content: String,
-
-    #[getset(get = "pub", set = "pub")]
-    part_type: CompilationResultPartType,
-}
-
-impl CompilationResultPart {
-    
-    pub fn new(content: String, part_type: CompilationResultPartType) -> Self {
-        Self {
-            content,
-            part_type,
-        }
-    }
-}
-
-
-pub type CompilationResultParts = Vec<CompilationResultPart>;
-
-
 #[derive(Debug, Clone, Getters, MutGetters, Setters, Serialize)]
 pub struct CompilationResult {
 
     #[getset(get_mut = "pub", get = "pub", set = "pub")]
-    parts: CompilationResultParts
+    content: Compi
 }
 
 impl CompilationResult {

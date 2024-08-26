@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 use regex::Regex;
-use crate::{codex::modifier::standard_text_modifier::StandardTextModifier, compiler::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_result::{CompilationResultPart, CompilationResultPartType, CompilationResultParts}}, output_format::OutputFormat};
+use crate::{codex::modifier::standard_text_modifier::StandardTextModifier, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, compiler::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, output_format::OutputFormat};
 use super::{CompilationRule, CompilationRuleResult};
 
 
@@ -30,9 +30,9 @@ impl CompilationRule for HtmlCiteRule {
         &self.search_pattern
     }
 
-    fn standard_compile(&self, compilable: &Compilable, _format: &OutputFormat, compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> CompilationRuleResult {
+    fn standard_compile(&self, compilable: &CompilableText, _format: &OutputFormat, compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> CompilationRuleResult {
         
-        let mut compiled_parts = CompilationResultParts::new();
+        let mut compiled_parts = Vec::new();
 
         for matc in self.search_pattern_regex.captures_iter(&compilable.compilable_content()) {
 
@@ -43,9 +43,9 @@ impl CompilationRule for HtmlCiteRule {
                     if let Some(reference) = bibliography.get_reference_from_key(bib_key) {
                         if let Ok(reference) = reference {
                             
-                            let reference_part = CompilationResultPart::new(
+                            let reference_part = CompilableTextPart::new(
                                 format!(r#"<a class="cite" href="{}">{}</a>"#, reference.build(), n),
-                                CompilationResultPartType::Fixed
+                                CompilableTextPartType::Fixed
                             );
             
                             compiled_parts.push(reference_part);
@@ -64,7 +64,7 @@ impl CompilationRule for HtmlCiteRule {
 
         }
 
-        Ok(Compilable::new(compiled_parts, None))
+        Ok(CompilableText::new(compiled_parts))
 
         // let content = compilable.compilable_content();
 

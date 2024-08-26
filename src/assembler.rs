@@ -4,7 +4,7 @@ pub mod html_assembler;
 
 
 use thiserror::Error;
-use crate::{compiler::{compilation_result_accessor::CompilationResultAccessor, compilation_error::CompilationError}, resource::ResourceError};
+use crate::{compiler::{compiled_text_accessor::CompiledTextAccessor, compilation_error::CompilationError}, resource::ResourceError};
 use super::{artifact::{Artifact, ArtifactError}, bibliography::Bibliography, dossier::{Document, Dossier}, table_of_contents::TableOfContents};
 
 
@@ -40,7 +40,7 @@ pub trait Assembler {
 
         for paragraph in document.preamble() {
 
-            if let Some(r) = paragraph.compilation_result().as_ref() {
+            if let Some(r) = paragraph.compiled_text().as_ref() {
 
                 result.push_str(&r.content());
 
@@ -52,7 +52,7 @@ pub trait Assembler {
 
         for chapter in document.chapters() {
 
-            if let Some(r) = chapter.heading().compilation_result().as_ref() {
+            if let Some(r) = chapter.heading().compiled_text().as_ref() {
 
                 result.push_str(&r.content());
 
@@ -62,7 +62,7 @@ pub trait Assembler {
             }
 
             for paragraph in chapter.paragraphs() {
-                if let Some(r) = paragraph.compilation_result().as_ref() {
+                if let Some(r) = paragraph.compiled_text().as_ref() {
 
                     result.push_str(&r.content());
     

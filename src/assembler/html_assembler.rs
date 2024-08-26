@@ -6,7 +6,7 @@ use build_html::{HtmlPage, HtmlContainer, Html, Container};
 use getset::{Getters, Setters};
 use html_assembler_configuration::HtmlAssemblerConfiguration;
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
-use crate::{artifact::Artifact, bibliography::Bibliography, compiler::compilation_result_accessor::CompilationResultAccessor, dossier::{document::chapter::chapter_tag::ChapterTagKey, Document, Dossier}, resource::{disk_resource::DiskResource, Resource}, table_of_contents::TableOfContents, theme::Theme};
+use crate::{artifact::Artifact, bibliography::Bibliography, compiler::compiled_text_accessor::CompiledTextAccessor, dossier::{document::chapter::chapter_tag::ChapterTagKey, Document, Dossier}, resource::{disk_resource::DiskResource, Resource}, table_of_contents::TableOfContents, theme::Theme};
 
 use super::{Assembler, AssemblerError};
 
@@ -260,7 +260,7 @@ impl Assembler for HtmlAssembler {
         }
 
         if let Some(bib) = dossier.bibliography() {
-            if let Some(compiled_bib) = bib.compilation_result() {
+            if let Some(compiled_bib) = bib.compiled_text() {
                 page.add_raw(compiled_bib.content());
             }
         }
@@ -275,7 +275,7 @@ impl Assembler for HtmlAssembler {
 
         for paragraph in document.preamble() {
 
-            if let Some(compiled_content) = paragraph.compilation_result().as_ref() {
+            if let Some(compiled_content) = paragraph.compiled_text().as_ref() {
 
                 result.push_str(&compiled_content.content());
 
@@ -311,7 +311,7 @@ impl Assembler for HtmlAssembler {
             div_chapter = div_chapter.with_attributes(vec![("style", style.as_str())]);
             let mut div_chapter_content = String::new();
 
-            if let Some(compiled_content) = chapter.heading().compilation_result().as_ref() {
+            if let Some(compiled_content) = chapter.heading().compiled_text().as_ref() {
 
                 div_chapter_content.push_str(&compiled_content.content());
 
@@ -320,7 +320,7 @@ impl Assembler for HtmlAssembler {
             }
 
             for paragraph in chapter.paragraphs() {
-                if let Some(compiled_content) = paragraph.compilation_result().as_ref() {
+                if let Some(compiled_content) = paragraph.compiled_text().as_ref() {
 
                     let compiled_content = compiled_content.content();
 
@@ -362,7 +362,7 @@ impl Assembler for HtmlAssembler {
         page.add_raw(Into::<String>::into(Self::assemble_document(document, configuration)?));
 
         if let Some(bib) = bibliography {
-            if let Some(compiled_bib) = bib.compilation_result() {
+            if let Some(compiled_bib) = bib.compiled_text() {
                 page.add_raw(compiled_bib.content());
             }
         }

@@ -1,5 +1,5 @@
 use getset::{Getters, Setters};
-use crate::{codex::Codex, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor, self_compile::SelfCompile, Compiler}, output_format::OutputFormat, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use crate::{codex::Codex, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile, Compiler}, output_format::OutputFormat, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 use super::Paragraph;
 
 
@@ -48,7 +48,7 @@ impl SelfCompile for ExtendedBlockQuoteParagraph {
         for paragraph in self.paragraphs.iter_mut() {
             paragraph.standard_compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
 
-            compilation_result.add_fixed_part(paragraph.compilation_result().as_ref().unwrap().content());
+            compilation_result.add_fixed_part(paragraph.compiled_text().as_ref().unwrap().content());
         }
 
         compilation_result.add_fixed_part(String::from("</div></div>"));
@@ -62,8 +62,8 @@ impl SelfCompile for ExtendedBlockQuoteParagraph {
 }
 
 
-impl CompilationResultAccessor for ExtendedBlockQuoteParagraph {
-    fn compilation_result(&self) -> &Option<CompilationResult> {
+impl CompiledTextAccessor for ExtendedBlockQuoteParagraph {
+    fn compiled_text(&self) -> &Option<CompilationResult> {
         &self.compiled_content
     }
 }

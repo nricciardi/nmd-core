@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use bibliography_record::BibliographyRecord;
 use getset::{Getters, Setters};
 use serde::Serialize;
-use crate::{compiler::{compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor}, dossier::dossier_configuration::dossier_configuration_bibliography::DossierConfigurationBibliography, resource::resource_reference::{ResourceReference, ResourceReferenceError}};
+use crate::{compiler::{compilation_result::CompilationResult, compiled_text_accessor::CompiledTextAccessor}, dossier::dossier_configuration::dossier_configuration_bibliography::DossierConfigurationBibliography, resource::resource_reference::{ResourceReference, ResourceReferenceError}};
 
 
 pub const BIBLIOGRAPHY_FICTITIOUS_DOCUMENT: &str = "bibliography";
@@ -61,8 +61,8 @@ impl From<&DossierConfigurationBibliography> for Bibliography {
     }
 }
 
-impl CompilationResultAccessor for Bibliography {
-    fn compilation_result(&self) -> &Option<CompilationResult> {
+impl CompiledTextAccessor for Bibliography {
+    fn compiled_text(&self) -> &Option<CompilationResult> {
         &self.compilation_result
     }
 }

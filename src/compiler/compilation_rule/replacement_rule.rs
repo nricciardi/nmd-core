@@ -1,24 +1,21 @@
 use std::fmt::Debug;
-use getset::{CopyGetters, Getters, MutGetters, Setters};
+use getset::{Getters, Setters};
 use log;
-use regex::{Captures, Regex, Replacer};
-use crate::compiler::compilable::Compilable;
+use regex::{Captures, Regex};
+use crate::compilable_text::compilable_text_part::{CompilableTextPart, CompilableTextPartType};
+use crate::compilable_text::CompilableText;
 use crate::compiler::compilation_configuration::compilation_configuration_overlay::CompilationConfigurationOverLay;
 use crate::compiler::compilation_configuration::CompilationConfiguration;
 use crate::compiler::compilation_error::CompilationError;
-use crate::compiler::compilation_result::{CompilationResult, CompilationResultPart, CompilationResultPartType, CompilationResultParts};
-use crate::compiler::compilation_rule::constants::DOUBLE_NEW_LINE_REGEX;
 use crate::output_format::OutputFormat;
-use crate::resource::resource_reference::ResourceReference;
-use crate::utility::text_utility;
 use super::{CompilationRule, CompilationRuleResult};
 
 
-type Closure = dyn Sync + Send + Fn(&Captures, &Compilable, &OutputFormat, &CompilationConfiguration, CompilationConfigurationOverLay) -> Result<Compilable, CompilationError>;
+type Closure = dyn Sync + Send + Fn(&Captures, &CompilableText, &OutputFormat, &CompilationConfiguration, CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError>;
 
 pub trait ReplacementRuleReplacerPart: Debug + Sync + Send {
 
-    fn compile(&self, captures: &Captures, compilable: &Compilable, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<Compilable, CompilationError>;
+    fn compile(&self, captures: &Captures, compilable: &CompilableText, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError>;
 }
 
 pub struct ClosureReplacementRuleReplacerPart {
@@ -43,8 +40,8 @@ impl Debug for ClosureReplacementRuleReplacerPart {
 }
 
 impl ReplacementRuleReplacerPart for ClosureReplacementRuleReplacerPart {
-    fn compile(&self, captures: &Captures, compilable: &Compilable, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<Compilable, CompilationError> {
-        todo!()
+    fn compile(&self, captures: &Captures, compilable: &CompilableText, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError> {
+        (self.closure)(captures, compilable, format, compilation_configuration, compilation_configuration_overlay.clone())
     }
 }
 
@@ -66,10 +63,10 @@ impl FixedReplacementRuleReplacerPart {
 }
 
 impl ReplacementRuleReplacerPart for FixedReplacementRuleReplacerPart {
-    fn compile(&self, captures: &Captures, compilable: &Compilable, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<Compilable, CompilationError> {
-        Ok(Compilable::new(CompilationResultParts::from([
-            CompilationResultPart::new(self.content.clone(), CompilationResultPartType::Fixed)
-        ]), None))
+    fn compile(&self, _captures: &Captures, _compilable: &CompilableText, _format: &OutputFormat, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError> {
+        Ok(CompilableText::new(vec![
+            CompilableTextPart::new(self.content.clone(), CompilableTextPartType::Fixed)
+        ]))
     }
 }
 
@@ -122,11 +119,11 @@ impl ReplacementRule {
 impl CompilationRule for ReplacementRule {
 
     /// Compile the content using internal search and replacement pattern
-    fn standard_compile(&self, compilable: &Compilable, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> CompilationRuleResult {
+    fn standard_compile(&self, compilable: &CompilableText, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> CompilationRuleResult {
 
         log::debug!("compile:\n{:#?}\nusing '{}'->'{:?}'", compilable, self.search_pattern(), self.replacer_parts);
 
-        let mut compiled_parts = CompilationResultParts::new();
+        let mut compiled_parts = Vec::new();
 
         for captures in self.search_pattern_regex.captures_iter(&compilable.compilable_content()) {
 
@@ -136,7 +133,7 @@ impl CompilationRule for ReplacementRule {
             }   
         }
 
-        Ok(Compilable::new(compiled_parts, None))
+        Ok(CompilableText::new(compiled_parts))
 
         // log::debug!("compile:\n{:#?}\nusing '{}'->'{:?}'", compilable, self.search_pattern(), self.replacer_parts);
 
@@ -240,14 +237,14 @@ impl CompilationRule for ReplacementRule {
 #[cfg(test)]
 mod test {
 
-    use crate::{codex::modifier::ModifiersBucket, compiler::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_result::{CompilationResultPart, CompilationResultPartType, CompilationResultParts}, compilation_rule::{replacement_rule::{ClosureReplacementRuleReplacerPart, FixedReplacementRuleReplacerPart, ReplacementRule, ReplacementRuleReplacerPart}, CompilationRule}}, output_format::OutputFormat};
+    use crate::{codex::modifier::{standard_text_modifier::StandardTextModifier, ModifiersBucket}, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{replacement_rule::{ClosureReplacementRuleReplacerPart, FixedReplacementRuleReplacerPart, ReplacementRule, ReplacementRuleReplacerPart}, CompilationRule}}, output_format::OutputFormat};
 
 
     #[test]
-    fn bold_parsing() {
+    fn bold_compiling() {
 
         // valid pattern with a valid text modifier
-        let replacement_rule = ReplacementRule::new(String::from("bold-rule"), vec![
+        let replacement_rule = ReplacementRule::new(StandardTextModifier::BoldStarVersion.modifier_pattern(), vec![
             Box::new(FixedReplacementRuleReplacerPart::new(String::from("<strong>"))) as Box<dyn ReplacementRuleReplacerPart>,
             Box::new(ClosureReplacementRuleReplacerPart::new(Box::new(|captures, compilable, _, _, _| {
                 
@@ -255,7 +252,7 @@ mod test {
                 
                 let slice = compilable.parts_slice(capture1.start(), capture1.end())?;
 
-                Ok(Compilable::new(slice, None))
+                Ok(CompilableText::new(slice))
             }))),
             Box::new(FixedReplacementRuleReplacerPart::new(String::from("</strong>"))),
         ]);
@@ -263,15 +260,13 @@ mod test {
         let text_to_compile = r"A piece of **bold text** and **bold text2**";
         let compilation_configuration = CompilationConfiguration::default();
 
-        let compilable = Compilable::new(
-            CompilationResultParts::from([
-                CompilationResultPart::new(
+        let compilable = CompilableText::new(
+            vec![
+                CompilableTextPart::new(
                     text_to_compile.to_string(),
-                    CompilationResultPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
+                    CompilableTextPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
                 )
-            ]),
-            None
-        );
+        ]);
         
         let outcome = replacement_rule.compile(&compilable, &OutputFormat::Html, &compilation_configuration, CompilationConfigurationOverLay::default()).unwrap();
 
@@ -280,15 +275,13 @@ mod test {
         // without text modifier
         let text_to_compile = r"A piece of text without bold text";
 
-        let compilable = Compilable::new(
-            CompilationResultParts::from([
-                CompilationResultPart::new(
+        let compilable = CompilableText::new(
+            vec![
+                CompilableTextPart::new(
                     text_to_compile.to_string(),
-                    CompilationResultPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
+                    CompilableTextPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
                 )
-            ]),
-            None
-        );
+        ]);
 
         let outcome = replacement_rule.compile(&compilable, &OutputFormat::Html, &compilation_configuration, CompilationConfigurationOverLay::default()).unwrap();
 

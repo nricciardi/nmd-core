@@ -5,8 +5,11 @@ use build_html::HtmlContainer;
 use build_html::TableCell as HtmlTableCell;
 use build_html::TableRow as HtmlTableRow;
 use getset::{Getters, Setters};
+use crate::compilable_text::compilable_text_part::CompilableTextPart;
+use crate::compilable_text::compilable_text_part::CompilableTextPartType;
+use crate::compilable_text::CompilableText;
 use crate::resource::table::TableCellAlignment;
-use crate::{codex::Codex, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, resource::{resource_reference::ResourceReference, table::{Table, TableCell}}, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use crate::{codex::Codex, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, resource::{resource_reference::ResourceReference, table::{Table, TableCell}}, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 pub type TableParagraphContentRow = Vec<Box<dyn Paragraph>>;
@@ -31,7 +34,7 @@ pub struct TableParagraph {
     raw_caption: Option<String>,
 
     #[getset(set = "pub")]
-    compiled_content: Option<CompilationResult>,
+    compiled_content: Option<CompilableText>,
 
 }
 
@@ -122,7 +125,7 @@ impl TableParagraph {
                                 compilation_configuration_overlay.clone()
                             )?;
 
-                            compiled_content.push_str(&paragraph.compilation_result().as_ref().unwrap().content());
+                            compiled_content.push_str(&paragraph.compiled_text().as_ref().unwrap().content());
                         }
 
                         let cell = TableCell::ContentCell { content: compiled_content, alignment: alignment.clone() };
@@ -212,7 +215,12 @@ impl TableParagraph {
             html_table.add_caption(html_caption);
         }
 
-        self.compiled_content = Some(CompilationResult::new_fixed(html_table.to_html_string()));
+        self.compiled_content = Some(CompilableText::new(vec![
+            CompilableTextPart::new(
+                html_table.to_html_string(),
+                CompilableTextPartType::Fixed
+            )
+        ]));
 
         Ok(())
     }
@@ -228,9 +236,9 @@ impl SelfCompile for TableParagraph {
 }
 
 
-impl CompilationResultAccessor for TableParagraph {
-    fn compilation_result(&self) -> &Option<CompilationResult> {
-        &self.compiled_content
+impl CompiledTextAccessor for TableParagraph {
+    fn compiled_text(&self) -> Option<&CompilableText> {
+        self.compiled_content.as_ref()
     }
 }
 
@@ -287,7 +295,7 @@ mod test {
         
         paragraph.compile(&OutputFormat::Html, &codex, &compilation_configuration, compilation_configuration_overlay).unwrap();
         
-        let outcome = paragraph.compilation_result().as_ref().unwrap().content();
+        let outcome = paragraph.compiled_text().as_ref().unwrap().content();
 
         assert!(outcome.contains("<thead"));
         assert!(outcome.contains("<tbody"));
@@ -316,7 +324,7 @@ mod test {
         
         paragraph.compile(&OutputFormat::Html, &codex, &compilation_configuration, compilation_configuration_overlay).unwrap();
         
-        let outcome = paragraph.compilation_result().as_ref().unwrap().content();
+        let outcome = paragraph.compiled_text().as_ref().unwrap().content();
 
         assert!(outcome.contains("<img"))
     }

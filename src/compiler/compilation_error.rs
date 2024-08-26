@@ -1,7 +1,5 @@
 use thiserror::Error;
-use crate::{loader::LoadError, resource::{resource_reference::ResourceReferenceError, ResourceError}};
-
-use super::compilable::CompilableError;
+use crate::{compilable_text::CompilableError, resource::{resource_reference::ResourceReferenceError, ResourceError}};
 
 
 #[derive(Error, Debug)]

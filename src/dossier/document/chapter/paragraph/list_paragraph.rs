@@ -1,7 +1,7 @@
 use getset::{Getters, Setters};
 use once_cell::sync::Lazy;
 use regex::Regex;
-use crate::{codex::{modifier::{standard_paragraph_modifier::StandardParagraphModifier, ModifiersBucket}, Codex}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, list_bullet_configuration_record::{self, ListBulletConfigurationRecord}, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compilation_result_accessor::CompilationResultAccessor, compilation_rule::constants::{ESCAPE_HTML, SPACE_TAB_EQUIVALENCE}, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, utility::{nmd_unique_identifier::NmdUniqueIdentifier, text_utility}};
+use crate::{codex::{modifier::{standard_paragraph_modifier::StandardParagraphModifier, ModifiersBucket}, Codex}, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, list_bullet_configuration_record::{self, ListBulletConfigurationRecord}, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compilation_rule::constants::{ESCAPE_HTML, SPACE_TAB_EQUIVALENCE}, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, utility::{nmd_unique_identifier::NmdUniqueIdentifier, text_utility}};
 
 
 static SEARCH_LIST_ITEM_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&StandardParagraphModifier::ListItem.modifier_pattern()).unwrap());
@@ -20,7 +20,7 @@ pub struct ListParagraph {
     raw_content: String,
 
     #[getset(set = "pub")]
-    compiled_content: Option<CompilationResult>,
+    compiled_content: Option<CompilableText>,
 
 }
 
@@ -66,7 +66,7 @@ impl ListParagraph {
     }
 
     fn html_standard_compile(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
-        let mut compilation_result = CompilationResult::new_empty();
+        let mut compilation_result = CompilableText::new_empty();
 
         let nuid_attr: String;
 
@@ -76,7 +76,7 @@ impl ListParagraph {
             nuid_attr = String::new();
         }
 
-        compilation_result.add_fixed_part(format!(r#"<ul class="list" {}>"#, nuid_attr));
+        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<ul class="list" {}>"#, nuid_attr)));
 
         let mut items_found = 0;
 
@@ -107,7 +107,7 @@ impl ListParagraph {
 
                         let content = text_utility::replace(&content, &ESCAPE_HTML);
 
-                        compilation_result.add_fixed_part(r#"<li class="list-item">"#.to_string());
+                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(r#"<li class="list-item">"#.to_string()));
                         compilation_result.add_fixed_part(LIST_ITEM_INDENTATION.repeat(indentation_level));
                         compilation_result.add_fixed_part(r#"<span class="list-item-bullet">"#.to_string());
                         compilation_result.add_fixed_part(bullet);
@@ -152,9 +152,9 @@ impl SelfCompile for ListParagraph {
 }
 
 
-impl CompilationResultAccessor for ListParagraph {
-    fn compilation_result(&self) -> &Option<CompilationResult> {
-        &self.compiled_content
+impl CompiledTextAccessor for ListParagraph {
+    fn compiled_text(&self) -> Option<&CompilableText> {
+        self.compiled_content.as_ref()
     }
 }
 
@@ -207,7 +207,7 @@ mod test {
         
         paragraph.compile(&OutputFormat::Html, &codex, &CompilationConfiguration::default(), CompilationConfigurationOverLay::default()).unwrap();
 
-        let compiled_content = paragraph.compilation_result().as_ref().unwrap().content();
+        let compiled_content = paragraph.compiled_text().as_ref().unwrap().content();
         let li_n = Regex::new("<li").unwrap().find_iter(&compiled_content).count();
 
         assert_eq!(li_n, 9);

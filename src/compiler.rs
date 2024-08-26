@@ -6,13 +6,13 @@ pub mod compilation_rule;
 pub mod compilation_error;
 pub mod compilation_result;
 pub mod compilation_configuration;
-pub mod compilation_result_accessor;
+pub mod compiled_text_accessor;
 pub mod compilable;
 pub mod self_compile;
 
 
 use std::time::Instant;
-use compilable::Compilable;
+use compilable::CompilableText;
 use compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration};
 use compilation_error::CompilationError;
 use compilation_result::{CompilationResult, CompilationResultPart, CompilationResultPartType, CompilationResultParts};
@@ -490,7 +490,7 @@ impl Compiler {
     }
 
     /// Compile a string
-    pub fn compile_str(content: &str, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationResult, CompilationError> {
+    pub fn compile_str(content: &str, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError> {
 
         let excluded_modifiers = compilation_configuration_overlay.excluded_modifiers().clone();
 
@@ -531,7 +531,7 @@ impl Compiler {
             }
         }
         
-        Ok(CompilationResult::new(content_parts))
+        Ok(CompilableText::new(content_parts))
     }
 
     /// Compile parts and return the new compiled parts or `None` if there are not matches using
