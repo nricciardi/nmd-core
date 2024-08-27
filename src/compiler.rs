@@ -14,7 +14,6 @@ use compilation_configuration::{compilation_configuration_overlay::CompilationCo
 use compilation_error::CompilationError;
 use compilation_rule::CompilationRule;
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
-use regex::Match;
 use crate::{bibliography::{Bibliography, BIBLIOGRAPHY_FICTITIOUS_DOCUMENT}, codex::{modifier::ModifiersBucket, CodexIdentifier}, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, dossier::{document::{chapter::heading::Heading, Chapter}, Document, Dossier}, output_format::OutputFormat, resource::{bucket::Bucket, resource_reference::ResourceReference}, table_of_contents::{TableOfContents, TOC_INDENTATION}};
 use super::codex::Codex;
 
@@ -28,7 +27,6 @@ enum LoopIteration {
     },
     EndParts,
 }
-
 
 
 #[derive(Debug)]
@@ -597,20 +595,21 @@ impl Compiler {
             let mut loop_iteration: LoopIteration;
 
             if match_index < matches.len() {
-                loop_iteration = LoopIteration::
+
+                let matc = matches[match_index];
+                
+                loop_iteration = LoopIteration::Match {
+                    match_start: matc.start(),
+                    match_end: matc.end(),
+                    match_found: false,
+                    matched_parts: Vec::new(),
+                }
+
+            } else {
+                loop_iteration = LoopIteration::EndParts;
             }
             
-
-            let matc = matches[match_index];
-
-            let match_start = matc.start();
-            let match_end = matc.end();
-
-            let mut match_found = false;
-
-            let mut matched_parts: Vec<CompilableTextPart> = Vec::new();
-
-            'parts_loop: loop {
+            'parts_loop: while parts_index < parts.len() {
 
                 let part = &parts[parts_index];
 
@@ -619,17 +618,27 @@ impl Compiler {
                 match part.part_type() {
                     CompilableTextPartType::Fixed => {
 
-                        if match_found {        // matching end cannot be in a fixed part
+                        match loop_iteration {
+                            LoopIteration::Match { match_start: _, match_end: _, match_found, ref mut matched_parts } => {
+                                
+                                if match_found {        // matching end cannot be in a fixed part
 
-                            matched_parts.push(part.clone());
-    
-                            continue 'parts_loop;
-                        
-                        } else {
-                            
-                            compiled_parts.push(part.clone());      // direct in compiled_parts
+                                    matched_parts.push(part.clone());
+            
+                                    continue 'parts_loop;
+                                
+                                } else {
+                                    
+                                    compiled_parts.push(part.clone());      // direct in compiled_parts
+        
+                                    continue 'parts_loop;
+                                }
+                            },
+                            LoopIteration::EndParts => {
+                                compiled_parts.push(part.clone());      // direct in compiled_parts
 
-                            continue 'parts_loop;
+                                continue 'parts_loop;
+                            },
                         }
 
                     },
@@ -638,88 +647,98 @@ impl Compiler {
                         part_end_position_in_compilable_content = part_start_position_in_compilable_content - offset + part.content().len();
                         offset = 0;
 
-                        if !match_found && part_end_position_in_compilable_content < match_start {      // there is no match in this part
+                        match loop_iteration {
+                            LoopIteration::Match { match_start, match_end, mut match_found, ref mut matched_parts } => {
+                                if !match_found && part_end_position_in_compilable_content < match_start {      // there is no match in this part
                             
-                            compiled_parts.push(part.clone());
+                                    compiled_parts.push(part.clone());
+        
+                                } else {
+                                    // ...part has a match
+        
+                                    if !match_found     // first part in which current match is found
+                                        && part_start_position_in_compilable_content <= match_start
+                                        && match_start < part_end_position_in_compilable_content {
+        
+                                        // === pre-matched part ==
+                                        let pre_matched_part = &compilable_content[part_start_position_in_compilable_content..match_start];
+                                                                            
+                                        if !pre_matched_part.is_empty() {
+                                            compiled_parts.push(CompilableTextPart::new(
+                                                pre_matched_part.to_string(),
+                                                CompilableTextPartType::Compilable{ incompatible_modifiers: incompatible_modifiers.clone() }
+                                            ));
+                                        }
+        
+                                        // === matched part ===
+                                        let matched_part = &compilable_content[match_start..part_end_position_in_compilable_content.min(match_end)];
+        
+                                        matched_parts.push(CompilableTextPart::new(
+                                            matched_part.to_string(),
+                                            CompilableTextPartType::Compilable{ incompatible_modifiers: incompatible_modifiers.clone() }
+                                        ));
+                                    }
+                                    
+                                    if match_end <= part_end_position_in_compilable_content {       // matching end is in this part
+        
+                                        if match_found {   // the matching end is in another part respect of matching start
+        
+                                            let matched_part = &compilable_content[part_start_position_in_compilable_content..match_end];
+        
+                                            matched_parts.push(CompilableTextPart::new(
+                                                matched_part.to_string(),
+                                                CompilableTextPartType::Compilable{ incompatible_modifiers: incompatible_modifiers.clone() }
+                                            ));
+                                        }
 
-                        } else {
-                            // ...part has a match
-
-                            if !match_found     // first part in which current match is found
-                                && part_start_position_in_compilable_content <= match_start
-                                && match_start < part_end_position_in_compilable_content {
-
-                                // === pre-matched part ==
-                                let pre_matched_part = &compilable_content[part_start_position_in_compilable_content..match_start];
-                                                                    
-                                if !pre_matched_part.is_empty() {
+                                        parts_index -= 1;       // re-start next parts loop from this part
+                                        offset = match_end - part_start_position_in_compilable_content;
+                                        part_start_position_in_compilable_content = match_end;
+        
+                                        break 'parts_loop;
+        
+                                    } else {
+        
+                                        if match_found {        // simple matched part in matched parts 
+        
+                                            matched_parts.push(part.clone());
+                                        }
+                                    }
+        
+                                    match_found = true;     // update to check if match is found in next iterations
+                                }
+                            },
+                            LoopIteration::EndParts => {
+                                let part = &compilable_content[part_start_position_in_compilable_content..part_end_position_in_compilable_content];
+                                                                            
+                                if !part.is_empty() {
                                     compiled_parts.push(CompilableTextPart::new(
-                                        pre_matched_part.to_string(),
+                                        part.to_string(),
                                         CompilableTextPartType::Compilable{ incompatible_modifiers: incompatible_modifiers.clone() }
                                     ));
                                 }
-
-                                // === matched part ===
-                                let matched_part = &compilable_content[match_start..part_end_position_in_compilable_content.min(match_end)];
-
-                                matched_parts.push(CompilableTextPart::new(
-                                    matched_part.to_string(),
-                                    CompilableTextPartType::Compilable{ incompatible_modifiers: incompatible_modifiers.clone() }
-                                ));
-                            }
-
-                            // TODO: check if matching start -> add to match_parts, else add to compiled_parts
-
-                            // TODO: check if matching end -> split part (first in match_parts, second in next match iterations -> continue match loop), else whole part in match_parts
-
-                            if match_end <= part_end_position_in_compilable_content {       // matching end is in this part
-
-                                if match_found {   // the matching end is in another part respect of matching start
-
-                                    let matched_part = &compilable_content[part_start_position_in_compilable_content..match_end];
-
-                                    matched_parts.push(CompilableTextPart::new(
-                                        matched_part.to_string(),
-                                        CompilableTextPartType::Compilable{ incompatible_modifiers: incompatible_modifiers.clone() }
-                                    ));
-                                }
-
-
-                                // TODO: compile matched parts
-                                println!("matched_parts: {:?}", matched_parts);
-
-                                compiled_parts.append(
-                                    &mut rule.compile(
-                                        &CompilableText::from(matched_parts),
-                                        format,
-                                        compilation_configuration,
-                                        compilation_configuration_overlay.clone()
-                                    )?.parts_mut() 
-                                );
-
-                                parts_index -= 1;       // re-start next parts loop from this part
-                                offset = match_end - part_start_position_in_compilable_content;
-                                part_start_position_in_compilable_content = match_end;
-
-                                break 'parts_loop;
-
-                            } else {
-
-                                if match_found {        // simple matched part in matched parts 
-
-                                    matched_parts.push(part.clone());
-                                }
-                            }
-
-                            // update start position
-                            part_start_position_in_compilable_content = part_end_position_in_compilable_content;
-
-                            match_found = true;     // update to check if match is found in next iterations
+                            },
                         }
+        
+                        // update start position
+                        part_start_position_in_compilable_content = part_end_position_in_compilable_content;
 
                     },
                 }
 
+            }
+
+            // compile and append found matched parts
+            if let LoopIteration::Match { match_start: _, match_end: _, match_found: _, matched_parts } = loop_iteration {
+
+                compiled_parts.append(
+                    &mut rule.compile(
+                        &CompilableText::from(matched_parts),
+                        format,
+                        compilation_configuration,
+                        compilation_configuration_overlay.clone()
+                    )?.parts_mut() 
+                );
             }
         
             match_index += 1;
