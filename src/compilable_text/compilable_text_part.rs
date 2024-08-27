@@ -31,4 +31,8 @@ impl CompilableTextPart {
     pub fn new_fixed(content: String) -> Self {
         Self::new(content, CompilableTextPartType::Fixed)
     }
+
+    pub fn new_compilable(content: String, incompatible_modifiers: ModifiersBucket) -> Self {
+        Self::new(content, CompilableTextPartType::Compilable { incompatible_modifiers })
+    }
 }

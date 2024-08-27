@@ -223,7 +223,7 @@ impl Assembler for HtmlAssembler {
         let mut page = Self::create_default_html_page(dossier.name(), &styles_references, configuration.external_styles(), configuration.external_scripts_paths(), configuration.external_scripts(), configuration.theme(), configuration.use_remote_addons())?;
         
         if let Some(toc) = dossier.table_of_contents() {
-            if let Some(compiled_toc) = toc.compilation_result() {
+            if let Some(compiled_toc) = toc.compiled_text() {
                 page.add_raw(compiled_toc.content());
             }
         }
@@ -354,7 +354,7 @@ impl Assembler for HtmlAssembler {
                                 )?;
 
         if let Some(toc) = toc {
-            if let Some(compiled_toc) = toc.compilation_result() {
+            if let Some(compiled_toc) = toc.compiled_text() {
                 page.add_raw(compiled_toc.content());
             }
         }

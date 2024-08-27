@@ -4,22 +4,17 @@
 
 pub mod compilation_rule;
 pub mod compilation_error;
-pub mod compilation_result;
 pub mod compilation_configuration;
 pub mod compiled_text_accessor;
-pub mod compilable;
 pub mod self_compile;
 
 
 use std::time::Instant;
-use compilable::CompilableText;
 use compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration};
 use compilation_error::CompilationError;
-use compilation_result::{CompilationResult, CompilationResultPart, CompilationResultPartType, CompilationResultParts};
 use compilation_rule::CompilationRule;
-use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, IntoParallelRefMutIterator, ParallelIterator};
-use regex::Captures;
-use crate::{bibliography::{Bibliography, BIBLIOGRAPHY_FICTITIOUS_DOCUMENT}, codex::{modifier::ModifiersBucket, CodexIdentifier}, dossier::{document::{chapter::heading::Heading, Chapter}, Document, Dossier}, output_format::OutputFormat, resource::{bucket::Bucket, resource_reference::ResourceReference}, table_of_contents::{TableOfContents, TOC_INDENTATION}};
+use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
+use crate::{bibliography::{Bibliography, BIBLIOGRAPHY_FICTITIOUS_DOCUMENT}, codex::{modifier::ModifiersBucket, CodexIdentifier}, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, dossier::{document::{chapter::heading::Heading, Chapter}, Document, Dossier}, output_format::OutputFormat, resource::{bucket::Bucket, resource_reference::ResourceReference}, table_of_contents::{TableOfContents, TOC_INDENTATION}};
 use super::codex::Codex;
 
 
@@ -286,19 +281,19 @@ impl Compiler {
                     nuid_attr = String::new();
                 }
 
-                let outcome = CompilationResult::new(vec![
+                let outcome = CompilableText::new(vec![
 
-                    CompilationResultPart::new(
+                    CompilableTextPart::new(
                         format!(r#"<h{} class="heading-{}" id="{}" {}>"#, heading.level(), heading.level(), id.build_without_internal_sharp(), nuid_attr),
-                        CompilationResultPartType::Fixed
+                        CompilableTextPartType::Fixed
                     ),
-                    CompilationResultPart::new(
+                    CompilableTextPart::new(
                         compiled_title.content(),
-                        CompilationResultPartType::Compilable{ incompatible_modifiers: ModifiersBucket::None }
+                        CompilableTextPartType::Compilable{ incompatible_modifiers: ModifiersBucket::None }
                     ),
-                    CompilationResultPart::new(
+                    CompilableTextPart::new(
                         format!(r#"</h{}>"#, heading.level()),
-                        CompilationResultPartType::Fixed
+                        CompilableTextPartType::Fixed
                     ),
                 ]);
 
@@ -345,13 +340,13 @@ impl Compiler {
         
         match format {
             OutputFormat::Html => {
-                let mut outcome = CompilationResult::new_empty();
+                let mut outcome = CompilableText::new_empty();
 
-                outcome.add_fixed_part(String::from(r#"<section class="toc">"#));
-                outcome.add_fixed_part(String::from(r#"<div class="toc-title">"#));
-                outcome.append_compilation_result(&mut Self::compile_str(table_of_contents.title(), format, codex, compilation_configuration, compilation_configuration_overlay.clone())?);
-                outcome.add_fixed_part(String::from(r#"</div>"#));
-                outcome.add_fixed_part(String::from(r#"<ul class="toc-body">"#));
+                outcome.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"<section class="toc">"#)));
+                outcome.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"<div class="toc-title">"#)));
+                outcome.parts_mut().append(&mut Self::compile_str(table_of_contents.title(), format, codex, compilation_configuration, compilation_configuration_overlay.clone())?.parts_mut());
+                outcome.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</div>"#)));
+                outcome.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"<ul class="toc-body">"#)));
 
                 let mut total_li = 0;
 
@@ -363,7 +358,7 @@ impl Compiler {
                         continue;
                     }
 
-                    outcome.add_fixed_part(String::from(r#"<li class="toc-item">"#));
+                    outcome.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"<li class="toc-item">"#)));
 
                     if !table_of_contents.plain() {
 
@@ -371,20 +366,20 @@ impl Compiler {
 
                         if let Some(m) = min_heading_lv {
 
-                            outcome.add_fixed_part(TOC_INDENTATION.repeat((heading_lv - m) as usize));
+                            outcome.parts_mut().push(CompilableTextPart::new_fixed(TOC_INDENTATION.repeat((heading_lv - m) as usize)));
 
                         } else {
-                            outcome.add_fixed_part(TOC_INDENTATION.repeat(heading_lv as usize));
+                            outcome.parts_mut().push(CompilableTextPart::new_fixed(TOC_INDENTATION.repeat(heading_lv as usize)));
 
                         }
                     }
 
-                    outcome.add_fixed_part(r#"<span class="toc-item-bullet">"#.to_string());
-                    outcome.add_fixed_part(r#"</span><span class="toc-item-content">"#.to_string());
+                    outcome.parts_mut().push(CompilableTextPart::new_fixed(r#"<span class="toc-item-bullet">"#.to_string()));
+                    outcome.parts_mut().push(CompilableTextPart::new_fixed(r#"</span><span class="toc-item-content">"#.to_string()));
 
                     if let Some(id) = heading.resource_reference() {
 
-                        outcome.add_fixed_part(format!(r#"<a href="{}" class="link">"#, id.build()));
+                        outcome.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<a href="{}" class="link">"#, id.build())));
                     
                     } else {
                         log::warn!("heading '{}' does not have a valid id", heading.title())
@@ -392,27 +387,21 @@ impl Compiler {
 
                     let compilation_configuration_overlay = compilation_configuration_overlay.clone();
 
-                    outcome.append_compilation_result(&mut Self::compile_str(
-                                    &heading.title(),
-                                    format,
-                                    codex,
-                                    compilation_configuration,
-                                    compilation_configuration_overlay.clone()
-                                )?);
+                    outcome.parts_mut().append(Self::compile_str(heading.title(), format, codex, compilation_configuration, compilation_configuration_overlay.clone())?.parts_mut());
 
                     if let Some(_) = heading.resource_reference() {
 
-                        outcome.add_fixed_part(String::from(r#"</a>"#));
+                        outcome.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</a>"#)));
                     }
 
-                    outcome.add_fixed_part(String::from(r#"</span></li>"#));
+                    outcome.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</span></li>"#)));
 
                     total_li += 1;
                         
                 }
 
-                outcome.add_fixed_part(String::from(r#"</ul>"#));
-                outcome.add_fixed_part(String::from(r#"</section>"#));
+                outcome.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</ul>"#)));
+                outcome.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</section>"#)));
 
                 table_of_contents.set_compilation_result(Some(outcome));
 
@@ -430,55 +419,55 @@ impl Compiler {
 
         match format {
             OutputFormat::Html => {
-                let mut compilation_result = CompilationResult::new_empty();
+                let mut compilation_result = CompilableText::new_empty();
 
-                compilation_result.add_fixed_part(String::from(r#"<section class="bibliography">"#));
-                compilation_result.add_fixed_part(String::from(r#"<div class="bibliography-title">"#));
-                compilation_result.append_compilation_result(&mut Self::compile_str(bibliography.title(), format, codex, compilation_configuration, compilation_configuration_overlay)?);
-                compilation_result.add_fixed_part(String::from(r#"</div>"#));
-                compilation_result.add_fixed_part(String::from(r#"<ul class="bibliography-body">"#));
+                compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"<section class="bibliography">"#)));
+                compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"<div class="bibliography-title">"#)));
+                compilation_result.parts_mut().append(&mut Self::compile_str(bibliography.title(), format, codex, compilation_configuration, compilation_configuration_overlay)?.parts_mut());
+                compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</div>"#)));
+                compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"<ul class="bibliography-body">"#)));
         
                 for (bib_key, bib_record) in bibliography.content().iter() {
-                    compilation_result.add_fixed_part(format!(r#"<div class="bibliography-item" id="{}">"#, ResourceReference::of_internal_from_without_sharp(bib_key, Some(&BIBLIOGRAPHY_FICTITIOUS_DOCUMENT))?.build_without_internal_sharp()));
-                    compilation_result.add_fixed_part(String::from(r#"<div class="bibliography-item-title">"#));
+                    compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<div class="bibliography-item" id="{}">"#, ResourceReference::of_internal_from_without_sharp(bib_key, Some(&BIBLIOGRAPHY_FICTITIOUS_DOCUMENT))?.build_without_internal_sharp())));
+                    compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"<div class="bibliography-item-title">"#)));
         
-                    compilation_result.add_fixed_part(bib_record.title().to_string());
+                    compilation_result.parts_mut().push(CompilableTextPart::new_fixed(bib_record.title().to_string()));
         
-                    compilation_result.add_fixed_part(String::from(r#"</div>"#));
+                    compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</div>"#)));
         
                     if let Some(authors) = bib_record.authors() {
         
-                        compilation_result.add_fixed_part(String::from(r#"<div class="bibliography-item-authors">"#));
-                        compilation_result.add_fixed_part(String::from(authors.join(", ")));
-                        compilation_result.add_fixed_part(String::from(r#"</div>"#));
+                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"<div class="bibliography-item-authors">"#)));
+                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(authors.join(", "))));
+                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</div>"#)));
                     }
         
                     if let Some(year) = bib_record.year() {
         
-                        compilation_result.add_fixed_part(String::from(r#"<div class="bibliography-item-year">"#));
-                        compilation_result.add_fixed_part(String::from(year.to_string()));
-                        compilation_result.add_fixed_part(String::from(r#"</div>"#));
+                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"<div class="bibliography-item-year">"#)));
+                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(year.to_string())));
+                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</div>"#)));
                     }
         
                     if let Some(url) = bib_record.url() {
         
-                        compilation_result.add_fixed_part(String::from(r#"<div class="bibliography-item-url">"#));
-                        compilation_result.add_fixed_part(String::from(url.to_string()));
-                        compilation_result.add_fixed_part(String::from(r#"</div>"#));
+                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"<div class="bibliography-item-url">"#)));
+                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(url.to_string())));
+                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</div>"#)));
                     }
         
                     if let Some(description) = bib_record.description() {
         
-                        compilation_result.add_fixed_part(String::from(r#"<div class="bibliography-item-description">"#));
-                        compilation_result.add_fixed_part(String::from(description.to_string()));
-                        compilation_result.add_fixed_part(String::from(r#"</div>"#));
+                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"<div class="bibliography-item-description">"#)));
+                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(description.to_string())));
+                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</div>"#)));
                     }
         
-                    compilation_result.add_fixed_part(String::from(r#"</div>"#));
+                    compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</div>"#)));
                 }
         
-                compilation_result.add_fixed_part(String::from(r#"</ul>"#));
-                compilation_result.add_fixed_part(String::from(r#"</section>"#));
+                compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</ul>"#)));
+                compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</section>"#)));
         
                 bibliography.set_compilation_result(Some(compilation_result));
         
@@ -496,18 +485,33 @@ impl Compiler {
 
         log::debug!("start to compile content:\n{}\nexcluding: {:?}", content, excluded_modifiers);
 
+        let mut compilable_text = CompilableText::from(CompilableTextPart::new_compilable(
+            content.to_string(),
+            ModifiersBucket::None
+        ));
+
         if excluded_modifiers == Bucket::All {
             log::debug!("compilation of content:\n{} is skipped because are excluded all modifiers", content);
             
-            return Ok(CompilationResult::new_fixed(content.to_string()))
+            return Ok(compilable_text)
         }
 
-        let mut content_parts: CompilationResultParts = vec![
-            CompilationResultPart::new(
-                String::from(content),
-                CompilationResultPartType::Compilable{ incompatible_modifiers: ModifiersBucket::None },
-            )
-        ];
+        Self::compile_compilable_text(&mut compilable_text, format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
+
+        Ok(compilable_text)
+    }
+
+    pub fn compile_compilable_text(compilable_text: &mut CompilableText, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
+        
+        let excluded_modifiers = compilation_configuration_overlay.excluded_modifiers().clone();
+
+        log::debug!("start to compile content:\n{:?}\nexcluding: {:?}", compilable_text, excluded_modifiers);
+
+        if excluded_modifiers == Bucket::All {
+            log::debug!("compilation of content:\n{:?} is skipped because are excluded all modifiers", compilable_text);
+            
+            return Ok(())
+        }
 
         for (codex_identifier, text_modifier) in codex.text_modifiers() {
 
@@ -517,34 +521,33 @@ impl Compiler {
                 continue;
             }
 
-            let text_rule = codex.text_compilation_rules().get(codex_identifier);
+            if let Some(text_rule) = codex.text_compilation_rules().get(codex_identifier) {
 
-            if text_rule.is_none() {
+                if let Some(parts) = Self::compile_compilation_parts_with_compilation_rule(&compilable_text.parts(), (codex_identifier, text_rule), format, compilation_configuration, compilation_configuration_overlay.clone())? {
+                    compilable_text.set_parts(parts);
+                }
+
+            } else {
+
                 log::warn!("text rule for {:#?} not found", text_modifier);
                 continue;
             }
-
-            let text_rule = text_rule.unwrap();
-
-            if let Some(new_content_parts) = Self::compile_compilation_parts_with_compilation_rule(&content_parts, (codex_identifier, text_rule), format, compilation_configuration, compilation_configuration_overlay.clone())? {
-                content_parts = new_content_parts;
-            }
         }
-        
-        Ok(CompilableText::new(content_parts))
+
+        Ok(())
     }
 
     /// Compile parts and return the new compiled parts or `None` if there are not matches using
     /// provided rule
-    pub fn compile_compilation_parts_with_compilation_rule(parts: &CompilationResultParts, (rule_identifier, rule): (&CodexIdentifier, &Box<dyn CompilationRule>), format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<Option<CompilationResultParts>, CompilationError> {
+    pub fn compile_compilation_parts_with_compilation_rule(parts: &Vec<CompilableTextPart>, (rule_identifier, rule): (&CodexIdentifier, &Box<dyn CompilationRule>), _format: &OutputFormat, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<Option<Vec<CompilableTextPart>>, CompilationError> {
     
         let mut compilable_content = String::new();
 
         parts.iter()
                 .filter(|part| {
                     match &part.part_type() {
-                        CompilationResultPartType::Fixed => false,
-                        CompilationResultPartType::Compilable{ incompatible_modifiers } => {
+                        CompilableTextPartType::Fixed => false,
+                        CompilableTextPartType::Compilable{ incompatible_modifiers } => {
                             if incompatible_modifiers.contains(&rule_identifier) {
                                 return false
                             } else {
@@ -565,7 +568,7 @@ impl Compiler {
 
         log::debug!("'{}' => there is a match with {:#?}", compilable_content, rule);
 
-        let mut compiled_parts: CompilationResultParts = CompilationResultParts::new();     // final output
+        let mut compiled_parts: Vec<CompilableTextPart> = Vec::new();     // final output
 
         let mut parts_index: usize = 0;
 
@@ -581,7 +584,7 @@ impl Compiler {
 
             let mut match_found = false;
 
-            let mut matched_parts: CompilationResultParts = CompilationResultParts::new();
+            let mut matched_parts: Vec<CompilableTextPart> = Vec::new();
 
             let mut match_end_found = false;
 
@@ -592,7 +595,7 @@ impl Compiler {
                 parts_index += 1;   // for next iteration  
 
                 match part.part_type() {
-                    CompilationResultPartType::Fixed => {
+                    CompilableTextPartType::Fixed => {
 
                         if match_found {        // matching end cannot be in a fixed part
 
@@ -609,7 +612,7 @@ impl Compiler {
                         }
 
                     },
-                    CompilationResultPartType::Compilable{ incompatible_modifiers } => {
+                    CompilableTextPartType::Compilable{ incompatible_modifiers } => {
 
                         part_end_position_in_compilable_content = part_start_position_in_compilable_content + part.content().len();
 
@@ -628,18 +631,18 @@ impl Compiler {
                                 let pre_matched_part = &compilable_content[part_start_position_in_compilable_content..match_start];
                                                                     
                                 if !pre_matched_part.is_empty() {
-                                    compiled_parts.push(CompilationResultPart::new(
+                                    compiled_parts.push(CompilableTextPart::new(
                                         pre_matched_part.to_string(),
-                                        CompilationResultPartType::Compilable{ incompatible_modifiers: incompatible_modifiers.clone() }
+                                        CompilableTextPartType::Compilable{ incompatible_modifiers: incompatible_modifiers.clone() }
                                     ));
                                 }
 
                                 // === matched part ===
                                 let matched_part = &compilable_content[match_start..part_end_position_in_compilable_content.min(match_end)];
 
-                                matched_parts.push(CompilationResultPart::new(
+                                matched_parts.push(CompilableTextPart::new(
                                     matched_part.to_string(),
-                                    CompilationResultPartType::Compilable{ incompatible_modifiers: incompatible_modifiers.clone() }
+                                    CompilableTextPartType::Compilable{ incompatible_modifiers: incompatible_modifiers.clone() }
                                 ));
                             }
 
@@ -653,9 +656,9 @@ impl Compiler {
 
                                     let matched_part = &compilable_content[part_start_position_in_compilable_content..match_end];
 
-                                    matched_parts.push(CompilationResultPart::new(
+                                    matched_parts.push(CompilableTextPart::new(
                                         matched_part.to_string(),
-                                        CompilationResultPartType::Compilable{ incompatible_modifiers: incompatible_modifiers.clone() }
+                                        CompilableTextPartType::Compilable{ incompatible_modifiers: incompatible_modifiers.clone() }
                                     ));
                                 }
 

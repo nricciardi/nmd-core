@@ -2,7 +2,7 @@ pub mod content_tree;
 
 use getset::{CopyGetters, Getters, Setters};
 use serde::Serialize;
-use crate::compiler::compilation_result::CompilationResult;
+use crate::{compilable_text::CompilableText, compiler::compiled_text_accessor::CompiledTextAccessor};
 use super::dossier::document::chapter::heading::Heading;
 
 
@@ -28,8 +28,8 @@ pub struct TableOfContents {
     #[getset(get = "pub", set = "pub")]
     headings: Vec<Heading>,
 
-    #[getset(get = "pub", set = "pub")]
-    compilation_result: Option<CompilationResult>,
+    #[getset(set = "pub")]
+    compilation_result: Option<CompilableText>,
 }
 
 impl TableOfContents {
@@ -42,5 +42,11 @@ impl TableOfContents {
             headings,
             compilation_result: None
         }
+    }
+}
+
+impl CompiledTextAccessor for TableOfContents {
+    fn compiled_text(&self) -> Option<&CompilableText> {
+        self.compilation_result.as_ref()
     }
 }

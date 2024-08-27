@@ -125,7 +125,7 @@ impl TableParagraph {
                                 compilation_configuration_overlay.clone()
                             )?;
 
-                            compiled_content.push_str(&paragraph.compiled_text().as_ref().unwrap().content());
+                            compiled_content.push_str(&paragraph.compiled_text().unwrap().content());
                         }
 
                         let cell = TableCell::ContentCell { content: compiled_content, alignment: alignment.clone() };

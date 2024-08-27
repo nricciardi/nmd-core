@@ -17,7 +17,7 @@ pub enum CompilableError {
 #[derive(Debug, Clone, Getters, MutGetters, Setters, Serialize)]
 pub struct CompilableText {
 
-    #[getset(get = "pub", get_mut = "pub")]
+    #[getset(get = "pub", get_mut = "pub", set = "pub")]
     parts: Vec<CompilableTextPart>,
 }
 
@@ -126,6 +126,18 @@ impl CompilableText {
         }
 
         Ok(parts_slice)
+    }
+}
+
+impl From<CompilableTextPart> for CompilableText {
+    fn from(value: CompilableTextPart) -> Self {
+        Self::new(vec![value])
+    }
+}
+
+impl From<Vec<CompilableTextPart>> for CompilableText {
+    fn from(value: Vec<CompilableTextPart>) -> Self {
+        Self::new(value)
     }
 }
 

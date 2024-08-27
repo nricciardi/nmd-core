@@ -108,12 +108,12 @@ impl ListParagraph {
                         let content = text_utility::replace(&content, &ESCAPE_HTML);
 
                         compilation_result.parts_mut().push(CompilableTextPart::new_fixed(r#"<li class="list-item">"#.to_string()));
-                        compilation_result.add_fixed_part(LIST_ITEM_INDENTATION.repeat(indentation_level));
-                        compilation_result.add_fixed_part(r#"<span class="list-item-bullet">"#.to_string());
-                        compilation_result.add_fixed_part(bullet);
-                        compilation_result.add_fixed_part(r#"</span><span class="list-item-content">"#.to_string());
-                        compilation_result.add_compilable_part(content, ModifiersBucket::None);
-                        compilation_result.add_fixed_part(r#"</span></li>"#.to_string());
+                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(LIST_ITEM_INDENTATION.repeat(indentation_level)));
+                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(r#"<span class="list-item-bullet">"#.to_string()));
+                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(bullet));
+                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(r#"</span><span class="list-item-content">"#.to_string()));
+                        compilation_result.parts_mut().push(CompilableTextPart::new_compilable(content, ModifiersBucket::None));
+                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(r#"</span></li>"#.to_string()));
 
                     }
                 }
@@ -132,7 +132,7 @@ impl ListParagraph {
             }
         }
 
-        compilation_result.add_fixed_part("</ul>".to_string());
+        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(r#"</ul>"#.to_string()));
 
         compilation_result.apply_compile_function(|mutable_part| Compiler::compile_str(&mutable_part.content(), &OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone()))?;
 

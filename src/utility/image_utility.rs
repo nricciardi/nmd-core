@@ -1,5 +1,5 @@
 use oxipng::Options;
-use crate::{codex::modifier::ModifiersBucket, compiler::compilation_result::CompilationResult, resource::{image_resource::ImageResource, source::Source, ResourceError}};
+use crate::{codex::modifier::ModifiersBucket, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, resource::{image_resource::ImageResource, source::Source, ResourceError}};
 use super::nmd_unique_identifier::NmdUniqueIdentifier;
 
 
@@ -40,9 +40,9 @@ pub fn set_image_base64_embed_src(image: &mut ImageResource, compression: bool) 
 }
 
 
-pub fn compile_image_resource_in_html(image: &ImageResource, img_classes: Vec<&str>, nuid: Option<&NmdUniqueIdentifier>) -> Result<CompilationResult, ResourceError> {
+pub fn compile_image_resource_in_html(image: &ImageResource, img_classes: Vec<&str>, nuid: Option<&NmdUniqueIdentifier>) -> Result<CompilableText, ResourceError> {
     
-    let mut compilation_result = CompilationResult::new_empty();
+    let mut compilation_result = CompilableText::new_empty();
     
     let id_attr: String;
 
@@ -68,7 +68,7 @@ pub fn compile_image_resource_in_html(image: &ImageResource, img_classes: Vec<&s
         style_attr = String::new();
     }
 
-    compilation_result.add_fixed_part(format!(r#"<figure class="figure" {} {} {}>"#, id_attr, nuid_attr, style_attr));
+    compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<figure class="figure" {} {} {}>"#, id_attr, nuid_attr, style_attr)));
 
     // let html_alt: String;
 
@@ -101,14 +101,14 @@ pub fn compile_image_resource_in_html(image: &ImageResource, img_classes: Vec<&s
         },
     };
 
-    compilation_result.add_fixed_part(format!(r#"<img src="{}" class="{}" />"#, src, img_classes.join(" ")));
+    compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<img src="{}" class="{}" />"#, src, img_classes.join(" "))));
 
 
     if let Some(caption) = image.caption() {
 
-        compilation_result.add_fixed_part(String::from(r#"<figcaption class="image-caption">"#));
-        compilation_result.add_compilable_part(caption.clone(), ModifiersBucket::None);
-        compilation_result.add_fixed_part(String::from(r#"</figcaption>"#));
+        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"<figcaption class="image-caption">"#)));
+        compilation_result.parts_mut().push(CompilableTextPart::new_compilable(caption.clone(), ModifiersBucket::None));
+        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</figcaption>"#)));
     }
 
     Ok(compilation_result)
