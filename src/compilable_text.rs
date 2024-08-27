@@ -6,6 +6,8 @@ use getset::{Getters, MutGetters, Setters};
 use serde::Serialize;
 use thiserror::Error;
 
+use crate::utility::nmd_unique_identifier::NmdUniqueIdentifier;
+
 
 #[derive(Error, Debug)]
 pub enum CompilableError {
@@ -19,13 +21,17 @@ pub struct CompilableText {
 
     #[getset(get = "pub", get_mut = "pub", set = "pub")]
     parts: Vec<CompilableTextPart>,
+
+    #[getset(get = "pub", get_mut = "pub", set = "pub")]
+    nuid: Option<NmdUniqueIdentifier>,
 }
 
 impl CompilableText {
 
     pub fn new_empty() -> Self {
         Self {
-            parts: Vec::new()
+            parts: Vec::new(),
+            nuid: None,
         }
     }
 
@@ -33,6 +39,14 @@ impl CompilableText {
 
         Self {
             parts,
+            nuid: None,
+        }
+    }
+
+    pub fn new_with_nuid(parts: Vec<CompilableTextPart>, nuid: NmdUniqueIdentifier) -> Self {
+        Self {
+            parts,
+            nuid: Some(nuid)
         }
     }
 

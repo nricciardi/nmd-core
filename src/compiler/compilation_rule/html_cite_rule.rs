@@ -1,7 +1,8 @@
 use std::fmt::Debug;
 use regex::Regex;
 use crate::{codex::modifier::standard_text_modifier::StandardTextModifier, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, compiler::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, output_format::OutputFormat};
-use super::{CompilationRule, CompilationRuleResult};
+use super::CompilationRule;
+use crate::compiler::compilation_error::CompilationError;
 
 
 pub struct HtmlCiteRule {
@@ -30,7 +31,7 @@ impl CompilationRule for HtmlCiteRule {
         &self.search_pattern
     }
 
-    fn standard_compile(&self, compilable: &CompilableText, _format: &OutputFormat, compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> CompilationRuleResult {
+    fn standard_compile(&self, compilable: &CompilableText, _format: &OutputFormat, compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError> {
         
         let mut compiled_parts = Vec::new();
 

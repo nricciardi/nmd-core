@@ -9,7 +9,7 @@ use crate::compilable_text::compilable_text_part::CompilableTextPart;
 use crate::compilable_text::compilable_text_part::CompilableTextPartType;
 use crate::compilable_text::CompilableText;
 use crate::resource::table::TableCellAlignment;
-use crate::{codex::Codex, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, resource::{resource_reference::ResourceReference, table::{Table, TableCell}}, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use crate::{codex::Codex, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, resource::{resource_reference::ResourceReference, table::{Table, TableCell}}, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 pub type TableParagraphContentRow = Vec<Box<dyn Paragraph>>;
@@ -247,8 +247,8 @@ impl Paragraph for TableParagraph {
         &self.raw_content
     }
 
-    fn nuid(&self) -> &Option<NmdUniqueIdentifier> {
-        &self.nuid
+    fn nuid(&self) -> Option<&NmdUniqueIdentifier> {
+        self.nuid.as_ref()
     }
     
     fn set_raw_content(&mut self, raw_content: String) {

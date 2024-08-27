@@ -23,7 +23,6 @@ use super::compiler::compilation_rule::constants::ESCAPE_HTML;
 use super::compiler::compilation_rule::html_cite_rule::HtmlCiteRule;
 use super::compiler::compilation_rule::html_greek_letter_rule::HtmlGreekLettersRule;
 use super::compiler::compilation_rule::reference_rule::ReferenceRule;
-use super::compiler::compilation_rule::replacement_rule::{ReplacementRule, ReplacementRuleReplacerPart};
 use super::compiler::compilation_rule::CompilationRule;
 
 

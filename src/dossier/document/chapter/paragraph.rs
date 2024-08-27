@@ -36,7 +36,7 @@ pub trait Paragraph: std::fmt::Debug + SelfCompile + CompiledTextAccessor + Sync
 
     fn set_raw_content(&mut self, raw_content: String);
 
-    fn nuid(&self) -> &Option<NmdUniqueIdentifier>;
+    fn nuid(&self) -> Option<&NmdUniqueIdentifier>;
 
     fn set_nuid(&mut self, nuid: Option<NmdUniqueIdentifier>);
 

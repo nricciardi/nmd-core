@@ -1,6 +1,6 @@
 use build_html::{Container, Html, HtmlContainer};
 use getset::{Getters, Setters};
-use crate::{codex::Codex, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, resource::{image_resource::ImageResource, source::Source}, utility::{image_utility, nmd_unique_identifier::NmdUniqueIdentifier}};
+use crate::{codex::Codex, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, resource::{image_resource::ImageResource, source::Source}, utility::{image_utility, nmd_unique_identifier::NmdUniqueIdentifier}};
 
 
 const SINGLE_IMAGE_CLASSES: [&str; 1] = ["image"];
@@ -36,7 +36,7 @@ pub struct ImageParagraph {
     content: ImageParagraphContent,
 
     #[getset(set = "pub")]
-    compiled_content: Option<CompilationResult>,
+    compiled_content: Option<CompilableText>,
 
 }
 
@@ -70,11 +70,11 @@ impl ImageParagraph {
                             image_utility::set_image_base64_embed_src(image, compilation_configuration.compress_embed_image())?;
                         }
 
-                        let mut image_html_tag = image_utility::compile_image_resource_in_html(image, img_classes, nuid)?;
+                        let mut compilable_text = image_utility::compile_image_resource_in_html(image, img_classes, nuid)?;
 
-                        image_html_tag.apply_compile_function(|mutable_part| Compiler::compile_str(&mutable_part.content(), &OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone()))?;
-
-                        return Ok(image_html_tag.content())
+                        Compiler::compile_compilable_text(&mut compilable_text, &OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
+                        
+                        return Ok(compilable_text.content())
                     },
                     Source::Local { path } => {
 
@@ -87,19 +87,19 @@ impl ImageParagraph {
                             image.set_src(Source::Local { path: std::fs::canonicalize(path).unwrap() });
                         }
 
-                        let mut image_html_tag = image_utility::compile_image_resource_in_html(image, img_classes, nuid)?;
+                        let mut compilable_text = image_utility::compile_image_resource_in_html(image, img_classes, nuid)?;
 
-                        image_html_tag.apply_compile_function(|mutable_part| Compiler::compile_str(&mutable_part.content(), &OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone()))?;
+                        Compiler::compile_compilable_text(&mut compilable_text, &OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
 
-                        return Ok(image_html_tag.content())
+                        return Ok(compilable_text.content())
                     },
                     Source::Base64String { base64: _ } => {
 
-                        let mut image_html_tag = image_utility::compile_image_resource_in_html(image, img_classes, nuid)?;
+                        let mut compilable_text = image_utility::compile_image_resource_in_html(image, img_classes, nuid)?;
 
-                        image_html_tag.apply_compile_function(|mutable_part| Compiler::compile_str(&mutable_part.content(), &OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone()))?;
+                        Compiler::compile_compilable_text(&mut compilable_text, &OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
 
-                        return Ok(image_html_tag.content())
+                        return Ok(compilable_text.content())
                     },
                     Source::Bytes { bytes: _ } => todo!(),
                 }
@@ -141,10 +141,10 @@ impl ImageParagraph {
         
         self.compiled_content = Some(match self.content {
             ImageParagraphContent::SingleImage(_) | ImageParagraphContent::AbridgedImage(_) => {
-                CompilationResult::new_fixed(Self::html_standard_compile_single_or_abridged_image(&mut self.content, self.nuid.as_ref(), codex, compilation_configuration, compilation_configuration_overlay.clone())?)
+                CompilableText::from(CompilableTextPart::new_fixed(Self::html_standard_compile_single_or_abridged_image(&mut self.content, self.nuid.as_ref(), codex, compilation_configuration, compilation_configuration_overlay.clone())?))
             },
             ImageParagraphContent::MultiImage(ref mut multi_image) => {
-                CompilationResult::new_fixed(Self::html_standard_compile_multi_image(multi_image, self.nuid.as_ref(), codex, compilation_configuration, compilation_configuration_overlay.clone())?)
+                CompilableText::from(CompilableTextPart::new_fixed(Self::html_standard_compile_multi_image(multi_image, self.nuid.as_ref(), codex, compilation_configuration, compilation_configuration_overlay.clone())?))
             },
         });
 
@@ -162,7 +162,7 @@ impl ImageParagraph {
                 self.compiled_content = Some(image_utility::compile_image_resource_in_html(image, ABRIDGED_IMAGE_CLASSES.to_vec(), self.nuid.as_ref())?);
             }
             ImageParagraphContent::MultiImage(multi_image) => {
-                self.compiled_content = Some(CompilationResult::new_fixed(format!(r#"<img alt="multi-image paragraph with {} image(s)" />"#, multi_image.images.len())))
+                self.compiled_content = Some(CompilableText::from(CompilableTextPart::new_fixed(format!(r#"<img alt="multi-image paragraph with {} image(s)" />"#, multi_image.images.len()))))
             },
         };
         
@@ -189,8 +189,8 @@ impl SelfCompile for ImageParagraph {
 
 
 impl CompiledTextAccessor for ImageParagraph {
-    fn compiled_text(&self) -> &Option<CompilationResult> {
-        &self.compiled_content
+    fn compiled_text(&self) -> Option<&CompilableText> {
+        self.compiled_content.as_ref()
     }
 }
 
@@ -199,8 +199,8 @@ impl Paragraph for ImageParagraph {
         &self.raw_content
     }
 
-    fn nuid(&self) -> &Option<NmdUniqueIdentifier> {
-        &self.nuid
+    fn nuid(&self) -> Option<&NmdUniqueIdentifier> {
+        self.nuid.as_ref()
     }
     
     fn set_raw_content(&mut self, raw_content: String) {

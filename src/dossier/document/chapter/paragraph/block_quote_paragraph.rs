@@ -1,5 +1,5 @@
 use getset::{Getters, Setters};
-use crate::{codex::Codex, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile, Compiler}, output_format::OutputFormat, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use crate::{codex::Codex, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile}, output_format::OutputFormat, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 use super::Paragraph;
 
 
@@ -20,7 +20,7 @@ pub struct ExtendedBlockQuoteParagraph {
     raw_content: String,
 
     #[getset(set = "pub")]
-    compiled_content: Option<CompilationResult>,
+    compiled_content: Option<CompilableText>,
 }
 
 impl ExtendedBlockQuoteParagraph {
@@ -39,21 +39,19 @@ impl ExtendedBlockQuoteParagraph {
 impl SelfCompile for ExtendedBlockQuoteParagraph {
     fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
         
-        let mut compilation_result = CompilationResult::new_empty();
+        let mut compilation_result = CompilableText::new_empty();
 
-        compilation_result.add_fixed_part(format!(r#"<div class="focus-quote-block focus-quote-block-{}" {}>"#, self.extended_quote_type, self.nuid.as_ref().unwrap_or(&String::new())));
-        compilation_result.add_fixed_part(format!(r#"<div class="focus-quote-block-title focus-quote-block-{}-title"></div>"#, self.extended_quote_type));
-        compilation_result.add_fixed_part(format!(r#"<div class="focus-quote-block-description focus-quote-block-{}-description">"#, self.extended_quote_type));
+        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<div class="focus-quote-block focus-quote-block-{}" {}>"#, self.extended_quote_type, self.nuid.as_ref().unwrap_or(&String::new()))));
+        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<div class="focus-quote-block-title focus-quote-block-{}-title"></div>"#, self.extended_quote_type)));
+        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<div class="focus-quote-block-description focus-quote-block-{}-description">"#, self.extended_quote_type)));
 
         for paragraph in self.paragraphs.iter_mut() {
             paragraph.standard_compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
 
-            compilation_result.add_fixed_part(paragraph.compiled_text().as_ref().unwrap().content());
+            compilation_result.parts_mut().append(&mut paragraph.compiled_text().unwrap().clone().parts_mut());
         }
 
-        compilation_result.add_fixed_part(String::from("</div></div>"));
-
-        compilation_result.apply_compile_function(|mutable_part| Compiler::compile_str(&mutable_part.content(), &OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone()))?;
+        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from("</div></div>")));
 
         self.compiled_content = Some(compilation_result);
 
@@ -63,8 +61,8 @@ impl SelfCompile for ExtendedBlockQuoteParagraph {
 
 
 impl CompiledTextAccessor for ExtendedBlockQuoteParagraph {
-    fn compiled_text(&self) -> &Option<CompilationResult> {
-        &self.compiled_content
+    fn compiled_text(&self) -> Option<&CompilableText> {
+        self.compiled_content.as_ref()
     }
 }
 
@@ -73,8 +71,8 @@ impl Paragraph for ExtendedBlockQuoteParagraph {
         &self.raw_content
     }
 
-    fn nuid(&self) -> &Option<NmdUniqueIdentifier> {
-        &self.nuid
+    fn nuid(&self) -> Option<&NmdUniqueIdentifier> {
+        self.nuid.as_ref()
     }
     
     fn set_raw_content(&mut self, raw_content: String) {

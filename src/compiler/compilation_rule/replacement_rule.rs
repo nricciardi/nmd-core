@@ -1,76 +1,17 @@
+pub mod replacement_rule_part;
+
+
 use std::fmt::Debug;
 use getset::{Getters, Setters};
 use log;
-use regex::{Captures, Regex};
-use crate::compilable_text::compilable_text_part::{CompilableTextPart, CompilableTextPartType};
+use regex::Regex;
+use replacement_rule_part::ReplacementRuleReplacerPart;
 use crate::compilable_text::CompilableText;
 use crate::compiler::compilation_configuration::compilation_configuration_overlay::CompilationConfigurationOverLay;
 use crate::compiler::compilation_configuration::CompilationConfiguration;
-use crate::compiler::compilation_error::CompilationError;
 use crate::output_format::OutputFormat;
-use super::{CompilationRule, CompilationRuleResult};
-
-
-type Closure = dyn Sync + Send + Fn(&Captures, &CompilableText, &OutputFormat, &CompilationConfiguration, CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError>;
-
-pub trait ReplacementRuleReplacerPart: Debug + Sync + Send {
-
-    fn compile(&self, captures: &Captures, compilable: &CompilableText, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError>;
-}
-
-pub struct ClosureReplacementRuleReplacerPart {
-
-    closure: Box<Closure>,
-}
-
-impl ClosureReplacementRuleReplacerPart {
-
-    pub fn new(closure: Box<Closure>) -> Self {
-        Self {
-            closure
-        }
-    }
-
-}
-
-impl Debug for ClosureReplacementRuleReplacerPart {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ClosureReplacementRuleReplacerPart").finish()
-    }
-}
-
-impl ReplacementRuleReplacerPart for ClosureReplacementRuleReplacerPart {
-    fn compile(&self, captures: &Captures, compilable: &CompilableText, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError> {
-        (self.closure)(captures, compilable, format, compilation_configuration, compilation_configuration_overlay.clone())
-    }
-}
-
-#[derive(Debug, Getters, Setters)]
-pub struct FixedReplacementRuleReplacerPart {
-
-    #[getset(get = "pub", set = "pub")]
-    content: String
-}
-
-impl FixedReplacementRuleReplacerPart {
-
-    pub fn new(content: String) -> Self {
-        Self {
-            content
-        }
-    }
-
-}
-
-impl ReplacementRuleReplacerPart for FixedReplacementRuleReplacerPart {
-    fn compile(&self, _captures: &Captures, _compilable: &CompilableText, _format: &OutputFormat, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError> {
-        Ok(CompilableText::new(vec![
-            CompilableTextPart::new(self.content.clone(), CompilableTextPartType::Fixed)
-        ]))
-    }
-}
-
-
+use super::CompilationRule;
+use crate::compiler::compilation_error::CompilationError;
 
 
 /// Rule to replace a NMD text based on a specific pattern matching rule
@@ -85,12 +26,6 @@ pub struct ReplacementRule {
 
     #[getset(get = "pub", set = "pub")]
     replacer_parts: Vec<Box<dyn ReplacementRuleReplacerPart>>,
-
-    #[getset(get = "pub", set = "pub")]
-    newline_fix_pattern: Option<String>,
-
-    #[getset(get = "pub", set = "pub")]
-    nuid_placeholder: String,
 }
 
 impl ReplacementRule {
@@ -104,26 +39,22 @@ impl ReplacementRule {
             search_pattern_regex: Regex::new(&searching_pattern).unwrap(),
             search_pattern: searching_pattern,
             replacer_parts: replacers,
-            newline_fix_pattern: None,
-            nuid_placeholder: String::from("$nuid"),
         }
     }
 
-    pub fn with_newline_fix(mut self, pattern: String) -> Self {
-        self.newline_fix_pattern = Some(pattern);
-
-        self
-    }
 }
 
 impl CompilationRule for ReplacementRule {
 
     /// Compile the content using internal search and replacement pattern
-    fn standard_compile(&self, compilable: &CompilableText, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> CompilationRuleResult {
+    fn standard_compile(&self, compilable: &CompilableText, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError> {
 
         log::debug!("compile:\n{:#?}\nusing '{}'->'{:?}'", compilable, self.search_pattern(), self.replacer_parts);
 
         let mut compiled_parts = Vec::new();
+
+        println!("standard compile: {:?}", compilable);
+        self.search_pattern_regex.captures_iter(&compilable.compilable_content()).for_each(|c| println!("{:?}", c.get(0).unwrap()));
 
         for captures in self.search_pattern_regex.captures_iter(&compilable.compilable_content()) {
 
@@ -237,7 +168,7 @@ impl CompilationRule for ReplacementRule {
 #[cfg(test)]
 mod test {
 
-    use crate::{codex::modifier::{standard_text_modifier::StandardTextModifier, ModifiersBucket}, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{replacement_rule::{ClosureReplacementRuleReplacerPart, FixedReplacementRuleReplacerPart, ReplacementRule, ReplacementRuleReplacerPart}, CompilationRule}}, output_format::OutputFormat};
+    use crate::{codex::modifier::{standard_text_modifier::StandardTextModifier, ModifiersBucket}, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart, ReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}}, output_format::OutputFormat};
 
 
     #[test]

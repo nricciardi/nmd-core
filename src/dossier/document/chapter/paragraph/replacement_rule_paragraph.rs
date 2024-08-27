@@ -1,31 +1,33 @@
 use getset::{Getters, Setters};
-use crate::{codex::Codex, compilable_text::CompilableText, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_result::CompilationResult, compilation_rule::CompilationRule, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use crate::{codex::Codex, compilable_text::CompilableText, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_rule::{replacement_rule::ReplacementRule, CompilationRule}, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
+
+/// This paragraph uses a `ReplacementRule` to pre-compile the inner-text, after that, it will compile
+/// compilable parts using `Compiler` and `Codex`
 #[derive(Debug, Getters, Setters)]
 pub struct ReplacementRuleParagraph {
 
     #[getset(set = "pub")]
-    nuid: Option<NmdUniqueIdentifier>,
-
-    #[getset(set = "pub")]
     raw_content: String,
 
-    compilation_rule: Box<dyn CompilationRule>,
+    replacement_rule: ReplacementRule,
 
     #[getset(set = "pub")]
     compiled_content: Option<CompilableText>,
+
+    compilable_text: CompilableText,
 
 }
 
 impl ReplacementRuleParagraph {
 
-    pub fn new(raw_content: String, compilation_rule: Box<dyn CompilationRule>,) -> Self {
+    pub fn new(raw_content: String, compilable_text: CompilableText, replacement_rule: ReplacementRule,) -> Self {
         Self {
             raw_content,
-            compilation_rule,
-            nuid: None,
-            compiled_content: None
+            replacement_rule,
+            compiled_content: None,
+            compilable_text
         }
     }
 
@@ -34,25 +36,13 @@ impl ReplacementRuleParagraph {
 impl SelfCompile for ReplacementRuleParagraph {
     fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
         
-        // let input: Box<dyn Compilable> = Box::new(Compilable::new(
-        //     CompilableContent::from([
-        //         CompilationResultPart::new(
-        //             self.raw_content.clone(),
-        //             CompilationResultPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
-        //         )
-        //     ]),
-        //     self.nuid.clone()
-        // ));
-
-        // let mut compilation_result = self.compilation_rule.compile(&input, format, compilation_configuration, compilation_configuration_overlay.clone())?;
+        let mut outcome = self.replacement_rule.compile(&self.compilable_text, format, compilation_configuration, compilation_configuration_overlay.clone())?;
         
-        // compilation_result.apply_compile_function(|mutable_part| Compiler::compile_str(&mutable_part.content(), format, codex, compilation_configuration, compilation_configuration_overlay.clone()))?;
+        Compiler::compile_compilable_text(&mut outcome, format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
 
-        // self.compiled_content = Some(compilation_result);
+        self.compiled_content = Some(outcome);
 
-        // Ok(())
-
-        todo!()
+        Ok(())
     }
 }
 
@@ -68,8 +58,8 @@ impl Paragraph for ReplacementRuleParagraph {
         &self.raw_content
     }
 
-    fn nuid(&self) -> &Option<NmdUniqueIdentifier> {
-        &self.nuid
+    fn nuid(&self) -> Option<&NmdUniqueIdentifier> {
+        self.compilable_text.nuid().as_ref()
     }
     
     fn set_raw_content(&mut self, raw_content: String) {
@@ -77,7 +67,105 @@ impl Paragraph for ReplacementRuleParagraph {
     }
     
     fn set_nuid(&mut self, nuid: Option<NmdUniqueIdentifier>) {
-        self.nuid = nuid;
+        self.compilable_text.set_nuid(nuid);
     }
 }
 
+
+#[cfg(test)]
+mod test {
+    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, standard_text_modifier::StandardTextModifier, Modifier, ModifiersBucket}, Codex, CodexCompilationRulesMap, CodexLoadingRulesMap, CodexModifiersMap}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart, pass_through_replacement_rule_part::PassThroughReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile}, output_format::OutputFormat};
+
+    use super::ReplacementRuleParagraph;
+
+
+    #[test]
+    fn paragraph_with_nuid() {
+
+        let nmd_text = "This is a **common paragraph**";
+
+        let compilable_text = CompilableText::new_with_nuid(
+            vec![
+                CompilableTextPart::new_compilable(
+                    nmd_text.to_string(),
+                    ModifiersBucket::None
+                )
+            ],
+            String::from("nuid-test")
+        );
+
+        let replacement_rule = ReplacementRule::new(
+            StandardParagraphModifier::CommonParagraph.modifier_pattern(),
+            vec![
+                Box::new(ClosureReplacementRuleReplacerPart::new(
+                    Box::new(
+                        |_, compilable_text, _, _, _ | {
+
+                            Ok(CompilableText::from(
+                                CompilableTextPart::new_fixed(format!(r#"<p data-nuid="{}">"#, compilable_text.nuid().as_ref().unwrap()))
+                            ))
+                        }
+                    )
+                )),
+                Box::new(PassThroughReplacementRuleReplacerPart::new()),
+                Box::new(FixedReplacementRuleReplacerPart::new(String::from("</p>")))
+            ]
+        );
+
+        let mut paragraph = ReplacementRuleParagraph::new(
+            nmd_text.to_string(),
+            compilable_text,
+            replacement_rule,
+        );
+
+        let codex = Codex::new(
+            CodexModifiersMap::from([
+                (
+                    StandardTextModifier::BoldStarVersion.identifier(),
+                    Box::new(
+                        Into::<BaseModifier>::into(StandardTextModifier::BoldStarVersion)
+                    ) as Box<dyn Modifier>
+                )
+            ]),
+            CodexModifiersMap::new(),
+            CodexCompilationRulesMap::from([
+                (
+                    StandardTextModifier::BoldStarVersion.identifier(),
+                    Box::new(
+                        ReplacementRule::new(
+                            StandardTextModifier::BoldStarVersion.modifier_pattern(),
+                            vec![
+                                Box::new(FixedReplacementRuleReplacerPart::new(String::from("<strong>"))),
+                                Box::new(ClosureReplacementRuleReplacerPart::new(Box::new(|captures, compilable, _, _, _| {
+                
+                                    let capture1 = captures.get(1).unwrap();
+                                    
+                                    let slice = compilable.parts_slice(capture1.start(), capture1.end())?;
+                    
+                                    Ok(CompilableText::new(slice))
+                                }))),
+                                Box::new(FixedReplacementRuleReplacerPart::new(String::from("</strong>"))),
+                            ]
+                        )
+                    ) as Box<dyn CompilationRule>
+                )
+            ]),
+            CodexLoadingRulesMap::new(),
+        );
+
+        paragraph.compile(
+            &OutputFormat::Html,
+            &codex,
+            &CompilationConfiguration::default(),
+            CompilationConfigurationOverLay::default()
+        ).unwrap();
+
+
+        assert_eq!(
+            paragraph.compiled_text().unwrap().content(),
+            r#"<p data-nuid="nuid-test">This is a <strong>common paragraph</strong></p>"#
+        )
+
+    }
+
+}

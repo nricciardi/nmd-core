@@ -11,9 +11,6 @@ use crate::{compilable_text::CompilableText, output_format::OutputFormat};
 use super::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError};
 
 
-pub type CompilationRuleResult = Result<CompilableText, CompilationError>;
-
-
 pub trait CompilationRule: Send + Sync + Debug {
 
     fn search_pattern(&self) -> &String;
@@ -30,15 +27,15 @@ pub trait CompilationRule: Send + Sync + Debug {
     }
 
     /// Compile string
-    fn standard_compile(&self, compilable: &CompilableText, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> CompilationRuleResult;
+    fn standard_compile(&self, compilable: &CompilableText, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError>;
 
     /// Compile string avoid time consuming operations (incomplete compilation)
-    fn fast_compile(&self, compilable: &CompilableText, format: &OutputFormat,  compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> CompilationRuleResult {
+    fn fast_compile(&self, compilable: &CompilableText, format: &OutputFormat,  compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError> {
         self.standard_compile(compilable, format, compilation_configuration, compilation_configuration_overlay)
     }
 
     /// Standard or fast compilation based on `CompilationConfiguration` `fast_draft()`
-    fn compile(&self, compilable: &CompilableText, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> CompilationRuleResult {
+    fn compile(&self, compilable: &CompilableText, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError> {
 
         if compilation_configuration.fast_draft() {
             return self.fast_compile(compilable, format, compilation_configuration, compilation_configuration_overlay)

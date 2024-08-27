@@ -3,7 +3,8 @@ use regex::Regex;
 use crate::compilable_text::compilable_text_part::{CompilableTextPart, CompilableTextPartType};
 use crate::compilable_text::CompilableText;
 use crate::{codex::modifier::standard_text_modifier::StandardTextModifier, compiler::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, output_format::OutputFormat};
-use super::{CompilationRule, CompilationRuleResult};
+use super::CompilationRule;
+use crate::compiler::compilation_error::CompilationError;
 
 
 pub struct ReferenceRule {
@@ -32,7 +33,7 @@ impl CompilationRule for ReferenceRule {
         &self.search_pattern
     }
 
-    fn standard_compile(&self, compilable: &CompilableText, _format: &OutputFormat, compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> CompilationRuleResult {
+    fn standard_compile(&self, compilable: &CompilableText, _format: &OutputFormat, compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError> {
 
         let mut compiled_parts = Vec::new();
 

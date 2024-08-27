@@ -14,8 +14,20 @@ use compilation_configuration::{compilation_configuration_overlay::CompilationCo
 use compilation_error::CompilationError;
 use compilation_rule::CompilationRule;
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
+use regex::Match;
 use crate::{bibliography::{Bibliography, BIBLIOGRAPHY_FICTITIOUS_DOCUMENT}, codex::{modifier::ModifiersBucket, CodexIdentifier}, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, dossier::{document::{chapter::heading::Heading, Chapter}, Document, Dossier}, output_format::OutputFormat, resource::{bucket::Bucket, resource_reference::ResourceReference}, table_of_contents::{TableOfContents, TOC_INDENTATION}};
 use super::codex::Codex;
+
+
+enum LoopIteration {
+    Match{
+        match_start: usize,
+        match_end: usize,
+        match_found: bool,
+        matched_parts: Vec<CompilableTextPart>
+    },
+    EndParts,
+}
 
 
 
@@ -523,9 +535,7 @@ impl Compiler {
 
             if let Some(text_rule) = codex.text_compilation_rules().get(codex_identifier) {
 
-                if let Some(parts) = Self::compile_compilation_parts_with_compilation_rule(&compilable_text.parts(), (codex_identifier, text_rule), format, compilation_configuration, compilation_configuration_overlay.clone())? {
-                    compilable_text.set_parts(parts);
-                }
+                Self::compile_compilation_text_with_compilation_rule(compilable_text, (codex_identifier, text_rule), format, compilation_configuration, compilation_configuration_overlay.clone())?;
 
             } else {
 
@@ -539,8 +549,10 @@ impl Compiler {
 
     /// Compile parts and return the new compiled parts or `None` if there are not matches using
     /// provided rule
-    pub fn compile_compilation_parts_with_compilation_rule(parts: &Vec<CompilableTextPart>, (rule_identifier, rule): (&CodexIdentifier, &Box<dyn CompilationRule>), _format: &OutputFormat, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<Option<Vec<CompilableTextPart>>, CompilationError> {
+    pub fn compile_compilation_text_with_compilation_rule(compilable_text: &mut CompilableText, (rule_identifier, rule): (&CodexIdentifier, &Box<dyn CompilationRule>), format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
     
+        let parts = compilable_text.parts();
+
         let mut compilable_content = String::new();
 
         parts.iter()
@@ -563,7 +575,7 @@ impl Compiler {
         if matches.len() == 0 {
             log::debug!("'{}' => no matches with {:?}", compilable_content, rule);
             
-            return Ok(None);
+            return Ok(());
         }
 
         log::debug!("'{}' => there is a match with {:#?}", compilable_content, rule);
@@ -575,9 +587,21 @@ impl Compiler {
         // only for compilable parts
         let mut part_start_position_in_compilable_content: usize = 0;
         let mut part_end_position_in_compilable_content: usize;
-        let mut part_start_offset: usize = 0;
+        let mut offset: usize = 0;
 
-        'match_loop: for matc in matches {
+        let mut match_index: usize = 0;
+
+        while part_start_position_in_compilable_content < compilable_content.len()      // there are other parts
+                || match_index < matches.len() {
+            
+            let mut loop_iteration: LoopIteration;
+
+            if match_index < matches.len() {
+                loop_iteration = LoopIteration::
+            }
+            
+
+            let matc = matches[match_index];
 
             let match_start = matc.start();
             let match_end = matc.end();
@@ -585,8 +609,6 @@ impl Compiler {
             let mut match_found = false;
 
             let mut matched_parts: Vec<CompilableTextPart> = Vec::new();
-
-            let mut match_end_found = false;
 
             'parts_loop: loop {
 
@@ -601,12 +623,11 @@ impl Compiler {
 
                             matched_parts.push(part.clone());
     
-                            
                             continue 'parts_loop;
                         
                         } else {
                             
-                            compiled_parts.push(part.clone());
+                            compiled_parts.push(part.clone());      // direct in compiled_parts
 
                             continue 'parts_loop;
                         }
@@ -614,7 +635,8 @@ impl Compiler {
                     },
                     CompilableTextPartType::Compilable{ incompatible_modifiers } => {
 
-                        part_end_position_in_compilable_content = part_start_position_in_compilable_content + part.content().len();
+                        part_end_position_in_compilable_content = part_start_position_in_compilable_content - offset + part.content().len();
+                        offset = 0;
 
                         if !match_found && part_end_position_in_compilable_content < match_start {      // there is no match in this part
                             
@@ -666,11 +688,20 @@ impl Compiler {
                                 // TODO: compile matched parts
                                 println!("matched_parts: {:?}", matched_parts);
 
+                                compiled_parts.append(
+                                    &mut rule.compile(
+                                        &CompilableText::from(matched_parts),
+                                        format,
+                                        compilation_configuration,
+                                        compilation_configuration_overlay.clone()
+                                    )?.parts_mut() 
+                                );
 
-                                part_end_position_in_compilable_content = part_start_offset;
-                                part_start_offset = match_end;
+                                parts_index -= 1;       // re-start next parts loop from this part
+                                offset = match_end - part_start_position_in_compilable_content;
+                                part_start_position_in_compilable_content = match_end;
 
-                                match_end_found = true;
+                                break 'parts_loop;
 
                             } else {
 
@@ -681,23 +712,22 @@ impl Compiler {
                             }
 
                             // update start position
-                            part_start_position_in_compilable_content = part_end_position_in_compilable_content + part_start_offset;
-                            part_start_offset = 0;
+                            part_start_position_in_compilable_content = part_end_position_in_compilable_content;
 
                             match_found = true;     // update to check if match is found in next iterations
-
-                            if match_end_found {
-                                continue 'match_loop;
-                            }
                         }
 
                     },
                 }
 
             }
-        }
         
-        Ok(Some(compiled_parts))
+            match_index += 1;
+        }
+
+        compilable_text.set_parts(compiled_parts);
+        
+        Ok(())
     }
 
     // v1
@@ -834,13 +864,13 @@ impl Compiler {
 mod test {
     
     use std::collections::HashSet;
+    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, standard_text_modifier::StandardTextModifier, Modifier, ModifiersBucket}, Codex, CodexCompilationRulesMap, CodexLoadingRulesMap, CodexModifiersMap}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::constants::ESCAPE_HTML, Compiler}, dossier::document::chapter::paragraph::{replacement_rule_paragraph::ReplacementRuleParagraph, Paragraph}, output_format::OutputFormat};
 
-    use crate::{codex::{modifier::{standard_paragraph_modifier::StandardParagraphModifier, standard_text_modifier::StandardTextModifier}, Codex}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::constants::ESCAPE_HTML}, dossier::document::chapter::paragraph::{replacement_rule_paragraph::ReplacementRuleParagraph, Paragraph}, output_format::OutputFormat};
-    use super::{compilation_rule::replacement_rule::{ReplacementRule, ReplacementRuleReplacerPart}, Compiler};
+    use super::compilation_rule::{replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule};
 
 
     #[test]
-    fn compile_text() {
+    fn compile_nested_modifiers() {
 
         let mut codex = Codex::of_html();
 
@@ -866,6 +896,69 @@ mod test {
             r#" and "#,
             r#"<em class="italic">nested <strong class="bold">bold text</strong></em>"#,
         ));
+    }
+
+    #[test]
+    fn compile_fake_paragraph_with_bold_text() {
+
+        let mut compilable_text = CompilableText::new(
+            vec![
+                CompilableTextPart::new_fixed(String::from("<p>")),
+                CompilableTextPart::new_compilable(
+                    String::from("This is a **bold text**!"),
+                    ModifiersBucket::None
+                ),
+                CompilableTextPart::new_fixed(String::from("</p>")),
+            ],
+        );
+
+        let codex = Codex::new(
+            CodexModifiersMap::from([
+                (
+                    StandardTextModifier::BoldStarVersion.identifier(),
+                    Box::new(
+                        Into::<BaseModifier>::into(StandardTextModifier::BoldStarVersion)
+                    ) as Box<dyn Modifier>
+                )
+            ]),
+            CodexModifiersMap::new(),
+            CodexCompilationRulesMap::from([
+                (
+                    StandardTextModifier::BoldStarVersion.identifier(),
+                    Box::new(
+                        ReplacementRule::new(
+                            StandardTextModifier::BoldStarVersion.modifier_pattern(),
+                            vec![
+                                Box::new(FixedReplacementRuleReplacerPart::new(String::from("<strong>"))),
+                                Box::new(ClosureReplacementRuleReplacerPart::new(Box::new(|captures, compilable, _, _, _| {
+                
+                                    let capture1 = captures.get(1).unwrap();
+                                    
+                                    let slice = compilable.parts_slice(capture1.start(), capture1.end())?;
+                    
+                                    Ok(CompilableText::new(slice))
+                                }))),
+                                Box::new(FixedReplacementRuleReplacerPart::new(String::from("</strong>"))),
+                            ]
+                        )
+                    ) as Box<dyn CompilationRule>
+                )
+            ]),
+            CodexLoadingRulesMap::new(),
+        );
+
+        Compiler::compile_compilable_text(
+            &mut compilable_text,
+            &OutputFormat::Html,
+            &codex,
+            &CompilationConfiguration::default(),
+            CompilationConfigurationOverLay::default()
+        ).unwrap();
+
+        assert_eq!(
+            compilable_text.content(),
+            "<p>This is a <strong>bold text</strong>!</p>"
+        )
     }
 
     #[test]
