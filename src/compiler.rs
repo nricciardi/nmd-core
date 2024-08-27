@@ -552,6 +552,7 @@ impl Compiler {
         let parts = compilable_text.parts();
 
         let mut compilable_content = String::new();
+        let mut compilable_content_end_parts_positions: Vec<usize> = Vec::new();
 
         parts.iter()
                 .filter(|part| {
@@ -566,7 +567,14 @@ impl Compiler {
                         },
                     }
                 })
-                .for_each(|part| compilable_content.push_str(part.content()));
+                .for_each(|part| {
+
+                    compilable_content.push_str(part.content());
+
+                    let last_pos = *compilable_content_end_parts_positions.last().unwrap_or(&0);
+
+                    compilable_content_end_parts_positions.push(last_pos + part.content().len());
+                });
 
         let matches = rule.find_iter(&compilable_content);
 
@@ -581,16 +589,15 @@ impl Compiler {
         let mut compiled_parts: Vec<CompilableTextPart> = Vec::new();     // final output
 
         let mut parts_index: usize = 0;
+        let mut compilable_parts_index: usize = 0;
 
         // only for compilable parts
         let mut part_start_position_in_compilable_content: usize = 0;
         let mut part_end_position_in_compilable_content: usize;
-        let mut offset: usize = 0;
 
         let mut match_index: usize = 0;
 
-        while part_start_position_in_compilable_content < compilable_content.len()      // there are other parts
-                || match_index < matches.len() {
+        while parts_index < parts.len() {      // there are other parts
             
             let mut loop_iteration: LoopIteration;
 
@@ -613,7 +620,7 @@ impl Compiler {
 
                 let part = &parts[parts_index];
 
-                parts_index += 1;   // for next iteration  
+                parts_index += 1;   // for next iteration
 
                 match part.part_type() {
                     CompilableTextPartType::Fixed => {
@@ -644,8 +651,9 @@ impl Compiler {
                     },
                     CompilableTextPartType::Compilable{ incompatible_modifiers } => {
 
-                        part_end_position_in_compilable_content = part_start_position_in_compilable_content - offset + part.content().len();
-                        offset = 0;
+                        part_end_position_in_compilable_content = compilable_content_end_parts_positions[compilable_parts_index];
+                        
+                        compilable_parts_index += 1;
 
                         match loop_iteration {
                             LoopIteration::Match { match_start, match_end, mut match_found, ref mut matched_parts } => {
@@ -669,9 +677,11 @@ impl Compiler {
                                                 CompilableTextPartType::Compilable{ incompatible_modifiers: incompatible_modifiers.clone() }
                                             ));
                                         }
+
+                                        part_start_position_in_compilable_content = match_start;
         
                                         // === matched part ===
-                                        let matched_part = &compilable_content[match_start..part_end_position_in_compilable_content.min(match_end)];
+                                        let matched_part = &compilable_content[part_start_position_in_compilable_content..part_end_position_in_compilable_content.min(match_end)];
         
                                         matched_parts.push(CompilableTextPart::new(
                                             matched_part.to_string(),
@@ -691,8 +701,10 @@ impl Compiler {
                                             ));
                                         }
 
-                                        parts_index -= 1;       // re-start next parts loop from this part
-                                        offset = match_end - part_start_position_in_compilable_content;
+                                        // re-start next parts loop from this part
+                                        parts_index -= 1;       
+                                        compilable_parts_index -= 1;
+
                                         part_start_position_in_compilable_content = match_end;
         
                                         break 'parts_loop;
@@ -924,7 +936,7 @@ mod test {
             vec![
                 CompilableTextPart::new_fixed(String::from("<p>")),
                 CompilableTextPart::new_compilable(
-                    String::from("This is a **bold text**!"),
+                    String::from("This is a **bold text**! **again**"),
                     ModifiersBucket::None
                 ),
                 CompilableTextPart::new_fixed(String::from("</p>")),
@@ -976,7 +988,7 @@ mod test {
 
         assert_eq!(
             compilable_text.content(),
-            "<p>This is a <strong>bold text</strong>!</p>"
+            "<p>This is a <strong>bold text</strong>! <strong>again</strong></p>"
         )
     }
 
