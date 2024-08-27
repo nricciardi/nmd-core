@@ -14,12 +14,13 @@ use compilation_configuration::{compilation_configuration_overlay::CompilationCo
 use compilation_error::CompilationError;
 use compilation_rule::CompilationRule;
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
+use regex::Match;
 use crate::{bibliography::{Bibliography, BIBLIOGRAPHY_FICTITIOUS_DOCUMENT}, codex::{modifier::ModifiersBucket, CodexIdentifier}, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, dossier::{document::{chapter::heading::Heading, Chapter}, Document, Dossier}, output_format::OutputFormat, resource::{bucket::Bucket, resource_reference::ResourceReference}, table_of_contents::{TableOfContents, TOC_INDENTATION}};
 use super::codex::Codex;
 
 
 enum LoopIteration {
-    Match{
+    Match {
         match_start: usize,
         match_end: usize,
         match_found: bool,
@@ -598,23 +599,28 @@ impl Compiler {
         let mut match_index: usize = 0;
 
         while parts_index < parts.len() {      // there are other parts
-            
-            let mut loop_iteration: LoopIteration;
+
+            let match_start_end: Option<(usize, usize)>;        // start and end
 
             if match_index < matches.len() {
 
-                let matc = matches[match_index];
-                
-                loop_iteration = LoopIteration::Match {
-                    match_start: matc.start(),
-                    match_end: matc.end(),
-                    match_found: false,
-                    matched_parts: Vec::new(),
-                }
+                let current_evaluated_match = matches[match_index];
+
+                match_index += 1;    
+            
+                match_start_end = Some((
+                    current_evaluated_match.start(),
+                    current_evaluated_match.end()
+                ));
 
             } else {
-                loop_iteration = LoopIteration::EndParts;
+
+                match_start_end = None;
             }
+
+            let mut match_found = false;
+
+            let mut matched_parts: Vec<CompilableTextPart> = Vec::new();
             
             'parts_loop: while parts_index < parts.len() {
 
@@ -625,29 +631,26 @@ impl Compiler {
                 match part.part_type() {
                     CompilableTextPartType::Fixed => {
 
-                        match loop_iteration {
-                            LoopIteration::Match { match_start: _, match_end: _, match_found, ref mut matched_parts } => {
-                                
-                                if match_found {        // matching end cannot be in a fixed part
+                        if let Some((_start, _end)) = match_start_end {
 
-                                    matched_parts.push(part.clone());
-            
-                                    continue 'parts_loop;
-                                
-                                } else {
-                                    
-                                    compiled_parts.push(part.clone());      // direct in compiled_parts
+                            if match_found {        // matching end cannot be in a fixed part
+
+                                matched_parts.push(part.clone());
         
-                                    continue 'parts_loop;
-                                }
-                            },
-                            LoopIteration::EndParts => {
-                                compiled_parts.push(part.clone());      // direct in compiled_parts
-
                                 continue 'parts_loop;
-                            },
-                        }
+                            
+                            } else {
+                                
+                                compiled_parts.push(part.clone());      // direct in compiled_parts
+    
+                                continue 'parts_loop;
+                            }
+                        
+                        } else {
+                            compiled_parts.push(part.clone());      // direct in compiled_parts
 
+                            continue 'parts_loop;
+                        }
                     },
                     CompilableTextPartType::Compilable{ incompatible_modifiers } => {
 
@@ -655,239 +658,110 @@ impl Compiler {
                         
                         compilable_parts_index += 1;
 
-                        match loop_iteration {
-                            LoopIteration::Match { match_start, match_end, mut match_found, ref mut matched_parts } => {
-                                if !match_found && part_end_position_in_compilable_content < match_start {      // there is no match in this part
-                            
-                                    compiled_parts.push(part.clone());
-        
-                                } else {
-                                    // ...part has a match
-        
-                                    if !match_found     // first part in which current match is found
-                                        && part_start_position_in_compilable_content <= match_start
-                                        && match_start < part_end_position_in_compilable_content {
-        
-                                        // === pre-matched part ==
-                                        let pre_matched_part = &compilable_content[part_start_position_in_compilable_content..match_start];
-                                                                            
-                                        if !pre_matched_part.is_empty() {
-                                            compiled_parts.push(CompilableTextPart::new(
-                                                pre_matched_part.to_string(),
-                                                CompilableTextPartType::Compilable{ incompatible_modifiers: incompatible_modifiers.clone() }
-                                            ));
-                                        }
+                        if let Some((match_start, match_end)) = match_start_end {
 
-                                        part_start_position_in_compilable_content = match_start;
-        
-                                        // === matched part ===
-                                        let matched_part = &compilable_content[part_start_position_in_compilable_content..part_end_position_in_compilable_content.min(match_end)];
-        
+                            if !match_found && part_end_position_in_compilable_content <= match_start {      // there is no match in this part
+                            
+                                let sub_part = &compilable_content[part_start_position_in_compilable_content..part_end_position_in_compilable_content];
+
+                                compiled_parts.push(CompilableTextPart::new(
+                                    sub_part.to_string(),
+                                    CompilableTextPartType::Compilable{ incompatible_modifiers: incompatible_modifiers.clone() }
+                                ));
+    
+                            } else {
+                                // ...part has a match
+    
+                                if !match_found     // first part in which current match is found
+                                    && part_start_position_in_compilable_content <= match_start
+                                    && match_start < part_end_position_in_compilable_content {
+
+                                    // === pre-matched part ==
+                                    let pre_matched_part = &compilable_content[part_start_position_in_compilable_content..match_start];
+                                                                        
+                                    if !pre_matched_part.is_empty() {
+                                        compiled_parts.push(CompilableTextPart::new(
+                                            pre_matched_part.to_string(),
+                                            CompilableTextPartType::Compilable{ incompatible_modifiers: incompatible_modifiers.clone() }
+                                        ));
+                                    }
+
+                                    part_start_position_in_compilable_content = match_start;
+
+                                    // === matched part ===
+                                    let matched_part = &compilable_content[part_start_position_in_compilable_content..part_end_position_in_compilable_content.min(match_end)];
+
+                                    matched_parts.push(CompilableTextPart::new(
+                                        matched_part.to_string(),
+                                        CompilableTextPartType::Compilable{ incompatible_modifiers: incompatible_modifiers.clone() }
+                                    ));
+                                }
+                                
+                                if match_end <= part_end_position_in_compilable_content {       // matching end is in this part
+
+                                    if match_found {   // the matching end is in another part respect of matching start
+
+                                        let matched_part = &compilable_content[part_start_position_in_compilable_content..match_end];
+
                                         matched_parts.push(CompilableTextPart::new(
                                             matched_part.to_string(),
                                             CompilableTextPartType::Compilable{ incompatible_modifiers: incompatible_modifiers.clone() }
                                         ));
                                     }
-                                    
-                                    if match_end <= part_end_position_in_compilable_content {       // matching end is in this part
-        
-                                        if match_found {   // the matching end is in another part respect of matching start
-        
-                                            let matched_part = &compilable_content[part_start_position_in_compilable_content..match_end];
-        
-                                            matched_parts.push(CompilableTextPart::new(
-                                                matched_part.to_string(),
-                                                CompilableTextPartType::Compilable{ incompatible_modifiers: incompatible_modifiers.clone() }
-                                            ));
-                                        }
 
-                                        // re-start next parts loop from this part
-                                        parts_index -= 1;       
-                                        compilable_parts_index -= 1;
+                                    // compile and append found matched parts
+                                    compiled_parts.append(
+                                        &mut rule.compile(
+                                            &CompilableText::from(matched_parts),
+                                            format,
+                                            compilation_configuration,
+                                            compilation_configuration_overlay.clone()
+                                        )?.parts_mut() 
+                                    );
 
-                                        part_start_position_in_compilable_content = match_end;
-        
-                                        break 'parts_loop;
-        
-                                    } else {
-        
-                                        if match_found {        // simple matched part in matched parts 
-        
-                                            matched_parts.push(part.clone());
-                                        }
+                                    // re-start next parts loop from this part
+                                    parts_index -= 1;       
+                                    compilable_parts_index -= 1;
+
+                                    part_start_position_in_compilable_content = match_end;
+
+                                    break 'parts_loop;
+
+                                } else {
+
+                                    if match_found {        // simple matched part in matched parts 
+
+                                        matched_parts.push(part.clone());
                                     }
-        
-                                    match_found = true;     // update to check if match is found in next iterations
                                 }
-                            },
-                            LoopIteration::EndParts => {
-                                let part = &compilable_content[part_start_position_in_compilable_content..part_end_position_in_compilable_content];
+
+                                match_found = true;     // update to check if match is found in next iterations
+                            }
+        
+                            // update start position
+                            part_start_position_in_compilable_content = part_end_position_in_compilable_content;
+
+                        } else {
+                            
+                            let part = &compilable_content[part_start_position_in_compilable_content..part_end_position_in_compilable_content];
                                                                             
-                                if !part.is_empty() {
-                                    compiled_parts.push(CompilableTextPart::new(
-                                        part.to_string(),
-                                        CompilableTextPartType::Compilable{ incompatible_modifiers: incompatible_modifiers.clone() }
-                                    ));
-                                }
-                            },
+                            if !part.is_empty() {
+                                compiled_parts.push(CompilableTextPart::new(
+                                    part.to_string(),
+                                    CompilableTextPartType::Compilable{ incompatible_modifiers: incompatible_modifiers.clone() }
+                                ));
+                            }
                         }
-        
-                        // update start position
-                        part_start_position_in_compilable_content = part_end_position_in_compilable_content;
+                    }
 
-                    },
                 }
-
             }
-
-            // compile and append found matched parts
-            if let LoopIteration::Match { match_start: _, match_end: _, match_found: _, matched_parts } = loop_iteration {
-
-                compiled_parts.append(
-                    &mut rule.compile(
-                        &CompilableText::from(matched_parts),
-                        format,
-                        compilation_configuration,
-                        compilation_configuration_overlay.clone()
-                    )?.parts_mut() 
-                );
-            }
-        
-            match_index += 1;
         }
 
         compilable_text.set_parts(compiled_parts);
         
         Ok(())
     }
-
-    // v1
-    // pub fn compile_compilation_parts_with_compilation_rule(parts_and_excluded_modifiers: &Vec<(CompilationResultPart, ModifiersBucket)>, (rule_identifier, rule): (&CodexIdentifier, &Box<dyn CompilationRule>), format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<Option<Vec<(CompilationResultPart, ModifiersBucket)>>, CompilationError> {
-        
-    //     let compilable_parts_content: Vec<&str> = parts_and_excluded_modifiers.par_iter()
-    //                                         .filter(|(part, excluded_modifiers)| {
-    //                                             match part {
-    //                                                 CompilationResultPart::Fixed { content: _ } => false,
-    //                                                 CompilationResultPart::Compilable { content: _ } => {
-    //                                                     if excluded_modifiers.contains(rule_identifier) {
-    //                                                         return false;
-    //                                                     } else {
-    //                                                         return true;
-    //                                                     }
-    //                                                 },
-    //                                             }
-    //                                         })
-    //                                         .map(|(part, _)| part.content().as_str())
-    //                                         .collect();
-
-    //     let compilable_content: String = compilable_parts_content.join("");
-
-    //     let matches = rule.find_iter(&compilable_content);
-
-    //     if matches.len() == 0 {
-    //         log::debug!("'{}' => no matches with {:?}", compilable_content, rule);
-            
-    //         return Ok(None);
-    //     }
-
-    //     log::debug!("'{}' => there is a match with {:#?}", compilable_content, rule);
-
-    //     let mut new_parts_and_excluded_modifiers: Vec<(CompilationResultPart, ModifiersBucket)> = Vec::new();
-
-    //     let mut index: usize = 0;
-    //     let mut current_position_in_compilable_content: usize = 0;
-
-    //     // return the part end border in the compilable content, this is useful because
-    //     // for parts in which there is the match end the end border cannot be calculated
-    //     // summing content part length 
-    //     let mut next_compilable_part_border_position_in_compilable_content = 0;
-
-    //     'match_loop: for matc in matches {
-
-    //         let match_start = matc.start();
-    //         let match_end = matc.end();
-
-    //         let mut match_found = false;
-
-    //         'parts_loop: loop {
-
-    //             let (part, excluded_modifiers) = &parts_and_excluded_modifiers[index];
-
-    //             index += 1;       // for next iteration
-
-    //             match part {
-    //                 CompilationResultPart::Fixed { content: _ } => {
-                        
-    //                     new_parts_and_excluded_modifiers.push((part.clone(), excluded_modifiers.clone()));
-
-    //                     continue 'parts_loop
-    //                 },
-
-    //                 CompilationResultPart::Compilable { content: _ } => {
-
-    //                     next_compilable_part_border_position_in_compilable_content += part.content().len();
-
-    //                     if !match_found && next_compilable_part_border_position_in_compilable_content < match_start {
-
-    //                         // there is no match in this part
-
-    //                         current_position_in_compilable_content = next_compilable_part_border_position_in_compilable_content;
-
-    //                         new_parts_and_excluded_modifiers.push((part.clone(), excluded_modifiers.clone()));
-
-    //                         continue 'parts_loop;
-
-    //                     }
-
-    //                     // ...part has a match
-
-    //                     if !match_found     // first part in which current match is found
-    //                         && current_position_in_compilable_content <= match_start
-    //                         && next_compilable_part_border_position_in_compilable_content > match_start {
-                            
-    //                         // === pre-matched part ==
-    //                         let pre_matched_part = &compilable_content[current_position_in_compilable_content..match_start];
-                                    
-    //                         if !pre_matched_part.is_empty() {
-    //                             new_parts_and_excluded_modifiers.push((
-    //                                 CompilationResultPart::Compilable { content: pre_matched_part.to_string() },
-    //                                 excluded_modifiers.clone()
-    //                             ));
-    //                         }
-
-    //                         // === matched part ===
-    //                         let matched_part = Box::new(String::from(&compilable_content[match_start..match_end])) as Box<dyn Compilable>;
-
-    //                         let compilation_result = rule.compile(&matched_part, format, compilation_configuration, compilation_configuration_overlay.clone())?;
-
-    //                         let updated_excluded_modifiers: ModifiersBucket = excluded_modifiers.clone().insert(rule_identifier.clone());
-
-    //                         Into::<Vec<CompilationResultPart>>::into(compilation_result).into_iter()
-    //                             .for_each(|p| new_parts_and_excluded_modifiers.push((p, updated_excluded_modifiers.clone())));                       
-
-    //                         current_position_in_compilable_content = match_end;
-
-    //                         match_found = true;     // update to check if match is found in next iterations
-    //                     }
-
-    //                     if next_compilable_part_border_position_in_compilable_content >= match_end {
-    //                         // this is the part where matching end
-
-    //                         current_position_in_compilable_content = match_end;
-
-    //                         // let's consider this part again for next match
-    //                         index -= 1;
-    //                         next_compilable_part_border_position_in_compilable_content -= part.content().len();
-
-    //                         continue 'match_loop;
-    //                     }
-    //                 },
-    //             }
-    //         } 
-    //     }
-
-    //     Ok(Some(new_parts_and_excluded_modifiers))
-    // }
 
 }
 
@@ -901,42 +775,23 @@ mod test {
 
 
     #[test]
-    fn compile_nested_modifiers() {
-
-        let mut codex = Codex::of_html();
-
-        codex.retain(HashSet::from([
-            StandardTextModifier::BoldStarVersion.identifier(),
-            StandardTextModifier::BoldUnderscoreVersion.identifier(),
-            StandardTextModifier::ItalicStarVersion.identifier(),
-            StandardTextModifier::ItalicUnderscoreVersion.identifier(),
-            StandardTextModifier::InlineCode.identifier(),
-        ]));
-
-        let compilation_configuration = CompilationConfiguration::default();
-
-        let content = "A piece of **bold text**, *italic text*, `a **(fake) bold text** which must be not parsed` and *nested **bold text***";
-
-        let outcome = Compiler::compile_str(content, &OutputFormat::Html, &codex, &compilation_configuration, CompilationConfigurationOverLay::default()).unwrap();       
-
-        assert_eq!(outcome.content(), concat!(
-            "A piece of ",
-            r#"<strong class="bold">bold text</strong>, "#,
-            r#"<em class="italic">italic text</em>, "#,
-            r#"<code class="language-markup inline-code">a **(fake) bold text** which must be not parsed</code>"#,
-            r#" and "#,
-            r#"<em class="italic">nested <strong class="bold">bold text</strong></em>"#,
-        ));
-    }
-
-    #[test]
     fn compile_fake_paragraph_with_bold_text() {
 
         let mut compilable_text = CompilableText::new(
             vec![
                 CompilableTextPart::new_fixed(String::from("<p>")),
                 CompilableTextPart::new_compilable(
-                    String::from("This is a **bold text**! **again**"),
+                    String::from("This is a **bold text**!"),
+                    ModifiersBucket::None
+                ),
+                CompilableTextPart::new_fixed(String::from(" &euro; ")),
+                CompilableTextPart::new_compilable(
+                    String::from("**again"),
+                    ModifiersBucket::None
+                ),
+                CompilableTextPart::new_fixed(String::from(" &euro;")),
+                CompilableTextPart::new_compilable(
+                    String::from("**"),
                     ModifiersBucket::None
                 ),
                 CompilableTextPart::new_fixed(String::from("</p>")),
@@ -988,8 +843,38 @@ mod test {
 
         assert_eq!(
             compilable_text.content(),
-            "<p>This is a <strong>bold text</strong>! <strong>again</strong></p>"
+            "<p>This is a <strong>bold text</strong>! &euro; <strong>again &euro;</strong></p>"
         )
+    }
+
+
+    #[test]
+    fn compile_nested_modifiers() {
+
+        let mut codex = Codex::of_html();
+
+        codex.retain(HashSet::from([
+            StandardTextModifier::BoldStarVersion.identifier(),
+            StandardTextModifier::BoldUnderscoreVersion.identifier(),
+            StandardTextModifier::ItalicStarVersion.identifier(),
+            StandardTextModifier::ItalicUnderscoreVersion.identifier(),
+            StandardTextModifier::InlineCode.identifier(),
+        ]));
+
+        let compilation_configuration = CompilationConfiguration::default();
+
+        let content = "A piece of **bold text**, *italic text*, `a **(fake) bold text** which must be not parsed` and *nested **bold text***";
+
+        let outcome = Compiler::compile_str(content, &OutputFormat::Html, &codex, &compilation_configuration, CompilationConfigurationOverLay::default()).unwrap();       
+
+        assert_eq!(outcome.content(), concat!(
+            "A piece of ",
+            r#"<strong class="bold">bold text</strong>, "#,
+            r#"<em class="italic">italic text</em>, "#,
+            r#"<code class="language-markup inline-code">a **(fake) bold text** which must be not parsed</code>"#,
+            r#" and "#,
+            r#"<em class="italic">nested <strong class="bold">bold text</strong></em>"#,
+        ));
     }
 
     #[test]
