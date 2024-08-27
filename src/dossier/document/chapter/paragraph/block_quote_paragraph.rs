@@ -41,9 +41,11 @@ impl SelfCompile for ExtendedBlockQuoteParagraph {
         
         let mut compilation_result = CompilableText::new_empty();
 
-        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<div class="focus-quote-block focus-quote-block-{}" {}>"#, self.extended_quote_type, self.nuid.as_ref().unwrap_or(&String::new()))));
-        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<div class="focus-quote-block-title focus-quote-block-{}-title"></div>"#, self.extended_quote_type)));
-        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<div class="focus-quote-block-description focus-quote-block-{}-description">"#, self.extended_quote_type)));
+        let mut content = format!(r#"<div class="focus-quote-block focus-quote-block-{}" {}>"#, self.extended_quote_type, self.nuid.as_ref().unwrap_or(&String::new()));
+        content.push_str(&format!(r#"<div class="focus-quote-block-title focus-quote-block-{}-title"></div>"#, self.extended_quote_type));
+        content.push_str(&format!(r#"<div class="focus-quote-block-description focus-quote-block-{}-description">"#, self.extended_quote_type));
+
+        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(content));
 
         for paragraph in self.paragraphs.iter_mut() {
             paragraph.standard_compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;

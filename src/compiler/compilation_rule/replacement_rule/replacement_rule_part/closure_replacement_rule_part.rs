@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use regex::Captures;
 
 use crate::{compilable_text::CompilableText, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError}, output_format::OutputFormat};
@@ -5,17 +7,18 @@ use crate::{compilable_text::CompilableText, compiler::{compilation_configuratio
 use super::ReplacementRuleReplacerPart;
 
 
-type Closure = dyn Sync + Send + Fn(&Captures, &CompilableText, &OutputFormat, &CompilationConfiguration, CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError>;
+type Closure = Arc<dyn Sync + Send + Fn(&Captures, &CompilableText, &OutputFormat, &CompilationConfiguration, CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError>>;
 
 
+#[derive(Clone)]
 pub struct ClosureReplacementRuleReplacerPart {
 
-    closure: Box<Closure>,
+    closure: Closure,
 }
 
 impl ClosureReplacementRuleReplacerPart {
 
-    pub fn new(closure: Box<Closure>) -> Self {
+    pub fn new(closure: Closure) -> Self {
         Self {
             closure
         }

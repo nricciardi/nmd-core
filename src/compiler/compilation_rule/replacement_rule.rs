@@ -2,6 +2,7 @@ pub mod replacement_rule_part;
 
 
 use std::fmt::Debug;
+use std::sync::Arc;
 use getset::{Getters, Setters};
 use log;
 use regex::Regex;
@@ -14,8 +15,11 @@ use super::CompilationRule;
 use crate::compiler::compilation_error::CompilationError;
 
 
+pub type ReplacementRuleParts = Vec<Arc<dyn ReplacementRuleReplacerPart>>;
+
+
 /// Rule to replace a NMD text based on a specific pattern matching rule
-#[derive(Debug, Getters, Setters)]
+#[derive(Debug, Clone, Getters, Setters)]
 pub struct ReplacementRule {
 
     #[getset(set)]
@@ -25,13 +29,13 @@ pub struct ReplacementRule {
     search_pattern_regex: Regex,
 
     #[getset(get = "pub", set = "pub")]
-    replacer_parts: Vec<Box<dyn ReplacementRuleReplacerPart>>,
+    replacer_parts: ReplacementRuleParts,
 }
 
 impl ReplacementRule {
     
     /// Returns a new instance having a search pattern and a replication pattern
-    pub fn new(searching_pattern: String, replacers: Vec<Box<dyn ReplacementRuleReplacerPart>>) -> Self {
+    pub fn new(searching_pattern: String, replacers: ReplacementRuleParts) -> Self {
 
         log::debug!("created new compilation rule with search_pattern: '{}'", searching_pattern);
 
@@ -65,93 +69,6 @@ impl CompilationRule for ReplacementRule {
         }
 
         Ok(CompilableText::new(compiled_parts))
-
-        // log::debug!("compile:\n{:#?}\nusing '{}'->'{:?}'", compilable, self.search_pattern(), self.replacer_parts);
-
-        // let content = compilable.compilable_content();
-
-        // let mut outcome = CompilationResult::new_empty();
-        // let mut last_match = 0;
-
-        // for captures in self.search_pattern_regex.captures_iter(content) {
-
-        //     let mut replacers = self.replacer_parts.clone(); 
-
-        //     // replace references
-        //     for index in 0..self.replacer_parts.len() {
-
-        //         for reference_at in self.replacer_parts[index].references_at() {
-
-        //             let reference = captures.get(reference_at.clone()).unwrap().as_str();
-
-        //             let reference = ResourceReference::of(reference, compilation_configuration_overlay.document_name().as_ref())?;
-    
-        //             let reference = reference.build();
-
-        //             let r = replacers[index].replacer().replace(&format!("${}", reference_at), &reference);
-        //             replacers[index].set_replacer(r);
-
-        //             let r = replacers[index].replacer().replace(&format!("${{{}}}", reference_at), &reference);
-        //             replacers[index].set_replacer(r);
-
-        //             log::debug!("id: '{}', new replacer: {:?}", reference, replacers[index]);
-        //         }
-
-        //         if let Some(nuid) = compilable.nuid() {
-
-        //             let r = replacers[index].replacer().replace(&self.nuid_placeholder, nuid);
-
-        //             replacers[index].set_replacer(r);
-        //         }
-        //     }
-
-        //     let matched_content = captures.get(0).unwrap();
-
-        //     if last_match < matched_content.start() {
-        //         outcome.add_compilable_part(content[last_match..matched_content.start()].to_string());
-        //     }
-
-        //     last_match = matched_content.end();
-
-        //     for replacer in replacers {
-        //         let compilation_result = self.search_pattern_regex.replace_all(matched_content.as_str(), replacer.replacer());
-
-        //         let mut compilation_result = compilation_result.to_string();
-
-        //         if let Some(post_replacing) = replacer.post_replacing() {
-        //             compilation_result = text_utility::replace(&compilation_result, post_replacing);
-        //         }
-                
-        //         if replacer.fixed {
-
-        //             outcome.add_fixed_part(compilation_result);
-    
-        //         } else {
-    
-        //             outcome.add_compilable_part(compilation_result);
-        //         }
-        //     }   
-        // }
-
-        // if last_match < content.len() {
-        //     outcome.add_compilable_part(content[last_match..content.len()].to_string());
-        // }
-
-        // if let Some(newline_fix_pattern) = self.newline_fix_pattern.as_ref() {
-
-        //     for part in outcome.parts_mut().iter_mut() {
-        //         let new_result = DOUBLE_NEW_LINE_REGEX.replace_all(&part.content(), newline_fix_pattern).to_string();
-        
-        //         match part {
-        //             CompilationResultPart::Fixed { content: _ } => *part = CompilationResultPart::Fixed { content: new_result },
-        //             CompilationResultPart::Compilable { content: _ } => *part = CompilationResultPart::Compilable { content: new_result },
-        //         };
-        //     }
-        // }
-
-        // log::debug!("result:\n{:?}", outcome);
-        
-        // Ok(outcome)
     }
     
     fn search_pattern(&self) -> &String {
@@ -168,6 +85,8 @@ impl CompilationRule for ReplacementRule {
 #[cfg(test)]
 mod test {
 
+    use std::sync::Arc;
+
     use crate::{codex::modifier::{standard_text_modifier::StandardTextModifier, ModifiersBucket}, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart, ReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}}, output_format::OutputFormat};
 
 
@@ -176,8 +95,8 @@ mod test {
 
         // valid pattern with a valid text modifier
         let replacement_rule = ReplacementRule::new(StandardTextModifier::BoldStarVersion.modifier_pattern(), vec![
-            Box::new(FixedReplacementRuleReplacerPart::new(String::from("<strong>"))) as Box<dyn ReplacementRuleReplacerPart>,
-            Box::new(ClosureReplacementRuleReplacerPart::new(Box::new(|captures, compilable, _, _, _| {
+            Arc::new(FixedReplacementRuleReplacerPart::new(String::from("<strong>"))) as Arc<dyn ReplacementRuleReplacerPart>,
+            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
                 
                 let capture1 = captures.get(1).unwrap();
                 
@@ -185,7 +104,7 @@ mod test {
 
                 Ok(CompilableText::new(slice))
             }))),
-            Box::new(FixedReplacementRuleReplacerPart::new(String::from("</strong>"))),
+            Arc::new(FixedReplacementRuleReplacerPart::new(String::from("</strong>"))),
         ]);
 
         let text_to_compile = r"A piece of **bold text** and **bold text2**";

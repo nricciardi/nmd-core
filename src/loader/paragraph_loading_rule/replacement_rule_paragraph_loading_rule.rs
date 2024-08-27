@@ -1,17 +1,17 @@
 use super::ParagraphLoadingRule;
-use crate::{codex::Codex, compiler::compilation_rule::replacement_rule::ReplacementRule, dossier::document::chapter::paragraph::{replacement_rule_paragraph::ReplacementRuleParagraph, Paragraph}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError}};
+use crate::{codex::{modifier::ModifiersBucket, Codex}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compiler::compilation_rule::replacement_rule::ReplacementRule, dossier::document::chapter::paragraph::{replacement_rule_paragraph::ReplacementRuleParagraph, Paragraph}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError}};
 
 
 #[derive(Debug)]
 pub struct ReplacementRuleParagraphLoadingRule {
-    compilation_rule: ReplacementRule,
+    replacement_rule: ReplacementRule,
 }
 
 impl ReplacementRuleParagraphLoadingRule {
     
-    pub fn new(compilation_rule: ReplacementRule,) -> Self {
+    pub fn new(replacement_rule: ReplacementRule,) -> Self {
         Self {
-            compilation_rule,
+            replacement_rule,
         }
     } 
 }
@@ -19,8 +19,15 @@ impl ReplacementRuleParagraphLoadingRule {
 impl ParagraphLoadingRule for ReplacementRuleParagraphLoadingRule {
     fn load(&self, raw_content: &str, _codex: &Codex, _configuration: &LoaderConfiguration, _configuration_overlay: LoaderConfigurationOverLay) -> Result<Box<dyn Paragraph>, LoadError> {
         
-        todo!()
-        
-        // Ok(Box::new(ReplacementRuleParagraph::new(raw_content.to_string(), Box::new(self.compilation_rule.clone()))))
+        let compilable_text = CompilableText::from(CompilableTextPart::new_compilable(
+            raw_content.to_string(),
+            ModifiersBucket::None
+        ));
+
+        Ok(Box::new(ReplacementRuleParagraph::new(
+            raw_content.to_string(),
+            compilable_text,
+            self.replacement_rule.clone()
+        )))
     }
 }

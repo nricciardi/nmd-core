@@ -74,6 +74,8 @@ impl Paragraph for ReplacementRuleParagraph {
 
 #[cfg(test)]
 mod test {
+    use std::sync::Arc;
+
     use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, standard_text_modifier::StandardTextModifier, Modifier, ModifiersBucket}, Codex, CodexCompilationRulesMap, CodexLoadingRulesMap, CodexModifiersMap}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart, pass_through_replacement_rule_part::PassThroughReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile}, output_format::OutputFormat};
 
     use super::ReplacementRuleParagraph;
@@ -91,14 +93,14 @@ mod test {
                     ModifiersBucket::None
                 )
             ],
-            String::from("nuid-test")
+            Some(String::from("nuid-test"))
         );
 
         let replacement_rule = ReplacementRule::new(
             StandardParagraphModifier::CommonParagraph.modifier_pattern(),
             vec![
-                Box::new(ClosureReplacementRuleReplacerPart::new(
-                    Box::new(
+                Arc::new(ClosureReplacementRuleReplacerPart::new(
+                    Arc::new(
                         |_, compilable_text, _, _, _ | {
 
                             Ok(CompilableText::from(
@@ -107,8 +109,8 @@ mod test {
                         }
                     )
                 )),
-                Box::new(PassThroughReplacementRuleReplacerPart::new()),
-                Box::new(FixedReplacementRuleReplacerPart::new(String::from("</p>")))
+                Arc::new(PassThroughReplacementRuleReplacerPart::new()),
+                Arc::new(FixedReplacementRuleReplacerPart::new(String::from("</p>")))
             ]
         );
 
@@ -135,8 +137,8 @@ mod test {
                         ReplacementRule::new(
                             StandardTextModifier::BoldStarVersion.modifier_pattern(),
                             vec![
-                                Box::new(FixedReplacementRuleReplacerPart::new(String::from("<strong>"))),
-                                Box::new(ClosureReplacementRuleReplacerPart::new(Box::new(|captures, compilable, _, _, _| {
+                                Arc::new(FixedReplacementRuleReplacerPart::new(String::from("<strong>"))),
+                                Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
                 
                                     let capture1 = captures.get(1).unwrap();
                                     
@@ -144,7 +146,7 @@ mod test {
                     
                                     Ok(CompilableText::new(slice))
                                 }))),
-                                Box::new(FixedReplacementRuleReplacerPart::new(String::from("</strong>"))),
+                                Arc::new(FixedReplacementRuleReplacerPart::new(String::from("</strong>"))),
                             ]
                         )
                     ) as Box<dyn CompilationRule>

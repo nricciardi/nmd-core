@@ -353,11 +353,9 @@ impl Compiler {
             OutputFormat::Html => {
                 let mut outcome = CompilableText::new_empty();
 
-                outcome.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"<section class="toc">"#)));
-                outcome.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"<div class="toc-title">"#)));
+                outcome.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"<section class="toc"><div class="toc-title">"#)));
                 outcome.parts_mut().append(&mut Self::compile_str(table_of_contents.title(), format, codex, compilation_configuration, compilation_configuration_overlay.clone())?.parts_mut());
-                outcome.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</div>"#)));
-                outcome.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"<ul class="toc-body">"#)));
+                outcome.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</div><ul class="toc-body">"#)));
 
                 let mut total_li = 0;
 
@@ -385,8 +383,7 @@ impl Compiler {
                         }
                     }
 
-                    outcome.parts_mut().push(CompilableTextPart::new_fixed(r#"<span class="toc-item-bullet">"#.to_string()));
-                    outcome.parts_mut().push(CompilableTextPart::new_fixed(r#"</span><span class="toc-item-content">"#.to_string()));
+                    outcome.parts_mut().push(CompilableTextPart::new_fixed(r#"<span class="toc-item-bullet"></span><span class="toc-item-content">"#.to_string()));
 
                     if let Some(id) = heading.resource_reference() {
 
@@ -411,8 +408,7 @@ impl Compiler {
                         
                 }
 
-                outcome.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</ul>"#)));
-                outcome.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</section>"#)));
+                outcome.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</ul></section>"#)));
 
                 table_of_contents.set_compilation_result(Some(outcome));
 
@@ -432,53 +428,43 @@ impl Compiler {
             OutputFormat::Html => {
                 let mut compilation_result = CompilableText::new_empty();
 
-                compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"<section class="bibliography">"#)));
-                compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"<div class="bibliography-title">"#)));
+                compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"<section class="bibliography"><div class="bibliography-title">"#)));
                 compilation_result.parts_mut().append(&mut Self::compile_str(bibliography.title(), format, codex, compilation_configuration, compilation_configuration_overlay)?.parts_mut());
-                compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</div>"#)));
-                compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"<ul class="bibliography-body">"#)));
+                compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</div><ul class="bibliography-body">"#)));
         
                 for (bib_key, bib_record) in bibliography.content().iter() {
-                    compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<div class="bibliography-item" id="{}">"#, ResourceReference::of_internal_from_without_sharp(bib_key, Some(&BIBLIOGRAPHY_FICTITIOUS_DOCUMENT))?.build_without_internal_sharp())));
-                    compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"<div class="bibliography-item-title">"#)));
-        
-                    compilation_result.parts_mut().push(CompilableTextPart::new_fixed(bib_record.title().to_string()));
-        
-                    compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</div>"#)));
-        
+                    compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(
+                        r#"<div class="bibliography-item" id="{}"><div class="bibliography-item-title">{}</div>"#,
+                        ResourceReference::of_internal_from_without_sharp(bib_key,
+                            Some(&BIBLIOGRAPHY_FICTITIOUS_DOCUMENT))?.build_without_internal_sharp(),
+                            bib_record.title()
+                        )));
+                
                     if let Some(authors) = bib_record.authors() {
         
-                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"<div class="bibliography-item-authors">"#)));
-                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(authors.join(", "))));
-                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</div>"#)));
+                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<div class="bibliography-item-authors">{}</div>"#, authors.join(", "))));
                     }
         
                     if let Some(year) = bib_record.year() {
-        
-                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"<div class="bibliography-item-year">"#)));
-                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(year.to_string())));
-                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</div>"#)));
+
+                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<div class="bibliography-item-year">{}</div>"#, year)));
                     }
         
                     if let Some(url) = bib_record.url() {
         
-                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"<div class="bibliography-item-url">"#)));
-                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(url.to_string())));
-                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</div>"#)));
+                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<div class="bibliography-item-url">{}</div>"#, url)));
                     }
         
                     if let Some(description) = bib_record.description() {
+
+                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<div class="bibliography-item-description">{}</div>"#, description)));
         
-                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"<div class="bibliography-item-description">"#)));
-                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(description.to_string())));
-                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</div>"#)));
                     }
         
                     compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</div>"#)));
                 }
         
-                compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</ul>"#)));
-                compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</section>"#)));
+                compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</ul></section>"#)));
         
                 bibliography.set_compilation_result(Some(compilation_result));
         
@@ -768,7 +754,7 @@ impl Compiler {
 #[cfg(test)]
 mod test {
     
-    use std::collections::HashSet;
+    use std::{collections::HashSet, sync::Arc};
     use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, standard_text_modifier::StandardTextModifier, Modifier, ModifiersBucket}, Codex, CodexCompilationRulesMap, CodexLoadingRulesMap, CodexModifiersMap}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::constants::ESCAPE_HTML, Compiler}, dossier::document::chapter::paragraph::{replacement_rule_paragraph::ReplacementRuleParagraph, Paragraph}, output_format::OutputFormat};
 
     use super::compilation_rule::{replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule};
@@ -815,8 +801,8 @@ mod test {
                         ReplacementRule::new(
                             StandardTextModifier::BoldStarVersion.modifier_pattern(),
                             vec![
-                                Box::new(FixedReplacementRuleReplacerPart::new(String::from("<strong>"))),
-                                Box::new(ClosureReplacementRuleReplacerPart::new(Box::new(|captures, compilable, _, _, _| {
+                                Arc::new(FixedReplacementRuleReplacerPart::new(String::from("<strong>"))),
+                                Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
                 
                                     let capture1 = captures.get(1).unwrap();
                                     
@@ -824,7 +810,7 @@ mod test {
                     
                                     Ok(CompilableText::new(slice))
                                 }))),
-                                Box::new(FixedReplacementRuleReplacerPart::new(String::from("</strong>"))),
+                                Arc::new(FixedReplacementRuleReplacerPart::new(String::from("</strong>"))),
                             ]
                         )
                     ) as Box<dyn CompilationRule>

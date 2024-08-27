@@ -107,11 +107,16 @@ impl ListParagraph {
 
                         let content = text_utility::replace(&content, &ESCAPE_HTML);
 
-                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(r#"<li class="list-item">"#.to_string()));
-                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(LIST_ITEM_INDENTATION.repeat(indentation_level)));
-                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(r#"<span class="list-item-bullet">"#.to_string()));
-                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(bullet));
-                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(r#"</span><span class="list-item-content">"#.to_string()));
+                        compilation_result.parts_mut().push(
+                            CompilableTextPart::new_fixed(
+                                format!(
+                                    r#"<li class="list-item">{}<span class="list-item-bullet">{}</span><span class="list-item-content">"#,
+                                    LIST_ITEM_INDENTATION.repeat(indentation_level),
+                                    bullet
+                                )
+                            )
+                        );
+                        
                         compilation_result.parts_mut().push(CompilableTextPart::new_compilable(content, ModifiersBucket::None));
                         compilation_result.parts_mut().push(CompilableTextPart::new_fixed(r#"</span></li>"#.to_string()));
 

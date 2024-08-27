@@ -43,10 +43,10 @@ impl CompilableText {
         }
     }
 
-    pub fn new_with_nuid(parts: Vec<CompilableTextPart>, nuid: NmdUniqueIdentifier) -> Self {
+    pub fn new_with_nuid(parts: Vec<CompilableTextPart>, nuid: Option<NmdUniqueIdentifier>) -> Self {
         Self {
             parts,
-            nuid: Some(nuid)
+            nuid
         }
     }
 

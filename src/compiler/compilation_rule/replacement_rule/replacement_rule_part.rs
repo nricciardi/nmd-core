@@ -1,6 +1,7 @@
 pub mod closure_replacement_rule_part;
 pub mod fixed_replacement_rule_part;
 pub mod pass_through_replacement_rule_part;
+pub mod single_capture_group_replacement_rule_part;
 
 
 use regex::Captures;
