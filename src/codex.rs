@@ -131,15 +131,18 @@ impl Codex {
             paragraph_modifiers.insert(tm.identifier(), Box::new(Into::<BaseModifier>::into(tm)) as Box<dyn Modifier>);
         });
 
-        // let text_rules: CodexCompilationRulesMap = CodexCompilationRulesMap::from([
-        //     (
-        //         StandardTextModifier::Todo.identifier().clone(),
-        //         Box::new(ReplacementRule::new(StandardTextModifier::Todo.modifier_pattern().clone(), vec![
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="todo"><div class="todo-title"></div><div class="todo-description">"#)),
-        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div></div>"#)),
-        //         ])) as Box<dyn CompilationRule>,
-        //     ),
+        let text_rules: CodexCompilationRulesMap = CodexCompilationRulesMap::from([
+            (
+                StandardTextModifier::Todo.identifier().clone(),
+                Box::new(ReplacementRule::new(
+                    StandardTextModifier::Todo.modifier_pattern().clone(),
+                    vec![
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<div class="todo"><div class="todo-title"></div><div class="todo-description">"#))),
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::Todo.incompatible_modifiers())),
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div></div>"#))),
+                    ]
+                )) as Box<dyn CompilationRule>
+            ),
         //     (
         //         StandardTextModifier::BookmarkWithId.identifier().clone(),
         //         Box::new(ReplacementRule::new(StandardTextModifier::BookmarkWithId.modifier_pattern().clone(), vec![
@@ -160,204 +163,243 @@ impl Codex {
         //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div></div>"#)),
         //         ]))
         //     ),
-        //     (
-        //         StandardTextModifier::GreekLetter.identifier().clone(),
-        //         Box::new(HtmlGreekLettersRule::new()),
-        //     ),
-        //     (
-        //         StandardTextModifier::AbridgedBookmarkWithId.identifier().clone(),
-        //         Box::new(ReplacementRule::new(StandardTextModifier::AbridgedBookmarkWithId.modifier_pattern().clone(), vec![
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="abridged-bookmark" id="$2""#)).with_references_at(vec![2]),
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"><div class="abridged-bookmark-title">"#)),
-        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div></div>"#)),
-        //         ]))
-        //     ),
-        //     (
-        //         StandardTextModifier::AbridgedBookmark.identifier().clone(),
-        //         Box::new(ReplacementRule::new(StandardTextModifier::AbridgedBookmark.modifier_pattern().clone(), vec![
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="abridged-bookmark"><div class="abridged-bookmark-title">"#)),
-        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div></div>"#)),
-        //         ]))
-        //     ),
-        //     (
-        //         StandardTextModifier::EmbeddedStyleWithId.identifier().clone(),
-        //         Box::new(ReplacementRule::new(StandardTextModifier::EmbeddedStyleWithId.modifier_pattern().clone(), vec![
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<span class="identifier embedded-style" id="$2" style="$3">"#)).with_references_at(vec![2]),
-        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</span>"#)),
-        //         ]))
-        //     ),
-        //     (
-        //         StandardTextModifier::EmbeddedStyle.identifier().clone(),
-        //         Box::new(ReplacementRule::new(StandardTextModifier::EmbeddedStyle.modifier_pattern().clone(), vec![
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<span class="embedded-style" style="$2">"#)),
-        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</span>"#)),
-        //         ]))
-        //     ),
-        //     (
-        //         StandardTextModifier::AbridgedEmbeddedStyleWithId.identifier().clone(),
-        //         Box::new(ReplacementRule::new(StandardTextModifier::AbridgedEmbeddedStyleWithId.modifier_pattern().clone(), vec![
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<span class="identifier abridged-embedded-style" id="$2" style="color: $3; background-color: $4; font-family: $5;">"#)).with_references_at(vec![2]),
-        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</span>"#)),
-        //         ]))
-        //     ),
-        //     (
-        //         StandardTextModifier::AbridgedEmbeddedStyle.identifier().clone(),
-        //         Box::new(ReplacementRule::new(StandardTextModifier::AbridgedEmbeddedStyle.modifier_pattern().clone(), vec![
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<span class="abridged-embedded-style" style="color: $2; background-color: $3; font-family: $4;">"#)),
-        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</span>"#)),
-        //         ]))
-        //     ),
-        //     (
-        //         StandardTextModifier::Identifier.identifier().clone(),
-        //         Box::new(ReplacementRule::new(StandardTextModifier::Identifier.modifier_pattern().clone(), vec![
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<span class="identifier" id="$2">"#)).with_references_at(vec![2]),
-        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</span>"#)),
-        //         ]))
-        //     ),
-        //     (
-        //         StandardTextModifier::Highlight.identifier().clone(),
-        //         Box::new(ReplacementRule::new(StandardTextModifier::Highlight.modifier_pattern().clone(), vec![
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<mark class="highlight">"#)),
-        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</mark>"#)),
-        //         ]))
-        //     ),
-        //     (
-        //         StandardTextModifier::InlineMath.identifier().clone(),
-        //         Box::new(ReplacementRule::new(StandardTextModifier::InlineMath.modifier_pattern().clone(), vec![
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<span class="inline-math">$$"#)),
-        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"$$</span>"#)),
-        //         ]))
-        //     ),
-        //     (
-        //         StandardTextModifier::InlineCode.identifier().clone(),
-        //         Box::new(ReplacementRule::new(StandardTextModifier::InlineCode.modifier_pattern().clone(), vec![
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<code class="language-markup inline-code">"#)),
-        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</code>"#)),
-        //         ]))
-        //     ),
-        //     (
-        //         StandardTextModifier::BoldStarVersion.identifier().clone(),
-        //         Box::new(ReplacementRule::new(StandardTextModifier::BoldStarVersion.modifier_pattern().clone(), vec![
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<strong class="bold">"#)),
-        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</strong>"#)),
-        //         ]))
-        //     ),
-        //     (
-        //         StandardTextModifier::BoldUnderscoreVersion.identifier().clone(),
-        //         Box::new(ReplacementRule::new(StandardTextModifier::BoldUnderscoreVersion.modifier_pattern().clone(), vec![
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<strong class="bold">"#)),
-        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</strong>"#)),
-        //         ]))
-        //     ),
-        //     (
-        //         StandardTextModifier::ItalicStarVersion.identifier().clone(),
-        //         Box::new(ReplacementRule::new(StandardTextModifier::ItalicStarVersion.modifier_pattern().clone(), vec![
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<em class="italic">"#)),
-        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</em>"#)),
-        //         ]))
-        //     ),
-        //     (
-        //         StandardTextModifier::ItalicUnderscoreVersion.identifier().clone(),
-        //         Box::new(ReplacementRule::new(StandardTextModifier::ItalicUnderscoreVersion.modifier_pattern().clone(), vec![
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<em class="italic">"#)),
-        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</em>"#)),
-        //         ]))
-        //     ),
-        //     (
-        //         StandardTextModifier::Strikethrough.identifier().clone(),
-        //         Box::new(ReplacementRule::new(StandardTextModifier::Strikethrough.modifier_pattern().clone(), vec![
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<del class="strikethrough">"#)),
-        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</del>"#)),
-        //         ]))
-        //     ),
-        //     (
-        //         StandardTextModifier::Underlined.identifier().clone(),
-        //         Box::new(ReplacementRule::new(StandardTextModifier::Underlined.modifier_pattern().clone(), vec![
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<u class="underlined">"#)),
-        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</u>"#)),
-        //         ]))
-        //     ),
-        //     (
-        //         StandardTextModifier::Superscript.identifier().clone(),
-        //         Box::new(ReplacementRule::new(StandardTextModifier::Superscript.modifier_pattern().clone(), vec![
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<sup class="superscript">"#)),
-        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</sup>"#)),
-        //         ]))
-        //     ),
-        //     (
-        //         StandardTextModifier::Subscript.identifier().clone(),
-        //         Box::new(ReplacementRule::new(StandardTextModifier::Subscript.modifier_pattern().clone(), vec![
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<sub class="subscript">"#)),
-        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</sub>"#)),
-        //         ]))
-        //     ),
-        //     (
-        //         StandardTextModifier::Link.identifier().clone(),
-        //         Box::new(ReplacementRule::new(StandardTextModifier::Link.modifier_pattern().clone(), vec![
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<a href="$2" class="link">"#)).with_references_at(vec![2]),
-        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</a>"#)),
-        //         ]))
-        //     ),
-        //     (
-        //         StandardTextModifier::Comment.identifier().clone(),
-        //         Box::new(ReplacementRule::new(StandardTextModifier::Comment.modifier_pattern().clone(), vec![
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<!-- "#)),
-        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#" -->"#)),
-        //         ]))
-        //     ),
-        //     (
-        //         StandardTextModifier::Checkbox.identifier().clone(),
-        //         Box::new(ReplacementRule::new(StandardTextModifier::Checkbox.modifier_pattern().clone(), vec![
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="checkbox checkbox-unchecked"></div>"#)),
-        //         ])) as Box<dyn CompilationRule>,
-        //     ),
-        //     (
-        //         StandardTextModifier::CheckboxChecked.identifier().clone(),
-        //         Box::new(ReplacementRule::new(StandardTextModifier::CheckboxChecked.modifier_pattern().clone(), vec![
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="checkbox checkbox-checked"></div>"#)),
-        //         ]))
-        //     ),
-        //     (
-        //         StandardTextModifier::Emoji.identifier().clone(),
-        //         Box::new(ReplacementRule::new(StandardTextModifier::Emoji.modifier_pattern().clone(), vec![
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<i class="em-svg em-${1}" aria-role="presentation"></i>"#)),
-        //         ]))
-        //     ),
-        //     (
-        //         StandardTextModifier::Escape.identifier().clone(),
-        //         Box::new(ReplacementRule::new(StandardTextModifier::Escape.modifier_pattern().clone(), vec![
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-        //         ]))
-        //     ),
-        //     (
-        //         StandardTextModifier::Reference.identifier().clone(),
-        //         Box::new(ReferenceRule::new())
-        //     ),
-        //     (
-        //         StandardTextModifier::Cite.identifier().clone(),
-        //         Box::new(HtmlCiteRule::new())
-        //     ),
-        // ]);
+            (
+                StandardTextModifier::GreekLetter.identifier().clone(),
+                Box::new(HtmlGreekLettersRule::new()),
+            ),
+            (
+                StandardTextModifier::AbridgedBookmark.identifier().clone(),
+                Box::new(ReplacementRule::new(
+                    StandardTextModifier::AbridgedBookmark.modifier_pattern().clone(),
+                    vec![
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<div class="abridged-bookmark"><div class="abridged-bookmark-title">"#))),
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::AbridgedBookmark.incompatible_modifiers())),
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div></div>"#))),
+                    ]
+                ))
+            ),
+            //     (
+            //         StandardTextModifier::EmbeddedStyleWithId.identifier().clone(),
+            //         Box::new(ReplacementRule::new(StandardTextModifier::EmbeddedStyleWithId.modifier_pattern().clone(), vec![
+            //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<span class="identifier embedded-style" id="$2" style="$3">"#)).with_references_at(vec![2]),
+            //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
+            //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</span>"#)),
+            //         ]))
+            //     ),
+            //     (
+            //         StandardTextModifier::EmbeddedStyle.identifier().clone(),
+            //         Box::new(ReplacementRule::new(StandardTextModifier::EmbeddedStyle.modifier_pattern().clone(), vec![
+            //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<span class="embedded-style" style="$2">"#)),
+            //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
+            //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</span>"#)),
+            //         ]))
+            //     ),
+            //     (
+            //         StandardTextModifier::AbridgedEmbeddedStyleWithId.identifier().clone(),
+            //         Box::new(ReplacementRule::new(StandardTextModifier::AbridgedEmbeddedStyleWithId.modifier_pattern().clone(), vec![
+            //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<span class="identifier abridged-embedded-style" id="$2" style="color: $3; background-color: $4; font-family: $5;">"#)).with_references_at(vec![2]),
+            //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
+            //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</span>"#)),
+            //         ]))
+            //     ),
+            //     (
+            //         StandardTextModifier::AbridgedEmbeddedStyle.identifier().clone(),
+            //         Box::new(ReplacementRule::new(StandardTextModifier::AbridgedEmbeddedStyle.modifier_pattern().clone(), vec![
+            //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<span class="abridged-embedded-style" style="color: $2; background-color: $3; font-family: $4;">"#)),
+            //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
+            //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</span>"#)),
+            //         ]))
+            //     ),
+            //     (
+            //         StandardTextModifier::Identifier.identifier().clone(),
+            //         Box::new(ReplacementRule::new(StandardTextModifier::Identifier.modifier_pattern().clone(), vec![
+            //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<span class="identifier" id="$2">"#)).with_references_at(vec![2]),
+            //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
+            //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</span>"#)),
+            //         ]))
+            //     ),
+            (
+                StandardTextModifier::Highlight.identifier().clone(),
+                Box::new(ReplacementRule::new(
+                    StandardTextModifier::Highlight.modifier_pattern().clone(),
+                    vec![
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<mark class="highlight">"#))),
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::Highlight.incompatible_modifiers())),
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</mark>"#))),
+                    ]
+                ))
+            ),
+            (
+                StandardTextModifier::InlineMath.identifier().clone(),
+                Box::new(ReplacementRule::new(
+                    StandardTextModifier::InlineMath.modifier_pattern().clone(),
+                    vec![
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<span class="inline-math">$$"#))),
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, vec![], StandardTextModifier::InlineMath.incompatible_modifiers())),
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"$$</span>"#))),
+                    ]
+                ))
+            ),
+            (
+                StandardTextModifier::InlineCode.identifier().clone(),
+                Box::new(ReplacementRule::new(
+                    StandardTextModifier::InlineCode.modifier_pattern().clone(),
+                    vec![
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<code class="language-markup inline-code">"#))),
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::InlineCode.incompatible_modifiers())),
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</code>"#))),
+                    ]
+                ))
+            ),
+            (
+                StandardTextModifier::BoldStarVersion.identifier().clone(),
+                Box::new(ReplacementRule::new(
+                    StandardTextModifier::BoldStarVersion.modifier_pattern().clone(),
+                    vec![
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<strong class="bold">"#))),
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::BoldStarVersion.incompatible_modifiers())),
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</strong>"#))),
+                    ]
+                ))
+            ),
+            (
+                StandardTextModifier::BoldUnderscoreVersion.identifier().clone(),
+                Box::new(ReplacementRule::new(
+                    StandardTextModifier::BoldUnderscoreVersion.modifier_pattern().clone(),
+                    vec![
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<strong class="bold">"#))),
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::BoldUnderscoreVersion.incompatible_modifiers())),
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</strong>"#))),
+                    ]
+                ))
+            ),
+            (
+                StandardTextModifier::ItalicStarVersion.identifier().clone(),
+                Box::new(ReplacementRule::new(
+                    StandardTextModifier::ItalicStarVersion.modifier_pattern().clone(),
+                    vec![
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<em class="italic">"#))),
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::ItalicStarVersion.incompatible_modifiers())),
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</em>"#))),
+                    ]
+                ))
+            ),
+            (
+                StandardTextModifier::ItalicUnderscoreVersion.identifier().clone(),
+                Box::new(ReplacementRule::new(
+                    StandardTextModifier::ItalicUnderscoreVersion.modifier_pattern().clone(),
+                    vec![
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<em class="italic">"#))),
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::ItalicUnderscoreVersion.incompatible_modifiers())),
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</em>"#))),
+                    ]
+                ))
+            ),
+            (
+                StandardTextModifier::Strikethrough.identifier().clone(),
+                Box::new(ReplacementRule::new(
+                    StandardTextModifier::Strikethrough.modifier_pattern().clone(),
+                    vec![
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<del class="strikethrough">"#))),
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::Strikethrough.incompatible_modifiers())),
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</del>"#))),
+                    ]
+                ))
+            ),
+            (
+                StandardTextModifier::Underlined.identifier().clone(),
+                Box::new(ReplacementRule::new(
+                    StandardTextModifier::Underlined.modifier_pattern().clone(),
+                    vec![
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<u class="underlined">"#))),
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::Underlined.incompatible_modifiers())),
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</u>"#))),
+                    ]
+                ))
+            ),
+            (
+                StandardTextModifier::Superscript.identifier().clone(),
+                Box::new(ReplacementRule::new(
+                    StandardTextModifier::Superscript.modifier_pattern().clone(),
+                    vec![
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<sup class="superscript">"#))),
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::Superscript.incompatible_modifiers())),
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</sup>"#))),
+                    ]
+                ))
+            ),
+            (
+                StandardTextModifier::Subscript.identifier().clone(),
+                Box::new(ReplacementRule::new(
+                    StandardTextModifier::Subscript.modifier_pattern().clone(),
+                    vec![
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<sub class="subscript">"#))),
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::Subscript.incompatible_modifiers())),
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</sub>"#))),
+                    ]
+                ))
+            ),
+            //     (
+            //         StandardTextModifier::Link.identifier().clone(),
+            //         Box::new(ReplacementRule::new(StandardTextModifier::Link.modifier_pattern().clone(), vec![
+            //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<a href="$2" class="link">"#)).with_references_at(vec![2]),
+            //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
+            //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</a>"#)),
+            //         ]))
+            //     ),
+            (
+                StandardTextModifier::Comment.identifier().clone(),
+                Box::new(ReplacementRule::new(
+                    StandardTextModifier::Comment.modifier_pattern().clone(),
+                    vec![
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<!-- "#))),
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::Comment.incompatible_modifiers())),
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#" -->"#))),
+                    ]
+                ))
+            ),
+            (
+                StandardTextModifier::Checkbox.identifier().clone(),
+                Box::new(ReplacementRule::new(
+                    StandardTextModifier::Checkbox.modifier_pattern().clone(),
+                    vec![
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<div class="checkbox checkbox-unchecked"></div>"#))),
+                    ]
+                ))
+            ),
+            (
+                StandardTextModifier::CheckboxChecked.identifier().clone(),
+                Box::new(ReplacementRule::new(
+                    StandardTextModifier::CheckboxChecked.modifier_pattern().clone(),
+                    vec![
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<div class="checkbox checkbox-checked"></div>"#))),
+                    ]
+                ))
+            ),
+            //     (
+            //         StandardTextModifier::Emoji.identifier().clone(),
+            //         Box::new(ReplacementRule::new(StandardTextModifier::Emoji.modifier_pattern().clone(), vec![
+            //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<i class="em-svg em-${1}" aria-role="presentation"></i>"#)),
+            //         ]))
+            //     ),
+            (
+                StandardTextModifier::Escape.identifier().clone(),
+                Box::new(ReplacementRule::new(
+                    StandardTextModifier::Escape.modifier_pattern().clone(),
+                    vec![
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::Escape.incompatible_modifiers())),
+                    ]
+                ))
+            ),
+            (
+                StandardTextModifier::Reference.identifier().clone(),
+                Box::new(ReferenceRule::new())
+            ),
+            (
+                StandardTextModifier::Cite.identifier().clone(),
+                Box::new(HtmlCiteRule::new())
+            ),
+        ]);
 
         let paragraph_rules: CodexLoadingRulesMap = CodexLoadingRulesMap::from([
             (
@@ -388,11 +430,11 @@ impl Codex {
                                         r#"<div class="identifier embedded-paragraph-style" id="{}" style="{}" data-nuid="{}">"#,
                                         ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
                                         captures.get(3).unwrap().as_str(),
-                                        compilable.nuid().unwrap_or(String::new())
+                                        compilable.nuid().as_ref().unwrap_or(&String::new())
                                     ))
                                 ]))
                             }))),
-                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), ModifiersBucket::None)),
+                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardParagraphModifier::EmbeddedParagraphStyleWithId.incompatible_modifiers())),
                             Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div>"#)))
                         ]
                     )
@@ -404,17 +446,17 @@ impl Codex {
                     ReplacementRule::new(
                         StandardParagraphModifier::EmbeddedParagraphStyle.modifier_pattern().clone(),
                         vec![
-                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
+                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
                                         r#"<div class="embedded-paragraph-style" style="{}" data-nuid="{}">"#,
                                         captures.get(2).unwrap().as_str(),
-                                        compilable.nuid().unwrap_or(String::new())
+                                        compilable.nuid().as_ref().unwrap_or(&String::new())
                                     ))
                                 ]))
                             }))),
-                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), ModifiersBucket::None)),
+                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardParagraphModifier::EmbeddedParagraphStyle.incompatible_modifiers())),
                             Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div>"#)))
                         ]
                     )
@@ -432,14 +474,14 @@ impl Codex {
                                     CompilableTextPart::new_fixed(format!(
                                         r#"<div class="identifier abridged-embedded-paragraph-style" id="{}" data-nuid="{}" style="color: {}; background-color: {}; font-family: {};">"#,
                                         ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
-                                        compilable.nuid().unwrap_or(String::new()),
+                                        compilable.nuid().as_ref().unwrap_or(&String::new()),
                                         captures.get(3).unwrap().as_str(),
                                         captures.get(4).unwrap().as_str(),
                                         captures.get(5).unwrap().as_str(),
                                     ))
                                 ]))
                             }))),
-                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), ModifiersBucket::None)),
+                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardParagraphModifier::AbridgedEmbeddedParagraphStyleWithId.incompatible_modifiers())),
                             Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div>"#)))
                         ]
                     )
@@ -451,16 +493,16 @@ impl Codex {
                     ReplacementRule::new(
                         StandardParagraphModifier::AbridgedTodo.modifier_pattern().clone(),
                         vec![
-                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
+                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|_, compilable, _, _, _| {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
                                         r#"<div class="todo abridged-todo" data-nuid="{}">"#,
-                                        compilable.nuid().unwrap_or(String::new())
+                                        compilable.nuid().as_ref().unwrap_or(&String::new())
                                     ))
                                 ]))
                             }))),
-                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), ModifiersBucket::None)),
+                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardParagraphModifier::AbridgedTodo.incompatible_modifiers())),
                             Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div>"#)))
                         ]
                     )
@@ -472,16 +514,16 @@ impl Codex {
                     ReplacementRule::new(
                         StandardParagraphModifier::MultilineTodo.modifier_pattern().clone(),
                         vec![
-                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
+                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|_, compilable, _, _, _| {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
                                         r#"<div class="todo multiline-todo" data-nuid="{}"><div class="todo-title"></div><div class="todo-description">"#,
-                                        compilable.nuid().unwrap_or(String::new())
+                                        compilable.nuid().as_ref().unwrap_or(&String::new())
                                     ))
                                 ]))
                             }))),
-                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), ModifiersBucket::None)),
+                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardParagraphModifier::MultilineTodo.incompatible_modifiers())),
                             Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div>"#)))
                         ]
                     )
@@ -493,19 +535,19 @@ impl Codex {
                     ReplacementRule::new(
                         StandardParagraphModifier::AbridgedEmbeddedParagraphStyle.modifier_pattern().clone(),
                         vec![
-                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
+                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
                                         r#"<div class="abridged-embedded-paragraph-style" data-nuid="{}" style="color: {}; background-color: {}; font-family: {};">"#,
-                                        compilable.nuid().unwrap_or(String::new()),
+                                        compilable.nuid().as_ref().unwrap_or(&String::new()),
                                         captures.get(2).unwrap().as_str(),
                                         captures.get(3).unwrap().as_str(),
                                         captures.get(4).unwrap().as_str(),
                                     ))
                                 ]))
                             }))),
-                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), ModifiersBucket::None)),
+                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardParagraphModifier::AbridgedEmbeddedParagraphStyle.incompatible_modifiers())),
                             Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div>"#)))
                         ]
                     )
@@ -523,11 +565,11 @@ impl Codex {
                                     CompilableTextPart::new_fixed(format!(
                                         r#"<span class="identifier" id="{}" data-nuid="{}">"#,
                                         ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
-                                        compilable.nuid().unwrap_or(String::new())
+                                        compilable.nuid().as_ref().unwrap_or(&String::new())
                                     ))
                                 ]))
                             }))),
-                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), ModifiersBucket::None)),
+                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardParagraphModifier::ParagraphIdentifier.incompatible_modifiers())),
                             Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</span>"#)))
                         ]
                     )
@@ -543,12 +585,12 @@ impl Codex {
                     ReplacementRule::new(
                         StandardParagraphModifier::MathBlock.modifier_pattern().clone(),
                         vec![
-                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
+                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
                                         r#"<p class="math-block" data-nuid="{}">{}</p>"#,
-                                        compilable.nuid().unwrap_or(String::new()),
+                                        compilable.nuid().as_ref().unwrap_or(&String::new()),
                                         captures.get(1).unwrap().as_str(),
                                     )
                                 )
@@ -576,12 +618,12 @@ impl Codex {
                     ReplacementRule::new(
                         StandardParagraphModifier::CodeBlock.modifier_pattern().clone(),
                         vec![
-                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
+                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
                                         r#"<pre data-nuid="{}"><code class="language-{} code-block">{}</code></pre>"#,
-                                        compilable.nuid().unwrap_or(String::new()),
+                                        compilable.nuid().as_ref().unwrap_or(&String::new()),
                                         captures.get(1).unwrap().as_str(),
                                         text_utility::replace(captures.get(2).unwrap().as_str(), &ESCAPE_HTML),
                                     )
@@ -602,19 +644,19 @@ impl Codex {
                     ReplacementRule::new(
                         StandardParagraphModifier::FocusBlock.modifier_pattern().clone(),
                         vec![
-                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
+                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
                                         r#"<div class="focus-block focus-block-{}" data-nuid="{}"><div class="focus-block-title focus-block-{}-title"></div><div class="focus-block-description focus-block-{}-description">"#,
                                         captures.get(1).unwrap().as_str(),
-                                        compilable.nuid().unwrap_or(String::new()),
+                                        compilable.nuid().as_ref().unwrap_or(&String::new()),
                                         captures.get(1).unwrap().as_str(),
                                         captures.get(1).unwrap().as_str(),
                                     ))
                                 ]))
                             }))),
-                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), ModifiersBucket::None)),
+                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardParagraphModifier::FocusBlock.incompatible_modifiers())),
                             Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div>"#)))
                         ]
                     )
@@ -626,12 +668,12 @@ impl Codex {
                     ReplacementRule::new(
                         StandardParagraphModifier::LineBreakDash.modifier_pattern().clone(),
                         vec![
-                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
+                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|_, compilable, _, _, _| {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
                                         r#"<hr class="line-break line-break-dash" data-nuid="{}">"#,
-                                        compilable.nuid().unwrap_or(String::new()),
+                                        compilable.nuid().as_ref().unwrap_or(&String::new()),
                                     )
                                 )
                                 ]))
@@ -646,12 +688,12 @@ impl Codex {
                     ReplacementRule::new(
                         StandardParagraphModifier::LineBreakDash.modifier_pattern().clone(),
                         vec![
-                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
+                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|_, compilable, _, _, _| {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
                                         r#"<hr class="line-break line-break-star" data-nuid="{}">"#,
-                                        compilable.nuid().unwrap_or(String::new()),
+                                        compilable.nuid().as_ref().unwrap_or(&String::new()),
                                     )
                                 )
                                 ]))
@@ -666,12 +708,12 @@ impl Codex {
                     ReplacementRule::new(
                         StandardParagraphModifier::LineBreakDash.modifier_pattern().clone(),
                         vec![
-                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
+                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|_, compilable, _, _, _| {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
                                         r#"<hr class="line-break line-break-plus" data-nuid="{}">"#,
-                                        compilable.nuid().unwrap_or(String::new()),
+                                        compilable.nuid().as_ref().unwrap_or(&String::new()),
                                     )
                                 )
                                 ]))
@@ -686,29 +728,21 @@ impl Codex {
                     ReplacementRule::new(
                         StandardParagraphModifier::CommonParagraph.modifier_pattern().clone(),
                         vec![
-                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
+                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|_, compilable, _, _, _| {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
                                         r#"<p class="paragraph" data-nuid="{}">"#,
-                                        compilable.nuid().unwrap_or(String::new()),
+                                        compilable.nuid().as_ref().unwrap_or(&String::new()),
                                     ))
                                 ]))
                             }))),
-                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), ModifiersBucket::None)),
+                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardParagraphModifier::CommonParagraph.incompatible_modifiers())),
                             Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</p>"#)))
                         ]
                     )
                 ))
             ),
-            // (
-            //     StandardParagraphModifier::CommonParagraph.identifier().clone(),
-            //     Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::CommonParagraph.modifier_pattern_with_paragraph_separator().clone(), vec![
-            //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"<p class="paragraph" data-nuid="$nuid">"#)),
-            //         ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-            //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"</p>"#)),
-            //     ])))
-            // ),
         ]);
 
         Self::new(
