@@ -110,6 +110,10 @@ impl CompilableText {
 
                     end_part_position_in_compilable_content = start_part_position_in_compilable_content + part.content().len();
 
+                    if start_part_position_in_compilable_content == end {
+                        break;
+                    } 
+
                     if start_part_position_in_compilable_content <= start
                         && start < end_part_position_in_compilable_content {     // start matching
                         
@@ -271,6 +275,25 @@ mod test {
         assert_eq!(parts_slice[2].content(), &String::from("c2"));
         assert_eq!(parts_slice[3].content(), &String::from("f2"));
         assert_eq!(parts_slice[4].content(), &String::from("c"));
+
+        let compilable = CompilableText::new(vec![
+            CompilableTextPart::new_compilable(String::from("c1"), ModifiersBucket::None),
+            CompilableTextPart::new_fixed(String::from("f1")),
+            CompilableTextPart::new_compilable(String::from("c2"), ModifiersBucket::None),
+            CompilableTextPart::new_fixed(String::from("f2")),
+            CompilableTextPart::new_compilable(String::from("c3"), ModifiersBucket::None),
+        ]);
+
+        let start: usize = 1;
+        let end: usize = 4;
+
+        let parts_slice = compilable.parts_slice(start, end).unwrap();
+
+        assert_eq!(parts_slice.len(), 4);
+        assert_eq!(parts_slice[0].content(), &String::from("1"));
+        assert_eq!(parts_slice[1].content(), &String::from("f1"));
+        assert_eq!(parts_slice[2].content(), &String::from("c2"));
+        assert_eq!(parts_slice[3].content(), &String::from("f2"));
     }
 
 }
