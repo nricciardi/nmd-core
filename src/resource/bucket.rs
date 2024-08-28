@@ -22,7 +22,7 @@ impl<T: PartialEq> Bucket<T> {
     }
 
     pub fn insert(mut self, item: T) -> Self {
-        return match self {
+        match self {
             Self::All => Self::All,
             Self::List(ref mut list) => {
                 list.push(item);
@@ -30,6 +30,22 @@ impl<T: PartialEq> Bucket<T> {
                 self
             },
             Self::None => Self::List(vec![item]),
+        }
+    }    
+}
+
+impl<T: PartialEq + Clone> Bucket<T> {
+    pub fn extend(mut self, b: &Bucket<T>) -> Self {
+        match b {
+            Self::All => Self::All,
+            Self::List(ref list) => {
+                for item in list {
+                    self = self.insert(item.clone());
+                }
+
+                self
+            }
+            Self::None => self,
         }
     }
 }

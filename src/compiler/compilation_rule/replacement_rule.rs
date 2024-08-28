@@ -57,9 +57,6 @@ impl CompilationRule for ReplacementRule {
 
         let mut compiled_parts = Vec::new();
 
-        println!("standard compile: {:?}", compilable);
-        self.search_pattern_regex.captures_iter(&compilable.compilable_content()).for_each(|c| println!("{:?}", c.get(0).unwrap()));
-
         for captures in self.search_pattern_regex.captures_iter(&compilable.compilable_content()) {
 
             for replacer_part in &self.replacer_parts {
@@ -87,7 +84,7 @@ mod test {
 
     use std::sync::Arc;
 
-    use crate::{codex::modifier::{standard_text_modifier::StandardTextModifier, ModifiersBucket}, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart, ReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}}, output_format::OutputFormat};
+    use crate::{codex::modifier::{standard_text_modifier::StandardTextModifier, ModifiersBucket}, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{constants::ESCAPE_HTML, replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart, single_capture_group_replacement_rule_part::SingleCaptureGroupReplacementRuleReplacerPart, ReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}}, output_format::OutputFormat};
 
 
     #[test]
@@ -137,6 +134,37 @@ mod test {
 
         assert_eq!(outcome.content(), r"");
 
+
+    }
+
+    #[test]
+    fn input_with_fixed_parts() {
+        let replacement_rule = ReplacementRule::new(StandardTextModifier::ItalicStarVersion.modifier_pattern(), vec![
+            Arc::new(FixedReplacementRuleReplacerPart::new(String::from("<em>"))) as Arc<dyn ReplacementRuleReplacerPart>,
+            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), ModifiersBucket::None)),
+            Arc::new(FixedReplacementRuleReplacerPart::new(String::from("</em>"))),
+        ]);
+
+        let compilation_configuration = CompilationConfiguration::default();
+
+        let compilable = CompilableText::new(
+            vec![
+                CompilableTextPart::new(
+                    String::from("*start "),
+                    CompilableTextPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
+                ),
+                CompilableTextPart::new_fixed(String::from("<strong>")),
+                CompilableTextPart::new_compilable(String::from("fixed"), ModifiersBucket::None),
+                CompilableTextPart::new_fixed(String::from("</strong>")),
+                CompilableTextPart::new(
+                    String::from(" end*"),
+                    CompilableTextPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
+                ),
+        ]);
+        
+        let outcome = replacement_rule.compile(&compilable, &OutputFormat::Html, &compilation_configuration, CompilationConfigurationOverLay::default()).unwrap();
+
+        assert_eq!(outcome.content(), r"<em>start <strong>fixed</strong> end</em>");
 
     }
 

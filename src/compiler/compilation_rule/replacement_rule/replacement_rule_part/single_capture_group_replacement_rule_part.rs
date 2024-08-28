@@ -1,6 +1,7 @@
 use getset::{Getters, Setters};
+use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use regex::{Captures, Regex};
-use crate::{codex::modifier::ModifiersBucket, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError}, output_format::OutputFormat, utility::text_utility};
+use crate::{codex::modifier::ModifiersBucket, compilable_text::{compilable_text_part::CompilableTextPartType, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError}, output_format::OutputFormat, utility::text_utility};
 use super::ReplacementRuleReplacerPart;
 
 
@@ -29,12 +30,28 @@ impl SingleCaptureGroupReplacementRuleReplacerPart {
 }
 
 impl ReplacementRuleReplacerPart for SingleCaptureGroupReplacementRuleReplacerPart {
-    fn compile(&self, captures: &Captures, _compilable: &CompilableText, _format: &OutputFormat, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError> {
-        Ok(CompilableText::from(
-            CompilableTextPart::new_compilable(
-                text_utility::replace(captures.get(self.capture_group).unwrap().as_str(), &self.post_replacing).to_string(),
-                self.incompatible_modifiers.clone()
-            )
-        ))
+    fn compile(&self, captures: &Captures, compilable: &CompilableText, _format: &OutputFormat, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError> {
+        
+        let capture = captures.get(self.capture_group).unwrap();
+                
+        let mut slice = compilable.parts_slice(capture.start(), capture.end())?;
+
+        slice.par_iter_mut().for_each(|part| {
+
+            if let CompilableTextPartType::Compilable{ incompatible_modifiers } = part.part_type() {
+
+                let incompatible_modifiers = incompatible_modifiers.clone().extend(&self.incompatible_modifiers);
+
+                part.set_part_type(CompilableTextPartType::Compilable { incompatible_modifiers });
+
+                let new_content = text_utility::replace(part.content(), &self.post_replacing);
+    
+                part.set_content(new_content);
+
+            }
+
+        });
+
+        Ok(CompilableText::new(slice))
     }
 }

@@ -629,6 +629,12 @@ impl Compiler {
                     },
                     CompilableTextPartType::Compilable{ incompatible_modifiers } => {
 
+                        if incompatible_modifiers.contains(rule_identifier) {
+                            compiled_parts.push(part.clone());      // direct in compiled_parts
+
+                            continue 'parts_loop;
+                        }
+
                         part_end_position_in_compilable_content = compilable_content_end_parts_positions[compilable_parts_index];
                         
                         compilable_parts_index += 1;
@@ -653,7 +659,7 @@ impl Compiler {
 
                                     // === pre-matched part ==
                                     let pre_matched_part = &compilable_content[part_start_position_in_compilable_content..match_start];
-                                                                        
+                                                                            
                                     if !pre_matched_part.is_empty() {
                                         compiled_parts.push(CompilableTextPart::new(
                                             pre_matched_part.to_string(),
@@ -706,15 +712,17 @@ impl Compiler {
 
                                     if match_found {        // simple matched part in matched parts 
 
-                                        matched_parts.push(part.clone());
+                                        let matched_part = &compilable_content[part_start_position_in_compilable_content..match_end];
+
+                                        matched_parts.push(CompilableTextPart::new(
+                                            matched_part.to_string(),
+                                            CompilableTextPartType::Compilable{ incompatible_modifiers: incompatible_modifiers.clone() }
+                                        ));
                                     }
                                 }
 
                                 match_found = true;     // update to check if match is found in next iterations
                             }
-        
-                            // update start position
-                            part_start_position_in_compilable_content = part_end_position_in_compilable_content;
 
                         } else {
                             
@@ -727,6 +735,9 @@ impl Compiler {
                                 ));
                             }
                         }
+        
+                        // update start position
+                        part_start_position_in_compilable_content = part_end_position_in_compilable_content;
                     }
 
                 }

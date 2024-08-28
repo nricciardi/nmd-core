@@ -75,7 +75,10 @@ impl CompilableText {
         content
     }
 
-    /// parts between two position in `compilable_content`
+    /// parts between two positions in `compilable_content`.
+    /// If start or end are in the middle of a compilable part, it will be split.
+    /// 
+    /// **`start` is included, but `end` is excluded** as typically behavior of `end()` methods.
     pub fn parts_slice(&self, start: usize, end: usize) -> Result<Vec<CompilableTextPart>, CompilableError> {
 
         let compilable_content = self.compilable_content();
@@ -93,6 +96,8 @@ impl CompilableText {
 
         for part in &self.parts {
 
+            let mut slice_found_in_current_iteration = false;
+
             match part.part_type() {
                 CompilableTextPartType::Fixed => {
                     if slice_found {
@@ -105,7 +110,8 @@ impl CompilableText {
 
                     end_part_position_in_compilable_content = start_part_position_in_compilable_content + part.content().len();
 
-                    if start_part_position_in_compilable_content <= start {
+                    if start_part_position_in_compilable_content <= start
+                        && start < end_part_position_in_compilable_content {     // start matching
                         
                         let part = CompilableTextPart::new(
                             compilable_content[start..end_part_position_in_compilable_content.min(end)].to_string(),
@@ -119,19 +125,32 @@ impl CompilableText {
                         }
 
                         slice_found = true;
+                        slice_found_in_current_iteration = true;
                     }
 
-                    if end < end_part_position_in_compilable_content {
+                    if slice_found {
 
-                        let part = CompilableTextPart::new(
-                            compilable_content[start_part_position_in_compilable_content..end].to_string(),
-                            part.part_type().clone()
-                        );
-                        
-                        parts_slice.push(part);
+                        if end < end_part_position_in_compilable_content {
 
-                        break;              
+                            let part = CompilableTextPart::new(
+                                compilable_content[start_part_position_in_compilable_content..end].to_string(),
+                                part.part_type().clone()
+                            );
+                            
+                            parts_slice.push(part);
+    
+                            break;
+
+                        } else {
+
+                            if !slice_found_in_current_iteration {
+
+                                parts_slice.push(part.clone());
+                            }
+                        }
                     }
+
+                    
                     
                     start_part_position_in_compilable_content = end_part_position_in_compilable_content;
                 },
@@ -196,7 +215,7 @@ mod test {
 
 
     #[test]
-    fn parts_between_positions() {
+    fn parts_between_positions_in_cfc() {
         let compilable = CompilableText::new(vec![
             CompilableTextPart::new(
                 String::from("this is a string with 35 characters"),
@@ -229,6 +248,29 @@ mod test {
         assert_eq!(parts_slice[0].content(), &String::from("characters"));
         assert_eq!(parts_slice[1].content(), &String::from("this is the fixed part"));
         assert_eq!(parts_slice[2].content(), &String::from("end"));
+    }
+
+    #[test]
+    fn parts_between_positions_in_cfcfc() {
+        let compilable = CompilableText::new(vec![
+            CompilableTextPart::new_compilable(String::from("c1"), ModifiersBucket::None),
+            CompilableTextPart::new_fixed(String::from("f1")),
+            CompilableTextPart::new_compilable(String::from("c2"), ModifiersBucket::None),
+            CompilableTextPart::new_fixed(String::from("f2")),
+            CompilableTextPart::new_compilable(String::from("c3"), ModifiersBucket::None),
+        ]);
+
+        let start: usize = 1;
+        let end: usize = 5;
+
+        let parts_slice = compilable.parts_slice(start, end).unwrap();
+
+        assert_eq!(parts_slice.len(), 5);
+        assert_eq!(parts_slice[0].content(), &String::from("1"));
+        assert_eq!(parts_slice[1].content(), &String::from("f1"));
+        assert_eq!(parts_slice[2].content(), &String::from("c2"));
+        assert_eq!(parts_slice[3].content(), &String::from("f2"));
+        assert_eq!(parts_slice[4].content(), &String::from("c"));
     }
 
 }
