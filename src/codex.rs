@@ -10,7 +10,7 @@ use std::sync::Arc;
 use getset::{Getters, Setters};
 use indexmap::IndexMap;
 use modifier::base_modifier::BaseModifier;
-use modifier::{Modifier, ModifiersBucket};
+use modifier::Modifier;
 use self::modifier::standard_paragraph_modifier::StandardParagraphModifier;
 use self::modifier::standard_text_modifier::StandardTextModifier;
 use crate::compilable_text::compilable_text_part::CompilableTextPart;
@@ -143,26 +143,40 @@ impl Codex {
                     ]
                 )) as Box<dyn CompilationRule>
             ),
-        //     (
-        //         StandardTextModifier::BookmarkWithId.identifier().clone(),
-        //         Box::new(ReplacementRule::new(StandardTextModifier::BookmarkWithId.modifier_pattern().clone(), vec![
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="bookmark" id="$2"><div class="bookmark-title">"#)).with_references_at(vec![2]),
-        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div><div class="bookmark-description">"#)),
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"$3"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div></div>"#)),
-        //         ]))
-        //     ),
-        //     (
-        //         StandardTextModifier::Bookmark.identifier().clone(),
-        //         Box::new(ReplacementRule::new(StandardTextModifier::Bookmark.modifier_pattern().clone(), vec![
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="bookmark"><div class="bookmark-title">"#)),
-        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),     // TODO: fixed part but compiled
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div><div class="bookmark-description">"#)),
-        //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$2"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),     // TODO: fixed part but compiled
-        //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div></div>"#)),
-        //         ]))
-        //     ),
+            (
+                StandardTextModifier::BookmarkWithId.identifier().clone(),
+                Box::new(ReplacementRule::new(
+                    StandardTextModifier::BookmarkWithId.modifier_pattern().clone(),
+                    vec![
+                        Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, _, _, _, cco| {
+    
+                            Ok(CompilableText::from(vec![
+                                CompilableTextPart::new_fixed(format!(
+                                    r#"<div class="bookmark" id="{}"><div class="bookmark-title">"#,
+                                    ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
+                                ))
+                            ]))
+                        }))),
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::BookmarkWithId.incompatible_modifiers())),
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div><div class="bookmark-description">"#))),
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(3, ESCAPE_HTML.clone(), StandardTextModifier::BookmarkWithId.incompatible_modifiers())),
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div></div>"#))),
+                    ]
+                ))
+            ),
+            (
+                StandardTextModifier::Bookmark.identifier().clone(),
+                Box::new(ReplacementRule::new(
+                    StandardTextModifier::Bookmark.modifier_pattern().clone(),
+                    vec![
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<div class="bookmark"><div class="bookmark-title">"#))),
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::Bookmark.incompatible_modifiers())),
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div><div class="bookmark-description">"#))),
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(3, ESCAPE_HTML.clone(), StandardTextModifier::Bookmark.incompatible_modifiers())),
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div></div>"#))),
+                    ]
+                ))
+            ),
             (
                 StandardTextModifier::GreekLetter.identifier().clone(),
                 Box::new(HtmlGreekLettersRule::new()),
@@ -178,46 +192,107 @@ impl Codex {
                     ]
                 ))
             ),
-            //     (
-            //         StandardTextModifier::EmbeddedStyleWithId.identifier().clone(),
-            //         Box::new(ReplacementRule::new(StandardTextModifier::EmbeddedStyleWithId.modifier_pattern().clone(), vec![
-            //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<span class="identifier embedded-style" id="$2" style="$3">"#)).with_references_at(vec![2]),
-            //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-            //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</span>"#)),
-            //         ]))
-            //     ),
-            //     (
-            //         StandardTextModifier::EmbeddedStyle.identifier().clone(),
-            //         Box::new(ReplacementRule::new(StandardTextModifier::EmbeddedStyle.modifier_pattern().clone(), vec![
-            //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<span class="embedded-style" style="$2">"#)),
-            //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-            //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</span>"#)),
-            //         ]))
-            //     ),
-            //     (
-            //         StandardTextModifier::AbridgedEmbeddedStyleWithId.identifier().clone(),
-            //         Box::new(ReplacementRule::new(StandardTextModifier::AbridgedEmbeddedStyleWithId.modifier_pattern().clone(), vec![
-            //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<span class="identifier abridged-embedded-style" id="$2" style="color: $3; background-color: $4; font-family: $5;">"#)).with_references_at(vec![2]),
-            //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-            //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</span>"#)),
-            //         ]))
-            //     ),
-            //     (
-            //         StandardTextModifier::AbridgedEmbeddedStyle.identifier().clone(),
-            //         Box::new(ReplacementRule::new(StandardTextModifier::AbridgedEmbeddedStyle.modifier_pattern().clone(), vec![
-            //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<span class="abridged-embedded-style" style="color: $2; background-color: $3; font-family: $4;">"#)),
-            //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-            //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</span>"#)),
-            //         ]))
-            //     ),
-            //     (
-            //         StandardTextModifier::Identifier.identifier().clone(),
-            //         Box::new(ReplacementRule::new(StandardTextModifier::Identifier.modifier_pattern().clone(), vec![
-            //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<span class="identifier" id="$2">"#)).with_references_at(vec![2]),
-            //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-            //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</span>"#)),
-            //         ]))
-            //     ),
+            (
+                StandardTextModifier::EmbeddedStyleWithId.identifier().clone(),
+                Box::new(ReplacementRule::new(
+                    StandardTextModifier::EmbeddedStyleWithId.modifier_pattern().clone(),
+                    vec![
+                        Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, _, _, _, cco| {
+    
+                            Ok(CompilableText::from(vec![
+                                CompilableTextPart::new_fixed(format!(
+                                    r#"<span class="identifier embedded-style" id="{}" style="{}">"#,
+                                    ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
+                                    captures.get(3).unwrap().as_str(),
+                                ))
+                            ]))
+                        }))),
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::EmbeddedStyleWithId.incompatible_modifiers())),
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</span>"#)))
+                    ]
+                ))
+            ),
+            (
+                StandardTextModifier::EmbeddedStyle.identifier().clone(),
+                Box::new(ReplacementRule::new(
+                    StandardTextModifier::EmbeddedStyle.modifier_pattern().clone(),
+                    vec![
+                        Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, _, _, _, _| {
+    
+                            Ok(CompilableText::from(vec![
+                                CompilableTextPart::new_fixed(format!(
+                                    r#"<span class="identifier embedded-style" style="{}">"#,
+                                    captures.get(2).unwrap().as_str(),
+                                ))
+                            ]))
+                        }))),
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::EmbeddedStyle.incompatible_modifiers())),
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</span>"#)))
+                    ]
+                ))
+            ),
+            (
+                StandardTextModifier::AbridgedEmbeddedStyleWithId.identifier().clone(),
+                Box::new(ReplacementRule::new(
+                    StandardTextModifier::AbridgedEmbeddedStyleWithId.modifier_pattern().clone(),
+                    vec![
+                        Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, _, _, _, cco| {
+    
+                            Ok(CompilableText::from(vec![
+                                CompilableTextPart::new_fixed(format!(
+                                    r#"<span class="identifier abridged-embedded-style" id="{}" style="color: {}; background-color: {}; font-family: {};">"#,
+                                    ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
+                                    captures.get(3).unwrap().as_str(),
+                                    captures.get(4).unwrap().as_str(),
+                                    captures.get(5).unwrap().as_str(),
+                                ))
+                            ]))
+                        }))),
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::AbridgedEmbeddedStyleWithId.incompatible_modifiers())),
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</span>"#)))
+                    ]
+                ))
+            ),
+            (
+                StandardTextModifier::AbridgedEmbeddedStyle.identifier().clone(),
+                Box::new(ReplacementRule::new(
+                    StandardTextModifier::AbridgedEmbeddedStyle.modifier_pattern().clone(),
+                    vec![
+                        Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, _, _, _, _| {
+    
+                            Ok(CompilableText::from(vec![
+                                CompilableTextPart::new_fixed(format!(
+                                    r#"<span class="abridged-embedded-style" style="color: {}; background-color: {}; font-family: {};">"#,
+                                    captures.get(2).unwrap().as_str(),
+                                    captures.get(3).unwrap().as_str(),
+                                    captures.get(4).unwrap().as_str(),
+                                ))
+                            ]))
+                        }))),
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::AbridgedEmbeddedStyle.incompatible_modifiers())),
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</span>"#)))
+                    ]
+                ))
+            ),
+            (
+                StandardTextModifier::Identifier.identifier().clone(),
+                Box::new(ReplacementRule::new(
+                    StandardTextModifier::Identifier.modifier_pattern().clone(),
+                    vec![
+                        Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, _, _, _, cco| {
+    
+                            Ok(CompilableText::from(vec![
+                                CompilableTextPart::new_fixed(format!(
+                                    r#"<span class="identifier" id="{}">"#,
+                                    ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
+                                ))
+                            ]))
+                        }))),
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::Identifier.incompatible_modifiers())),
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</span>"#)))
+                    ]
+                ))
+            ),
             (
                 StandardTextModifier::Highlight.identifier().clone(),
                 Box::new(ReplacementRule::new(
@@ -339,14 +414,25 @@ impl Codex {
                     ]
                 ))
             ),
-            //     (
-            //         StandardTextModifier::Link.identifier().clone(),
-            //         Box::new(ReplacementRule::new(StandardTextModifier::Link.modifier_pattern().clone(), vec![
-            //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<a href="$2" class="link">"#)).with_references_at(vec![2]),
-            //             ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-            //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"</a>"#)),
-            //         ]))
-            //     ),
+            (
+                StandardTextModifier::Link.identifier().clone(),
+                Box::new(ReplacementRule::new(
+                    StandardTextModifier::Link.modifier_pattern().clone(),
+                    vec![
+                        Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, _, _, _, cco| {
+    
+                            Ok(CompilableText::from(vec![
+                                CompilableTextPart::new_fixed(format!(
+                                    r#"<a href="{}" class="link">"#,
+                                    ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
+                                ))
+                            ]))
+                        }))),
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::Link.incompatible_modifiers())),
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</a>"#)))
+                    ]
+                ))
+            ),
             (
                 StandardTextModifier::Comment.identifier().clone(),
                 Box::new(ReplacementRule::new(
