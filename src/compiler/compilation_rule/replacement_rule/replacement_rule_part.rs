@@ -9,5 +9,7 @@ use crate::{compilable_text::CompilableText, compiler::{compilation_configuratio
 
 pub trait ReplacementRuleReplacerPart: std::fmt::Debug + Sync + Send {
 
+    /// `&CompilableText` is the original text on which this part will apply the `compile` function,
+    /// `captures` are the regex captures groups on compilable text `compilable_content`
     fn compile(&self, captures: &Captures, compilable: &CompilableText, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError>;
 }

@@ -27,6 +27,7 @@ use crate::loader::paragraph_loading_rule::table_paragraph_loading_rule::TablePa
 use crate::loader::paragraph_loading_rule::ParagraphLoadingRule;
 use crate::output_format::OutputFormat;
 use crate::resource::resource_reference::ResourceReference;
+use crate::utility::text_utility;
 use super::compiler::compilation_rule::constants::ESCAPE_HTML;
 use super::compiler::compilation_rule::html_cite_rule::HtmlCiteRule;
 use super::compiler::compilation_rule::html_greek_letter_rule::HtmlGreekLettersRule;
@@ -382,16 +383,14 @@ impl Codex {
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
 
-                                Ok(CompilableText::new_with_nuid(vec![
+                                Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<div class="identifier embedded-paragraph-style" id="{}" style="{}" data-nuid="$nuid">"#,
+                                        r#"<div class="identifier embedded-paragraph-style" id="{}" style="{}" data-nuid="{}">"#,
                                         ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
-                                        captures.get(3).unwrap().as_str()
-                                    )
-                                )
-                                ], compilable.nuid().clone()))
-                                
-                                //ReplacementRuleReplacerPart::new_fixed(String::from()).with_references_at(vec![2]),
+                                        captures.get(3).unwrap().as_str(),
+                                        compilable.nuid().unwrap_or(String::new())
+                                    ))
+                                ]))
                             }))),
                             Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), ModifiersBucket::None)),
                             Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div>"#)))
@@ -399,114 +398,309 @@ impl Codex {
                     )
                 ))
             ),
-            // (
-            //     StandardParagraphModifier::EmbeddedParagraphStyle.identifier().clone(),
-            //     Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::EmbeddedParagraphStyle.modifier_pattern().clone(), vec![
-            //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="embedded-paragraph-style" style="$2" data-nuid="$nuid">"#)),
-            //         ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-            //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div>"#)),
-            //     ]).with_newline_fix(r"<br>".to_string()))),
-            // ),
-            // (
-            //     StandardParagraphModifier::AbridgedEmbeddedParagraphStyleWithId.identifier().clone(),
-            //     Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::AbridgedEmbeddedParagraphStyleWithId.modifier_pattern().clone(),  vec![
-            //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="identifier abridged-embedded-paragraph-style" id="$2" data-nuid="$nuid" style="color: $3; background-color: $4; font-family: $5;">"#)).with_references_at(vec![2]),
-            //         ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-            //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div>"#)),
-            //     ]).with_newline_fix(r"<br>".to_string()))),
-            // ),
-            // (
-            //     StandardParagraphModifier::AbridgedTodo.identifier().clone(),
-            //     Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::AbridgedTodo.modifier_pattern().clone(), vec![
-            //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="todo abridged-todo" data-nuid="$nuid"><div class="todo-title"></div><div class="todo-description">"#)),
-            //         ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-            //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div></div>"#)),
-            //     ])))
-            // ),
-            // (
-            //     StandardParagraphModifier::MultilineTodo.identifier().clone(),
-            //     Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::MultilineTodo.modifier_pattern().clone(), vec![
-            //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="todo multiline-todo" data-nuid="$nuid"><div class="todo-title"></div><div class="todo-description">"#)),
-            //         ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-            //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div></div>"#)),
-            //     ])))
-            // ),
-            // (
-            //     StandardParagraphModifier::AbridgedEmbeddedParagraphStyle.identifier().clone(),
-            //     Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::AbridgedEmbeddedParagraphStyle.modifier_pattern().clone(), vec![
-            //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="abridged-embedded-paragraph-style" data-nuid="$nuid" style="color: $2; background-color: $3; font-family: $4;">"#)),
-            //         ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-            //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div>"#)),
-            //     ]).with_newline_fix(r"<br>".to_string()))),
-            // ),
-            // (
-            //     StandardParagraphModifier::ParagraphIdentifier.identifier().clone(),
-            //     Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::ParagraphIdentifier.modifier_pattern().clone(), vec![
-            //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"<span class="identifier" id="$2" data-nuid="$nuid">"#)).with_references_at(vec![2]),
-            //         ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-            //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"</span>"#)),
-            //     ]).with_newline_fix(r"<br>".to_string()))),
-            // ),
-            // (
-            //     StandardParagraphModifier::ExtendedBlockQuote.identifier().clone(),
-            //     Box::new(BlockQuoteParagraphLoadingRule::new()),
-            // ),
-            // (
-            //     StandardParagraphModifier::MathBlock.identifier().clone(),
-            //     Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::MathBlock.modifier_pattern().clone(), vec![
-            //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"<p class="math-block" data-nuid="$nuid">$$$$${1}$$$$</p>"#))
-            //     ])))
-            // ),
-            // (
-            //     StandardParagraphModifier::Image.identifier().clone(),
-            //     Box::new(ImageParagraphLoadingRule::SingleImage)
-            // ),
-            // (
-            //     StandardParagraphModifier::AbridgedImage.identifier().clone(),
-            //     Box::new(ImageParagraphLoadingRule::AbridgedImage)
-            // ),
-            // (
-            //     StandardParagraphModifier::MultiImage.identifier().clone(),
-            //     Box::new(ImageParagraphLoadingRule::MultiImage)
-            // ),
-            // (
-            //     StandardParagraphModifier::CodeBlock.identifier().clone(),
-            //     Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::CodeBlock.modifier_pattern().clone(), vec![
-            //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"<pre data-nuid="$nuid"><code class="language-${1} code-block">"#)),
-            //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"$2"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-            //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"</code></pre>"#)),
-            //     ])))
-            // ),
-            // (
-            //     StandardParagraphModifier::List.identifier().clone(),
-            //     Box::new(ListParagraphLoadingRule::new()),
-            // ),
-            // (
-            //     StandardParagraphModifier::FocusBlock.identifier().clone(),
-            //     Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::FocusBlock.modifier_pattern().clone(), vec![
-            //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="focus-block focus-block-$1" data-nuid="$nuid"><div class="focus-block-title focus-block-$1-title"></div><div class="focus-block-description focus-block-$1-description"">"#)),
-            //         ReplacementRuleReplacerPart::new_mutable(String::from(r#"$2"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-            //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div></div>"#)),
-            //     ]).with_newline_fix(r"<br>".to_string())))
-            // ),
-            // (
-            //     StandardParagraphModifier::LineBreakDash.identifier().clone(),
-            //     Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::LineBreakDash.modifier_pattern().clone(), vec![
-            //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"<hr class="line-break line-break-dash" data-nuid="$nuid">"#)),
-            //     ])))
-            // ),
-            // (
-            //     StandardParagraphModifier::LineBreakStar.identifier().clone(),
-            //     Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::LineBreakStar.modifier_pattern().clone(), vec![
-            //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"<hr class="line-break line-break-star" data-nuid="$nuid">"#)),
-            //     ])))
-            // ),
-            // (
-            //     StandardParagraphModifier::LineBreakPlus.identifier().clone(),
-            //     Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::LineBreakPlus.modifier_pattern().clone(), vec![
-            //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"<hr class="line-break line-break-plus" data-nuid="$nuid">"#)),
-            //     ])))
-            // ),
+            (
+                StandardParagraphModifier::EmbeddedParagraphStyle.identifier().clone(),
+                Box::new(ReplacementRuleParagraphLoadingRule::new(
+                    ReplacementRule::new(
+                        StandardParagraphModifier::EmbeddedParagraphStyle.modifier_pattern().clone(),
+                        vec![
+                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
+
+                                Ok(CompilableText::from(vec![
+                                    CompilableTextPart::new_fixed(format!(
+                                        r#"<div class="embedded-paragraph-style" style="{}" data-nuid="{}">"#,
+                                        captures.get(2).unwrap().as_str(),
+                                        compilable.nuid().unwrap_or(String::new())
+                                    ))
+                                ]))
+                            }))),
+                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), ModifiersBucket::None)),
+                            Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div>"#)))
+                        ]
+                    )
+                ))
+            ),
+            (
+                StandardParagraphModifier::AbridgedEmbeddedParagraphStyleWithId.identifier().clone(),
+                Box::new(ReplacementRuleParagraphLoadingRule::new(
+                    ReplacementRule::new(
+                        StandardParagraphModifier::AbridgedEmbeddedParagraphStyleWithId.modifier_pattern().clone(),
+                        vec![
+                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
+
+                                Ok(CompilableText::from(vec![
+                                    CompilableTextPart::new_fixed(format!(
+                                        r#"<div class="identifier abridged-embedded-paragraph-style" id="{}" data-nuid="{}" style="color: {}; background-color: {}; font-family: {};">"#,
+                                        ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
+                                        compilable.nuid().unwrap_or(String::new()),
+                                        captures.get(3).unwrap().as_str(),
+                                        captures.get(4).unwrap().as_str(),
+                                        captures.get(5).unwrap().as_str(),
+                                    ))
+                                ]))
+                            }))),
+                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), ModifiersBucket::None)),
+                            Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div>"#)))
+                        ]
+                    )
+                ))
+            ),
+            (
+                StandardParagraphModifier::AbridgedTodo.identifier().clone(),
+                Box::new(ReplacementRuleParagraphLoadingRule::new(
+                    ReplacementRule::new(
+                        StandardParagraphModifier::AbridgedTodo.modifier_pattern().clone(),
+                        vec![
+                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
+
+                                Ok(CompilableText::from(vec![
+                                    CompilableTextPart::new_fixed(format!(
+                                        r#"<div class="todo abridged-todo" data-nuid="{}">"#,
+                                        compilable.nuid().unwrap_or(String::new())
+                                    ))
+                                ]))
+                            }))),
+                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), ModifiersBucket::None)),
+                            Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div>"#)))
+                        ]
+                    )
+                ))
+            ),
+            (
+                StandardParagraphModifier::MultilineTodo.identifier().clone(),
+                Box::new(ReplacementRuleParagraphLoadingRule::new(
+                    ReplacementRule::new(
+                        StandardParagraphModifier::MultilineTodo.modifier_pattern().clone(),
+                        vec![
+                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
+
+                                Ok(CompilableText::from(vec![
+                                    CompilableTextPart::new_fixed(format!(
+                                        r#"<div class="todo multiline-todo" data-nuid="{}"><div class="todo-title"></div><div class="todo-description">"#,
+                                        compilable.nuid().unwrap_or(String::new())
+                                    ))
+                                ]))
+                            }))),
+                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), ModifiersBucket::None)),
+                            Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div>"#)))
+                        ]
+                    )
+                ))
+            ),
+            (
+                StandardParagraphModifier::AbridgedEmbeddedParagraphStyle.identifier().clone(),
+                Box::new(ReplacementRuleParagraphLoadingRule::new(
+                    ReplacementRule::new(
+                        StandardParagraphModifier::AbridgedEmbeddedParagraphStyle.modifier_pattern().clone(),
+                        vec![
+                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
+
+                                Ok(CompilableText::from(vec![
+                                    CompilableTextPart::new_fixed(format!(
+                                        r#"<div class="abridged-embedded-paragraph-style" data-nuid="{}" style="color: {}; background-color: {}; font-family: {};">"#,
+                                        compilable.nuid().unwrap_or(String::new()),
+                                        captures.get(2).unwrap().as_str(),
+                                        captures.get(3).unwrap().as_str(),
+                                        captures.get(4).unwrap().as_str(),
+                                    ))
+                                ]))
+                            }))),
+                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), ModifiersBucket::None)),
+                            Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div>"#)))
+                        ]
+                    )
+                ))
+            ),
+            (
+                StandardParagraphModifier::ParagraphIdentifier.identifier().clone(),
+                Box::new(ReplacementRuleParagraphLoadingRule::new(
+                    ReplacementRule::new(
+                        StandardParagraphModifier::ParagraphIdentifier.modifier_pattern().clone(),
+                        vec![
+                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
+
+                                Ok(CompilableText::from(vec![
+                                    CompilableTextPart::new_fixed(format!(
+                                        r#"<span class="identifier" id="{}" data-nuid="{}">"#,
+                                        ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
+                                        compilable.nuid().unwrap_or(String::new())
+                                    ))
+                                ]))
+                            }))),
+                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), ModifiersBucket::None)),
+                            Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</span>"#)))
+                        ]
+                    )
+                ))
+            ),
+            (
+                StandardParagraphModifier::ExtendedBlockQuote.identifier().clone(),
+                Box::new(BlockQuoteParagraphLoadingRule::new()),
+            ),
+            (
+                StandardParagraphModifier::MathBlock.identifier().clone(),
+                Box::new(ReplacementRuleParagraphLoadingRule::new(
+                    ReplacementRule::new(
+                        StandardParagraphModifier::MathBlock.modifier_pattern().clone(),
+                        vec![
+                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
+
+                                Ok(CompilableText::from(vec![
+                                    CompilableTextPart::new_fixed(format!(
+                                        r#"<p class="math-block" data-nuid="{}">{}</p>"#,
+                                        compilable.nuid().unwrap_or(String::new()),
+                                        captures.get(1).unwrap().as_str(),
+                                    )
+                                )
+                                ]))
+                            }))),
+                        ]
+                    )
+                ))
+            ),
+            (
+                StandardParagraphModifier::Image.identifier().clone(),
+                Box::new(ImageParagraphLoadingRule::SingleImage)
+            ),
+            (
+                StandardParagraphModifier::AbridgedImage.identifier().clone(),
+                Box::new(ImageParagraphLoadingRule::AbridgedImage)
+            ),
+            (
+                StandardParagraphModifier::MultiImage.identifier().clone(),
+                Box::new(ImageParagraphLoadingRule::MultiImage)
+            ),
+            (
+                StandardParagraphModifier::CodeBlock.identifier().clone(),
+                Box::new(ReplacementRuleParagraphLoadingRule::new(
+                    ReplacementRule::new(
+                        StandardParagraphModifier::CodeBlock.modifier_pattern().clone(),
+                        vec![
+                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
+
+                                Ok(CompilableText::from(vec![
+                                    CompilableTextPart::new_fixed(format!(
+                                        r#"<pre data-nuid="{}"><code class="language-{} code-block">{}</code></pre>"#,
+                                        compilable.nuid().unwrap_or(String::new()),
+                                        captures.get(1).unwrap().as_str(),
+                                        text_utility::replace(captures.get(2).unwrap().as_str(), &ESCAPE_HTML),
+                                    )
+                                )
+                                ]))
+                            }))),
+                        ]
+                    )
+                ))
+            ),
+            (
+                StandardParagraphModifier::List.identifier().clone(),
+                Box::new(ListParagraphLoadingRule::new()),
+            ),
+            (
+                StandardParagraphModifier::FocusBlock.identifier().clone(),
+                Box::new(ReplacementRuleParagraphLoadingRule::new(
+                    ReplacementRule::new(
+                        StandardParagraphModifier::FocusBlock.modifier_pattern().clone(),
+                        vec![
+                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
+
+                                Ok(CompilableText::from(vec![
+                                    CompilableTextPart::new_fixed(format!(
+                                        r#"<div class="focus-block focus-block-{}" data-nuid="{}"><div class="focus-block-title focus-block-{}-title"></div><div class="focus-block-description focus-block-{}-description">"#,
+                                        captures.get(1).unwrap().as_str(),
+                                        compilable.nuid().unwrap_or(String::new()),
+                                        captures.get(1).unwrap().as_str(),
+                                        captures.get(1).unwrap().as_str(),
+                                    ))
+                                ]))
+                            }))),
+                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), ModifiersBucket::None)),
+                            Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div>"#)))
+                        ]
+                    )
+                ))
+            ),
+            (
+                StandardParagraphModifier::LineBreakDash.identifier().clone(),
+                Box::new(ReplacementRuleParagraphLoadingRule::new(
+                    ReplacementRule::new(
+                        StandardParagraphModifier::LineBreakDash.modifier_pattern().clone(),
+                        vec![
+                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
+
+                                Ok(CompilableText::from(vec![
+                                    CompilableTextPart::new_fixed(format!(
+                                        r#"<hr class="line-break line-break-dash" data-nuid="{}">"#,
+                                        compilable.nuid().unwrap_or(String::new()),
+                                    )
+                                )
+                                ]))
+                            }))),
+                        ]
+                    )
+                ))
+            ),
+            (
+                StandardParagraphModifier::LineBreakStar.identifier().clone(),
+                Box::new(ReplacementRuleParagraphLoadingRule::new(
+                    ReplacementRule::new(
+                        StandardParagraphModifier::LineBreakDash.modifier_pattern().clone(),
+                        vec![
+                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
+
+                                Ok(CompilableText::from(vec![
+                                    CompilableTextPart::new_fixed(format!(
+                                        r#"<hr class="line-break line-break-star" data-nuid="{}">"#,
+                                        compilable.nuid().unwrap_or(String::new()),
+                                    )
+                                )
+                                ]))
+                            }))),
+                        ]
+                    )
+                ))
+            ),
+            (
+                StandardParagraphModifier::LineBreakPlus.identifier().clone(),
+                Box::new(ReplacementRuleParagraphLoadingRule::new(
+                    ReplacementRule::new(
+                        StandardParagraphModifier::LineBreakDash.modifier_pattern().clone(),
+                        vec![
+                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
+
+                                Ok(CompilableText::from(vec![
+                                    CompilableTextPart::new_fixed(format!(
+                                        r#"<hr class="line-break line-break-plus" data-nuid="{}">"#,
+                                        compilable.nuid().unwrap_or(String::new()),
+                                    )
+                                )
+                                ]))
+                            }))),
+                        ]
+                    )
+                ))
+            ),
+            (
+                StandardParagraphModifier::CommonParagraph.identifier().clone(),
+                Box::new(ReplacementRuleParagraphLoadingRule::new(
+                    ReplacementRule::new(
+                        StandardParagraphModifier::CommonParagraph.modifier_pattern().clone(),
+                        vec![
+                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
+
+                                Ok(CompilableText::from(vec![
+                                    CompilableTextPart::new_fixed(format!(
+                                        r#"<p class="paragraph" data-nuid="{}">"#,
+                                        compilable.nuid().unwrap_or(String::new()),
+                                    ))
+                                ]))
+                            }))),
+                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), ModifiersBucket::None)),
+                            Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</p>"#)))
+                        ]
+                    )
+                ))
+            ),
             // (
             //     StandardParagraphModifier::CommonParagraph.identifier().clone(),
             //     Box::new(ReplacementRuleParagraphLoadingRule::new(ReplacementRule::new(StandardParagraphModifier::CommonParagraph.modifier_pattern_with_paragraph_separator().clone(), vec![
