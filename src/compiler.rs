@@ -14,20 +14,9 @@ use compilation_configuration::{compilation_configuration_overlay::CompilationCo
 use compilation_error::CompilationError;
 use compilation_rule::CompilationRule;
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
-use regex::Match;
 use crate::{bibliography::{Bibliography, BIBLIOGRAPHY_FICTITIOUS_DOCUMENT}, codex::{modifier::ModifiersBucket, CodexIdentifier}, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, dossier::{document::{chapter::heading::Heading, Chapter}, Document, Dossier}, output_format::OutputFormat, resource::{bucket::Bucket, resource_reference::ResourceReference}, table_of_contents::{TableOfContents, TOC_INDENTATION}};
 use super::codex::Codex;
 
-
-enum LoopIteration {
-    Match {
-        match_start: usize,
-        match_end: usize,
-        match_found: bool,
-        matched_parts: Vec<CompilableTextPart>
-    },
-    EndParts,
-}
 
 
 #[derive(Debug)]
@@ -755,7 +744,7 @@ impl Compiler {
 mod test {
     
     use std::{collections::HashSet, sync::Arc};
-    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, standard_text_modifier::StandardTextModifier, Modifier, ModifiersBucket}, Codex, CodexCompilationRulesMap, CodexLoadingRulesMap, CodexModifiersMap}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::constants::ESCAPE_HTML, Compiler}, dossier::document::chapter::paragraph::{replacement_rule_paragraph::ReplacementRuleParagraph, Paragraph}, output_format::OutputFormat};
+    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_text_modifier::StandardTextModifier, Modifier, ModifiersBucket}, Codex, CodexCompilationRulesMap, CodexLoadingRulesMap, CodexModifiersMap}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, Compiler}, output_format::OutputFormat};
 
     use super::compilation_rule::{replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule};
 
@@ -863,30 +852,4 @@ mod test {
         ));
     }
 
-    #[test]
-    fn compile_paragraph() {
-
-        todo!()
-
-        // let codex = Codex::of_html();
-
-        // let mut paragraph = Box::new(ReplacementRuleParagraph::new(
-        //     "\n\ntest\n\n".to_string(),
-        //     Box::new(ReplacementRule::new(StandardParagraphModifier::CommonParagraph.modifier_pattern_with_paragraph_separator().clone(), vec![
-        //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"<p class="paragraph" data-nuid="$nuid">"#)),
-        //         ReplacementRuleReplacerPart::new_mutable(String::from(r#"$1"#)).with_post_replacing(Some(ESCAPE_HTML.clone())),
-        //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"</p>"#)),
-        //     ]))
-        // )) as Box<dyn Paragraph>;
-
-        // paragraph.set_nuid(Some("test-nuid".to_string()));
-
-        // paragraph.compile(&OutputFormat::Html, &codex, &CompilationConfiguration::default(), CompilationConfigurationOverLay::default()).unwrap();
-        
-        // assert_eq!(paragraph.compilation_result().clone().unwrap().content(), concat!(
-        //     r#"<p class="paragraph" data-nuid="test-nuid">"#,
-        //     "test",
-        //     r#"</p>"#
-        // ))
-    }
 }

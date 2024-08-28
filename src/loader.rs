@@ -348,6 +348,7 @@ impl Loader {
         tags
     }
 
+    #[allow(dead_code)]
     /// Load the chapter style from string
     fn load_chapter_style_from_str(content: &str, _codex: &Codex, _configuration: &LoaderConfiguration) -> Option<String> {
         
