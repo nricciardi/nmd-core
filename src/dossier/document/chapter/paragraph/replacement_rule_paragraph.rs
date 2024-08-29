@@ -76,7 +76,7 @@ impl Paragraph for ReplacementRuleParagraph {
 mod test {
     use std::sync::Arc;
 
-    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, standard_text_modifier::StandardTextModifier, Modifier, ModifiersBucket}, Codex, CodexCompilationRulesMap, CodexLoadingRulesMap, CodexModifiersMap}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart, pass_through_replacement_rule_part::PassThroughReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile}, output_format::OutputFormat};
+    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, standard_text_modifier::StandardTextModifier, Modifier, ModifiersBucket}, Codex, CodexCompilationRulesMap, CodexLoadingRulesMap, CodexModifiersMap}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart, single_capture_group_replacement_rule_part::SingleCaptureGroupReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile}, output_format::OutputFormat};
 
     use super::ReplacementRuleParagraph;
 
@@ -84,7 +84,7 @@ mod test {
     #[test]
     fn paragraph_with_nuid() {
 
-        let nmd_text = "This is a **common paragraph**";
+        let nmd_text = "\n\nThis is a **common paragraph**\n\n";
 
         let compilable_text = CompilableText::new_with_nuid(
             vec![
@@ -97,7 +97,7 @@ mod test {
         );
 
         let replacement_rule = ReplacementRule::new(
-            StandardParagraphModifier::CommonParagraph.modifier_pattern(),
+            StandardParagraphModifier::CommonParagraph.modifier_pattern_with_paragraph_separator(),
             vec![
                 Arc::new(ClosureReplacementRuleReplacerPart::new(
                     Arc::new(
@@ -109,7 +109,8 @@ mod test {
                         }
                     )
                 )),
-                Arc::new(PassThroughReplacementRuleReplacerPart::new()),
+                Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::from(1)
+                            .with_incompatible_modifiers(StandardParagraphModifier::CommonParagraph.incompatible_modifiers())),
                 Arc::new(FixedReplacementRuleReplacerPart::new(String::from("</p>")))
             ]
         );
@@ -138,14 +139,7 @@ mod test {
                             StandardTextModifier::BoldStarVersion.modifier_pattern(),
                             vec![
                                 Arc::new(FixedReplacementRuleReplacerPart::new(String::from("<strong>"))),
-                                Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
-                
-                                    let capture1 = captures.get(1).unwrap();
-                                    
-                                    let slice = compilable.parts_slice(capture1.start(), capture1.end())?;
-                    
-                                    Ok(CompilableText::new(slice))
-                                }))),
+                                Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, Vec::new(), StandardTextModifier::BoldStarVersion.incompatible_modifiers())),
                                 Arc::new(FixedReplacementRuleReplacerPart::new(String::from("</strong>"))),
                             ]
                         )

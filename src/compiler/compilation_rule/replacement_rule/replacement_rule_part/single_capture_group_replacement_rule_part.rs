@@ -14,7 +14,6 @@ pub struct SingleCaptureGroupReplacementRuleReplacerPart {
     post_replacing: Vec<(Regex, String)>,
 
     incompatible_modifiers: ModifiersBucket,
-
 }
 
 impl SingleCaptureGroupReplacementRuleReplacerPart {
@@ -27,6 +26,11 @@ impl SingleCaptureGroupReplacementRuleReplacerPart {
         }
     }
 
+    pub fn with_incompatible_modifiers(mut self, incompatible_modifiers: ModifiersBucket,) -> Self {
+        self.incompatible_modifiers = incompatible_modifiers;
+
+        self
+    }
 }
 
 impl ReplacementRuleReplacerPart for SingleCaptureGroupReplacementRuleReplacerPart {
@@ -53,5 +57,11 @@ impl ReplacementRuleReplacerPart for SingleCaptureGroupReplacementRuleReplacerPa
         });
 
         Ok(CompilableText::new(slice))
+    }
+}
+
+impl From<usize> for SingleCaptureGroupReplacementRuleReplacerPart {
+    fn from(value: usize) -> Self {
+        Self::new(value, Vec::new(), ModifiersBucket::None)
     }
 }

@@ -5,6 +5,7 @@ use super::ReplacementRuleReplacerPart;
 
 
 
+/// Its `compile` method returns the whole input `CompilableText` as result
 #[derive(Debug, Getters, Setters)]
 pub struct PassThroughReplacementRuleReplacerPart {
 }
