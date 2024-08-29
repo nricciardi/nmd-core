@@ -27,6 +27,7 @@ use crate::loader::paragraph_loading_rule::table_paragraph_loading_rule::TablePa
 use crate::loader::paragraph_loading_rule::ParagraphLoadingRule;
 use crate::output_format::OutputFormat;
 use crate::resource::resource_reference::ResourceReference;
+use crate::utility::nmd_unique_identifier::NmdUniqueIdentifier;
 use crate::utility::text_utility;
 use super::compiler::compilation_rule::constants::ESCAPE_HTML;
 use super::compiler::compilation_rule::html_cite_rule::HtmlCiteRule;
@@ -115,6 +116,13 @@ impl Codex {
         });
     }
 
+    fn html_nuid_tag_or_nothing(nuid: Option<&NmdUniqueIdentifier>) -> String {
+        if let Some(nuid) = nuid {
+            return format!(r#"data-nuid="{}""#, nuid);
+          }
+
+          String::new()
+    }
 
     /// Standard HTML `Codex`
     pub fn of_html() -> Self {
@@ -257,13 +265,28 @@ impl Codex {
                     vec![
                         Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, _, _, _, cco| {
     
+                            let mut color_style = String::new();
+                            if let Some(color) = captures.get(3) {
+                                color_style = format!("color: {};", color.as_str());
+                            }
+
+                            let mut bg_style = String::new();
+                            if let Some(bg) = captures.get(4) {
+                                bg_style = format!("background-color: {};", bg.as_str());
+                            }
+
+                            let mut font_style = String::new();
+                            if let Some(font) = captures.get(5) {
+                                font_style = format!("font-family: {};", font.as_str());
+                            }
+
                             Ok(CompilableText::from(vec![
                                 CompilableTextPart::new_fixed(format!(
-                                    r#"<span class="identifier abridged-embedded-style" id="{}" style="color: {}; background-color: {}; font-family: {};">"#,
+                                    r#"<span class="identifier abridged-embedded-style" id="{}" style="{} {} {}">"#,
                                     ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
-                                    captures.get(3).unwrap().as_str(),
-                                    captures.get(4).unwrap().as_str(),
-                                    captures.get(5).unwrap().as_str(),
+                                    color_style,
+                                    bg_style,
+                                    font_style,
                                 ))
                             ]))
                         }))),
@@ -278,13 +301,28 @@ impl Codex {
                     StandardTextModifier::AbridgedEmbeddedStyle.modifier_pattern().clone(),
                     vec![
                         Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, _, _, _, _| {
+
+                            let mut color_style = String::new();
+                            if let Some(color) = captures.get(2) {
+                                color_style = format!("color: {};", color.as_str());
+                            }
+
+                            let mut bg_style = String::new();
+                            if let Some(bg) = captures.get(3) {
+                                bg_style = format!("background-color: {};", bg.as_str());
+                            }
+
+                            let mut font_style = String::new();
+                            if let Some(font) = captures.get(4) {
+                                font_style = format!("font-family: {};", font.as_str());
+                            }
     
                             Ok(CompilableText::from(vec![
                                 CompilableTextPart::new_fixed(format!(
-                                    r#"<span class="abridged-embedded-style" style="color: {}; background-color: {}; font-family: {};">"#,
-                                    captures.get(2).unwrap().as_str(),
-                                    captures.get(3).unwrap().as_str(),
-                                    captures.get(4).unwrap().as_str(),
+                                    r#"<span class="abridged-embedded-style" style="{} {} {}">"#,
+                                    color_style,
+                                    bg_style,
+                                    font_style,
                                 ))
                             ]))
                         }))),
@@ -546,7 +584,7 @@ impl Codex {
                                         r#"<div class="identifier embedded-paragraph-style" id="{}" style="{}" data-nuid="{}">"#,
                                         ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
                                         captures.get(3).unwrap().as_str(),
-                                        compilable.nuid().as_ref().unwrap_or(&String::new())
+                                        Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     ))
                                 ]))
                             }))),
@@ -568,7 +606,7 @@ impl Codex {
                                     CompilableTextPart::new_fixed(format!(
                                         r#"<div class="embedded-paragraph-style" style="{}" data-nuid="{}">"#,
                                         captures.get(2).unwrap().as_str(),
-                                        compilable.nuid().as_ref().unwrap_or(&String::new())
+                                        Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     ))
                                 ]))
                             }))),
@@ -586,14 +624,29 @@ impl Codex {
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
 
+                                let mut color_style = String::new();
+                                if let Some(color) = captures.get(3) {
+                                    color_style = format!("color: {};", color.as_str());
+                                }
+
+                                let mut bg_style = String::new();
+                                if let Some(bg) = captures.get(4) {
+                                    bg_style = format!("background-color: {};", bg.as_str());
+                                }
+
+                                let mut font_style = String::new();
+                                if let Some(font) = captures.get(5) {
+                                    font_style = format!("font-family: {};", font.as_str());
+                                }
+
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<div class="identifier abridged-embedded-paragraph-style" id="{}" data-nuid="{}" style="color: {}; background-color: {}; font-family: {};">"#,
+                                        r#"<div class="identifier abridged-embedded-paragraph-style" id="{}" data-nuid="{}" style="{} {} {}">"#,
                                         ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
-                                        compilable.nuid().as_ref().unwrap_or(&String::new()),
-                                        captures.get(3).unwrap().as_str(),
-                                        captures.get(4).unwrap().as_str(),
-                                        captures.get(5).unwrap().as_str(),
+                                        Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
+                                        color_style,
+                                        bg_style,
+                                        font_style,
                                     ))
                                 ]))
                             }))),
@@ -614,7 +667,7 @@ impl Codex {
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
                                         r#"<div class="todo abridged-todo" data-nuid="{}">"#,
-                                        compilable.nuid().as_ref().unwrap_or(&String::new())
+                                        Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     ))
                                 ]))
                             }))),
@@ -635,7 +688,7 @@ impl Codex {
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
                                         r#"<div class="todo multiline-todo" data-nuid="{}"><div class="todo-title"></div><div class="todo-description">"#,
-                                        compilable.nuid().as_ref().unwrap_or(&String::new())
+                                        Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     ))
                                 ]))
                             }))),
@@ -653,13 +706,28 @@ impl Codex {
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
 
+                                let mut color_style = String::new();
+                                if let Some(color) = captures.get(2) {
+                                    color_style = format!("color: {};", color.as_str());
+                                }
+
+                                let mut bg_style = String::new();
+                                if let Some(bg) = captures.get(3) {
+                                    bg_style = format!("background-color: {};", bg.as_str());
+                                }
+
+                                let mut font_style = String::new();
+                                if let Some(font) = captures.get(4) {
+                                    font_style = format!("font-family: {};", font.as_str());
+                                }
+
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<div class="abridged-embedded-paragraph-style" data-nuid="{}" style="color: {}; background-color: {}; font-family: {};">"#,
-                                        compilable.nuid().as_ref().unwrap_or(&String::new()),
-                                        captures.get(2).unwrap().as_str(),
-                                        captures.get(3).unwrap().as_str(),
-                                        captures.get(4).unwrap().as_str(),
+                                        r#"<div class="abridged-embedded-paragraph-style" data-nuid="{}" style="{} {} {}">"#,
+                                        Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
+                                        color_style,
+                                        bg_style,
+                                        font_style,
                                     ))
                                 ]))
                             }))),
@@ -681,7 +749,7 @@ impl Codex {
                                     CompilableTextPart::new_fixed(format!(
                                         r#"<span class="identifier" id="{}" data-nuid="{}">"#,
                                         ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
-                                        compilable.nuid().as_ref().unwrap_or(&String::new())
+                                        Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     ))
                                 ]))
                             }))),
@@ -706,7 +774,7 @@ impl Codex {
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
                                         r#"<p class="math-block" data-nuid="{}">{}</p>"#,
-                                        compilable.nuid().as_ref().unwrap_or(&String::new()),
+                                        Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                         captures.get(1).unwrap().as_str(),
                                     )
                                 )
@@ -736,11 +804,16 @@ impl Codex {
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
 
+                                let mut lang_class = String::from("language-markup");
+                                if let Some(lang) = captures.get(1) {
+                                    lang_class = format!("language-{}", lang.as_str());
+                                }
+
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<pre data-nuid="{}"><code class="language-{} code-block">{}</code></pre>"#,
-                                        compilable.nuid().as_ref().unwrap_or(&String::new()),
-                                        captures.get(1).unwrap().as_str(),
+                                        r#"<pre data-nuid="{}"><code class="{} code-block">{}</code></pre>"#,
+                                        Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
+                                        lang_class,
                                         text_utility::replace(captures.get(2).unwrap().as_str(), &ESCAPE_HTML),
                                     )
                                 )
@@ -762,13 +835,18 @@ impl Codex {
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
 
+                                let mut focus_block_type = String::from("quote");
+                                if let Some(t) = captures.get(1) {
+                                    focus_block_type = t.as_str().to_string();
+                                }
+
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
                                         r#"<div class="focus-block focus-block-{}" data-nuid="{}"><div class="focus-block-title focus-block-{}-title"></div><div class="focus-block-description focus-block-{}-description">"#,
-                                        captures.get(1).unwrap().as_str(),
-                                        compilable.nuid().as_ref().unwrap_or(&String::new()),
-                                        captures.get(1).unwrap().as_str(),
-                                        captures.get(1).unwrap().as_str(),
+                                        focus_block_type,
+                                        Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
+                                        focus_block_type,
+                                        focus_block_type,
                                     ))
                                 ]))
                             }))),
@@ -789,7 +867,7 @@ impl Codex {
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
                                         r#"<hr class="line-break line-break-dash" data-nuid="{}">"#,
-                                        compilable.nuid().as_ref().unwrap_or(&String::new()),
+                                        Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     )
                                 )
                                 ]))
@@ -809,7 +887,7 @@ impl Codex {
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
                                         r#"<hr class="line-break line-break-star" data-nuid="{}">"#,
-                                        compilable.nuid().as_ref().unwrap_or(&String::new()),
+                                        Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     )
                                 )
                                 ]))
@@ -829,7 +907,7 @@ impl Codex {
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
                                         r#"<hr class="line-break line-break-plus" data-nuid="{}">"#,
-                                        compilable.nuid().as_ref().unwrap_or(&String::new()),
+                                        Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     )
                                 )
                                 ]))
@@ -849,7 +927,7 @@ impl Codex {
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
                                         r#"<p class="paragraph" data-nuid="{}">"#,
-                                        compilable.nuid().as_ref().unwrap_or(&String::new()),
+                                        Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     ))
                                 ]))
                             }))),

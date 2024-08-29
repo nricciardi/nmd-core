@@ -798,7 +798,7 @@ comment
 
 #### Focus block
 
-**Style class**: `focus-block`, `focus-block-type`, `focus-block-title`, `focus-block-type-title`, `focus-block-description`, `focus-block-type-description` (replace `type`)
+**Style class**: `focus-block`, `focus-block-<type>`, `focus-block-title`, `focus-block-<type>-title`, `focus-block-description`, `focus-block-<type>-description` (replace `type`)
 
 Focus blocks allow to insert text in particular paragraph in which the text is highlighted.
 

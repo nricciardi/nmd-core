@@ -90,11 +90,12 @@ impl TableParagraph {
     }
 
     fn html_standard_compile(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
+        
         let mut html_table_attrs: Vec<(String, String)> = vec![(String::from("class"), String::from("table"))];
 
         if let Some(ref id) = self.raw_id {
 
-            html_table_attrs.push((String::from("id"), ResourceReference::of_internal(&id, compilation_configuration_overlay.document_name().as_ref())?.build_without_internal_sharp()));
+            html_table_attrs.push((String::from("id"), ResourceReference::of_internal_from_without_sharp(&id, compilation_configuration_overlay.document_name().as_ref())?.build_without_internal_sharp()));
         }
 
         if let Some(ref style) = self.raw_style {

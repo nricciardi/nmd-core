@@ -292,5 +292,29 @@ mod test {
         assert_eq!(table_paragraph.raw_content(), nmd_text);
     }
 
+    #[test]
+    fn load_table_with_metadata() {
+        let nmd_text = concat!(
+            "\n\n",
+            "|                | $x_1$ | $...$ | $x_n$ | $s_1$ | $...$ | $s_m$ | $a_1$ | $...$ |\n",
+            "|----------------|:-----:|:-----:|:-----:|:-----:|:-----:|-------|-------|:-----:|\n",
+            "| This is a line |  $0$  |  $0$  |  $0$  |  $0$  |  $0$  |  $0$  |  $1$  |  $0$  |\n",
+            "|---|\n",
+            "||footer|\n",
+            "[Caption]#table-id{color:red;}",
+            "\n\n"
+        );
+
+        let codex = codex();
+        
+        let paragraphs = Loader::load_paragraphs_from_str(&nmd_text, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
+
+        assert_eq!(paragraphs.len(), 1);
+
+        let table_paragraph = &paragraphs[0];
+
+        assert_eq!(table_paragraph.raw_content(), nmd_text);
+    }
+
 }
 
