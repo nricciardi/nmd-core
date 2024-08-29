@@ -147,10 +147,53 @@ mod test {
 
         let compilation_configuration = CompilationConfiguration::default();
 
+        // ==== case 1 ====
+        // let compilable = CompilableText::new(
+        //     vec![
+        //         CompilableTextPart::new(
+        //             String::from("*start "),
+        //             CompilableTextPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
+        //         ),
+        //         CompilableTextPart::new_fixed(String::from("<strong>")),
+        //         CompilableTextPart::new_compilable(String::from("fixed"), ModifiersBucket::None),
+        //         CompilableTextPart::new_fixed(String::from("</strong>")),
+        //         CompilableTextPart::new(
+        //             String::from(" end*"),
+        //             CompilableTextPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
+        //         ),
+        // ]);
+        
+        // let outcome = replacement_rule.compile(&compilable, &OutputFormat::Html, &compilation_configuration, CompilationConfigurationOverLay::default()).unwrap();
+
+        // assert_eq!(outcome.content(), r"<em>start <strong>fixed</strong> end</em>");
+
+
+        // // ==== case 2 ====
+        // let compilable = CompilableText::new(
+        //     vec![
+        //         CompilableTextPart::new(
+        //             String::from("*start "),
+        //             CompilableTextPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
+        //         ),
+        //         CompilableTextPart::new_fixed(String::from("<strong>")),
+        //         CompilableTextPart::new_compilable(String::from("fixed"), ModifiersBucket::None),
+        //         CompilableTextPart::new_fixed(String::from("</strong>")),
+        //         CompilableTextPart::new(
+        //             String::from("*"),
+        //             CompilableTextPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
+        //         ),
+        // ]);
+        
+        // let outcome = replacement_rule.compile(&compilable, &OutputFormat::Html, &compilation_configuration, CompilationConfigurationOverLay::default()).unwrap();
+
+        // assert_eq!(outcome.content(), r"<em>start <strong>fixed</strong></em>");
+
+
+        // ==== case 3 ====
         let compilable = CompilableText::new(
             vec![
                 CompilableTextPart::new(
-                    String::from("*start "),
+                    String::from("*"),
                     CompilableTextPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
                 ),
                 CompilableTextPart::new_fixed(String::from("<strong>")),
@@ -164,7 +207,7 @@ mod test {
         
         let outcome = replacement_rule.compile(&compilable, &OutputFormat::Html, &compilation_configuration, CompilationConfigurationOverLay::default()).unwrap();
 
-        assert_eq!(outcome.content(), r"<em>start <strong>fixed</strong> end</em>");
+        assert_eq!(outcome.content(), r"<em><strong>fixed</strong> end</em>");
 
     }
 

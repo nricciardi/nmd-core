@@ -710,9 +710,9 @@ impl Compiler {
 
                                 } else {
 
-                                    if match_found {        // simple matched part in matched parts 
+                                    if match_found {        // this part is a compilable part in the middle of matched parts
 
-                                        let matched_part = &compilable_content[part_start_position_in_compilable_content..match_end];
+                                        let matched_part = &compilable_content[part_start_position_in_compilable_content..part_end_position_in_compilable_content];
 
                                         matched_parts.push(CompilableTextPart::new(
                                             matched_part.to_string(),

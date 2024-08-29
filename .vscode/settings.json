@@ -6,6 +6,7 @@
     ],
     "rust-analyzer.showUnlinkedFileNotification": false,
     "cSpell.words": [
+        "Dont",
         "matc",
         "nuid"
     ]
