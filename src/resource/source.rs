@@ -1,4 +1,4 @@
-use std::{fmt::Display, fs::File, io::Read, path::PathBuf, str::FromStr};
+use std::{fs::File, io::Read, path::PathBuf, str::FromStr};
 use base64::Engine;
 use url::Url;
 

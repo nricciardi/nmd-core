@@ -66,34 +66,6 @@ impl CompilationRule for HtmlCiteRule {
         }
 
         Ok(CompilableText::new(compiled_parts))
-
-        // let content = compilable.compilable_content();
-
-        // let compiled_content = self.search_pattern_regex.replace_all(content, |capture: &Captures| {
-
-        //     let bib_key = capture.get(1).unwrap().as_str();
-
-        //     if let Some(bibliography) = compilation_configuration.bibliography() {
-                
-        //         if let Some(n) = bibliography.get_n_from_key(bib_key) {
-        //             if let Some(reference) = bibliography.get_reference_from_key(bib_key) {
-        //                 if let Ok(reference) = reference {
-        //                     return format!(r#"<a class="cite" href="{}">{}</a>"#, reference.build(), n);
-        //                 }
-        //             }
-        //         }
-
-        //         log::error!("bibliography record with key: '{}' ('{}') not found: no replacement will be applied", bib_key, capture.get(0).unwrap().as_str());
-                
-        //     } else {
-
-        //         log::error!("bibliography '{}' ('{}') not found: no replacement will be applied", bib_key, capture.get(0).unwrap().as_str());
-        //     }
-
-        //     return String::from(content);
-        // });
-
-        // Ok(CompilationResult::new_fixed(compiled_content.to_string()))
     }
     
     fn search_pattern_regex(&self) -> &Regex {

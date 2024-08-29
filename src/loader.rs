@@ -559,6 +559,8 @@ mod test {
 
         let content: String = 
 r#"
+preamble
+
 # title 1a
 
 paragraph 1a
@@ -574,12 +576,10 @@ paragraph 1b
 
         let document = Loader::load_document_from_str("test", &content, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
 
-        assert_eq!(document.preamble().len(), 0);
+        assert_eq!(document.preamble().len(), 1);
 
         assert_eq!(document.chapters().len(), 3);
 
-
-        
     }
 
     #[test]

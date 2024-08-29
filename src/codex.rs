@@ -564,7 +564,7 @@ impl Codex {
                     StandardParagraphModifier::PageBreak.identifier().clone(),
                     Box::new(ReplacementRuleParagraphLoadingRule::new(
                         ReplacementRule::new(
-                            StandardParagraphModifier::PageBreak.modifier_pattern().clone(),
+                            StandardParagraphModifier::PageBreak.modifier_pattern_with_paragraph_separator().clone(),
                             vec![
                                 Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<div class="page-break"></div>"#)))
                             ]
@@ -575,13 +575,13 @@ impl Codex {
                 StandardParagraphModifier::EmbeddedParagraphStyleWithId.identifier().clone(),
                 Box::new(ReplacementRuleParagraphLoadingRule::new(
                     ReplacementRule::new(
-                        StandardParagraphModifier::EmbeddedParagraphStyleWithId.modifier_pattern().clone(),
+                        StandardParagraphModifier::EmbeddedParagraphStyleWithId.modifier_pattern_with_paragraph_separator().clone(),
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<div class="identifier embedded-paragraph-style" id="{}" style="{}" data-nuid="{}">"#,
+                                        r#"<div class="identifier embedded-paragraph-style" id="{}" style="{}" {}>"#,
                                         ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
                                         captures.get(3).unwrap().as_str(),
                                         Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
@@ -598,13 +598,13 @@ impl Codex {
                 StandardParagraphModifier::EmbeddedParagraphStyle.identifier().clone(),
                 Box::new(ReplacementRuleParagraphLoadingRule::new(
                     ReplacementRule::new(
-                        StandardParagraphModifier::EmbeddedParagraphStyle.modifier_pattern().clone(),
+                        StandardParagraphModifier::EmbeddedParagraphStyle.modifier_pattern_with_paragraph_separator().clone(),
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<div class="embedded-paragraph-style" style="{}" data-nuid="{}">"#,
+                                        r#"<div class="embedded-paragraph-style" style="{}" {}>"#,
                                         captures.get(2).unwrap().as_str(),
                                         Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     ))
@@ -620,7 +620,7 @@ impl Codex {
                 StandardParagraphModifier::AbridgedEmbeddedParagraphStyleWithId.identifier().clone(),
                 Box::new(ReplacementRuleParagraphLoadingRule::new(
                     ReplacementRule::new(
-                        StandardParagraphModifier::AbridgedEmbeddedParagraphStyleWithId.modifier_pattern().clone(),
+                        StandardParagraphModifier::AbridgedEmbeddedParagraphStyleWithId.modifier_pattern_with_paragraph_separator().clone(),
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
 
@@ -641,7 +641,7 @@ impl Codex {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<div class="identifier abridged-embedded-paragraph-style" id="{}" data-nuid="{}" style="{} {} {}">"#,
+                                        r#"<div class="identifier abridged-embedded-paragraph-style" id="{}" {} style="{} {} {}">"#,
                                         ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
                                         Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                         color_style,
@@ -660,13 +660,13 @@ impl Codex {
                 StandardParagraphModifier::AbridgedTodo.identifier().clone(),
                 Box::new(ReplacementRuleParagraphLoadingRule::new(
                     ReplacementRule::new(
-                        StandardParagraphModifier::AbridgedTodo.modifier_pattern().clone(),
+                        StandardParagraphModifier::AbridgedTodo.modifier_pattern_with_paragraph_separator().clone(),
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|_, compilable, _, _, _| {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<div class="todo abridged-todo" data-nuid="{}">"#,
+                                        r#"<div class="todo abridged-todo" {}>"#,
                                         Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     ))
                                 ]))
@@ -681,13 +681,13 @@ impl Codex {
                 StandardParagraphModifier::MultilineTodo.identifier().clone(),
                 Box::new(ReplacementRuleParagraphLoadingRule::new(
                     ReplacementRule::new(
-                        StandardParagraphModifier::MultilineTodo.modifier_pattern().clone(),
+                        StandardParagraphModifier::MultilineTodo.modifier_pattern_with_paragraph_separator().clone(),
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|_, compilable, _, _, _| {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<div class="todo multiline-todo" data-nuid="{}"><div class="todo-title"></div><div class="todo-description">"#,
+                                        r#"<div class="todo multiline-todo" {}><div class="todo-title"></div><div class="todo-description">"#,
                                         Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     ))
                                 ]))
@@ -702,7 +702,7 @@ impl Codex {
                 StandardParagraphModifier::AbridgedEmbeddedParagraphStyle.identifier().clone(),
                 Box::new(ReplacementRuleParagraphLoadingRule::new(
                     ReplacementRule::new(
-                        StandardParagraphModifier::AbridgedEmbeddedParagraphStyle.modifier_pattern().clone(),
+                        StandardParagraphModifier::AbridgedEmbeddedParagraphStyle.modifier_pattern_with_paragraph_separator().clone(),
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
 
@@ -723,7 +723,7 @@ impl Codex {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<div class="abridged-embedded-paragraph-style" data-nuid="{}" style="{} {} {}">"#,
+                                        r#"<div class="abridged-embedded-paragraph-style" {} style="{} {} {}">"#,
                                         Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                         color_style,
                                         bg_style,
@@ -741,13 +741,13 @@ impl Codex {
                 StandardParagraphModifier::ParagraphIdentifier.identifier().clone(),
                 Box::new(ReplacementRuleParagraphLoadingRule::new(
                     ReplacementRule::new(
-                        StandardParagraphModifier::ParagraphIdentifier.modifier_pattern().clone(),
+                        StandardParagraphModifier::ParagraphIdentifier.modifier_pattern_with_paragraph_separator().clone(),
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<span class="identifier" id="{}" data-nuid="{}">"#,
+                                        r#"<span class="identifier" id="{}" {}>"#,
                                         ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
                                         Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     ))
@@ -767,13 +767,13 @@ impl Codex {
                 StandardParagraphModifier::MathBlock.identifier().clone(),
                 Box::new(ReplacementRuleParagraphLoadingRule::new(
                     ReplacementRule::new(
-                        StandardParagraphModifier::MathBlock.modifier_pattern().clone(),
+                        StandardParagraphModifier::MathBlock.modifier_pattern_with_paragraph_separator().clone(),
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<p class="math-block" data-nuid="{}">{}</p>"#,
+                                        r#"<p class="math-block" {}>{}</p>"#,
                                         Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                         captures.get(1).unwrap().as_str(),
                                     )
@@ -800,7 +800,7 @@ impl Codex {
                 StandardParagraphModifier::CodeBlock.identifier().clone(),
                 Box::new(ReplacementRuleParagraphLoadingRule::new(
                     ReplacementRule::new(
-                        StandardParagraphModifier::CodeBlock.modifier_pattern().clone(),
+                        StandardParagraphModifier::CodeBlock.modifier_pattern_with_paragraph_separator().clone(),
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
 
@@ -811,7 +811,7 @@ impl Codex {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<pre data-nuid="{}"><code class="{} code-block">{}</code></pre>"#,
+                                        r#"<pre {}><code class="{} code-block">{}</code></pre>"#,
                                         Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                         lang_class,
                                         text_utility::replace(captures.get(2).unwrap().as_str(), &ESCAPE_HTML),
@@ -831,7 +831,7 @@ impl Codex {
                 StandardParagraphModifier::FocusBlock.identifier().clone(),
                 Box::new(ReplacementRuleParagraphLoadingRule::new(
                     ReplacementRule::new(
-                        StandardParagraphModifier::FocusBlock.modifier_pattern().clone(),
+                        StandardParagraphModifier::FocusBlock.modifier_pattern_with_paragraph_separator().clone(),
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
 
@@ -842,7 +842,7 @@ impl Codex {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<div class="focus-block focus-block-{}" data-nuid="{}"><div class="focus-block-title focus-block-{}-title"></div><div class="focus-block-description focus-block-{}-description">"#,
+                                        r#"<div class="focus-block focus-block-{}" {}><div class="focus-block-title focus-block-{}-title"></div><div class="focus-block-description focus-block-{}-description">"#,
                                         focus_block_type,
                                         Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                         focus_block_type,
@@ -860,13 +860,13 @@ impl Codex {
                 StandardParagraphModifier::LineBreakDash.identifier().clone(),
                 Box::new(ReplacementRuleParagraphLoadingRule::new(
                     ReplacementRule::new(
-                        StandardParagraphModifier::LineBreakDash.modifier_pattern().clone(),
+                        StandardParagraphModifier::LineBreakDash.modifier_pattern_with_paragraph_separator().clone(),
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|_, compilable, _, _, _| {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<hr class="line-break line-break-dash" data-nuid="{}">"#,
+                                        r#"<hr class="line-break line-break-dash" {}>"#,
                                         Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     )
                                 )
@@ -880,13 +880,13 @@ impl Codex {
                 StandardParagraphModifier::LineBreakStar.identifier().clone(),
                 Box::new(ReplacementRuleParagraphLoadingRule::new(
                     ReplacementRule::new(
-                        StandardParagraphModifier::LineBreakDash.modifier_pattern().clone(),
+                        StandardParagraphModifier::LineBreakDash.modifier_pattern_with_paragraph_separator().clone(),
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|_, compilable, _, _, _| {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<hr class="line-break line-break-star" data-nuid="{}">"#,
+                                        r#"<hr class="line-break line-break-star" {}>"#,
                                         Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     )
                                 )
@@ -900,13 +900,13 @@ impl Codex {
                 StandardParagraphModifier::LineBreakPlus.identifier().clone(),
                 Box::new(ReplacementRuleParagraphLoadingRule::new(
                     ReplacementRule::new(
-                        StandardParagraphModifier::LineBreakDash.modifier_pattern().clone(),
+                        StandardParagraphModifier::LineBreakDash.modifier_pattern_with_paragraph_separator().clone(),
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|_, compilable, _, _, _| {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<hr class="line-break line-break-plus" data-nuid="{}">"#,
+                                        r#"<hr class="line-break line-break-plus" {}>"#,
                                         Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     )
                                 )
@@ -920,13 +920,13 @@ impl Codex {
                 StandardParagraphModifier::CommonParagraph.identifier().clone(),
                 Box::new(ReplacementRuleParagraphLoadingRule::new(
                     ReplacementRule::new(
-                        StandardParagraphModifier::CommonParagraph.modifier_pattern().clone(),
+                        StandardParagraphModifier::CommonParagraph.modifier_pattern_with_paragraph_separator().clone(),
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|_, compilable, _, _, _| {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<p class="paragraph" data-nuid="{}">"#,
+                                        r#"<p class="paragraph" {}>"#,
                                         Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     ))
                                 ]))

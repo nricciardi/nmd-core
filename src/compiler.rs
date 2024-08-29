@@ -756,7 +756,6 @@ mod test {
     
     use std::{collections::HashSet, sync::Arc};
     use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_text_modifier::StandardTextModifier, Modifier, ModifiersBucket}, Codex, CodexCompilationRulesMap, CodexLoadingRulesMap, CodexModifiersMap}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, Compiler}, output_format::OutputFormat};
-
     use super::compilation_rule::{replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule};
 
 

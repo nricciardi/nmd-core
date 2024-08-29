@@ -76,13 +76,46 @@ impl Paragraph for ReplacementRuleParagraph {
 mod test {
     use std::sync::Arc;
 
-    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, standard_text_modifier::StandardTextModifier, Modifier, ModifiersBucket}, Codex, CodexCompilationRulesMap, CodexLoadingRulesMap, CodexModifiersMap}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart, single_capture_group_replacement_rule_part::SingleCaptureGroupReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile}, output_format::OutputFormat};
+    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, standard_text_modifier::StandardTextModifier, Modifier, ModifiersBucket}, Codex, CodexCompilationRulesMap, CodexLoadingRulesMap, CodexModifiersMap}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart, single_capture_group_replacement_rule_part::SingleCaptureGroupReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, Loader}, output_format::OutputFormat};
 
     use super::ReplacementRuleParagraph;
 
-
     #[test]
     fn paragraph_with_nuid() {
+
+        let nmd_text = "\n\nThis is a **common paragraph**\n\n";
+
+        let codex = Codex::of_html();
+
+        let mut paragraphs = Loader::load_paragraphs_from_str(
+            &nmd_text,
+            &codex,
+            &LoaderConfiguration::default(),
+            LoaderConfigurationOverLay::default(),
+        ).unwrap();
+
+        assert_eq!(paragraphs.len(), 1);
+
+        let paragraph = &mut paragraphs[0];
+
+        paragraph.set_nuid(Some(String::from("nuid-test")));
+
+        paragraph.compile(
+            &OutputFormat::Html,
+            &codex,
+            &CompilationConfiguration::default(),
+            CompilationConfigurationOverLay::default()
+        ).unwrap();
+
+        assert_eq!(
+            paragraph.compiled_text().unwrap().content(),
+            r#"<p class="paragraph" data-nuid="nuid-test">This is a <strong class="bold">common paragraph</strong></p>"#
+        )
+
+    }
+
+    #[test]
+    fn paragraph_with_nuid_and_simple_codex() {
 
         let nmd_text = "\n\nThis is a **common paragraph**\n\n";
 

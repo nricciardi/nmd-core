@@ -60,22 +60,6 @@ impl CompilationRule for ReferenceRule {
         }
 
         Ok(CompilableText::new(compiled_parts))
-
-        // let content = compilable.compilable_content();
-
-        // let compilation_result = self.search_pattern_regex.replace_all(content, |capture: &Captures| {
-
-        //     let reference_key = capture.get(1).unwrap().as_str();
-
-        //     if let Some(reference) = compilation_configuration.references().get(reference_key) {
-        //         return String::from(reference)
-        //     } else {
-        //         log::error!("reference '{}' ('{}') not found: no replacement will be applied", reference_key, capture.get(0).unwrap().as_str());
-        //         return String::from(content);
-        //     }
-        // });
-
-        // Ok(CompilationResult::new_fixed(compilation_result.to_string()))
     }
     
     fn search_pattern_regex(&self) -> &Regex {

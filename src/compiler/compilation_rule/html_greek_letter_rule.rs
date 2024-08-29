@@ -134,27 +134,6 @@ impl CompilationRule for HtmlGreekLettersRule {
         }
 
         Ok(CompilableText::new(compiled_parts))
-
-        // let content = compilable.compilable_content();
-        
-        // let compiled_content = self.search_pattern_regex.replace_all(content, |capture: &Captures| {
-
-        //     if let Some(greek_ref) = capture.get(1) {
-
-        //         let res = format!(r#"<span class="greek">${}$</span>"#, self.replace_with_greek_letters(greek_ref.as_str()));
-
-        //         log::debug!("compile '{}' into '{}'", content, res);
-
-        //         return res;
-        //     }
-
-        //     log::error!("no greek letters found in '{}' ({})", content, capture.get(1).unwrap().as_str());
-
-        //     panic!("no greek letters found");
-        // });
-
-        
-        // Ok(CompilationResult::new_fixed(compiled_content.to_string()))
     }
     
     fn search_pattern_regex(&self) -> &Regex {

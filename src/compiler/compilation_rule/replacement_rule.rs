@@ -57,7 +57,11 @@ impl CompilationRule for ReplacementRule {
 
         let mut compiled_parts = Vec::new();
 
-        for captures in self.search_pattern_regex.captures_iter(&compilable.compilable_content()) {
+        let compilable_content = compilable.compilable_content();
+
+        let captures_matches = self.search_pattern_regex.captures_iter(&compilable_content);
+
+        for captures in captures_matches {
 
             for replacer_part in &self.replacer_parts {
 
@@ -84,7 +88,7 @@ mod test {
 
     use std::sync::Arc;
 
-    use crate::{codex::modifier::{standard_text_modifier::StandardTextModifier, ModifiersBucket}, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{constants::ESCAPE_HTML, replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart, single_capture_group_replacement_rule_part::SingleCaptureGroupReplacementRuleReplacerPart, ReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}}, output_format::OutputFormat};
+    use crate::{codex::{modifier::{standard_text_modifier::StandardTextModifier, ModifiersBucket}, Codex}, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{constants::ESCAPE_HTML, replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart, single_capture_group_replacement_rule_part::SingleCaptureGroupReplacementRuleReplacerPart, ReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}}, output_format::OutputFormat};
 
 
     #[test]
@@ -236,7 +240,7 @@ mod test {
     // #[test]
     // fn paragraph_parsing() {
 
-    //     let codex = Codex::of_html(CodexConfiguration::default());
+    //     let codex = Codex::of_html();
 
     //     let compilation_configuration = CompilationConfiguration::default();
 
