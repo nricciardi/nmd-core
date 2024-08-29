@@ -488,7 +488,11 @@ impl Loader {
 
         dossier_configuration.set_raw_documents_paths(d);
 
-        Self::load_dossier_from_dossier_configuration(&dossier_configuration, codex, configuration, configuration_overlay.clone())
+        let mut configuration_overlay = configuration_overlay.clone();
+
+        configuration_overlay.set_dossier_name(Some(dossier_configuration.name().clone()));
+
+        Self::load_dossier_from_dossier_configuration(&dossier_configuration, codex, configuration, configuration_overlay)
     }
 
     /// Load dossier from its dossier configuration

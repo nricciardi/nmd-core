@@ -222,14 +222,33 @@ impl ParagraphLoadingRule for ImageParagraphLoadingRule {
 #[cfg(test)]
 mod test {
 
+    use std::path::PathBuf;
+
     use crate::{codex::Codex, dossier::document::chapter::paragraph::image_paragraph::ImageParagraphContent, loader::loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}};
     use super::ImageParagraphLoadingRule;
 
 
     #[test]
-    fn load_single_image() {
+    fn load_single_image_from_url() {
 
         let src = "https://en.wikipedia.org/wiki/Main_Page";
+        let caption = "This is a *caption*";
+
+        let nmd_text = format!("![{}]({})", caption, src);
+
+        let codex = Codex::of_html();
+
+        let image = ImageParagraphLoadingRule::load_single_image(&nmd_text, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
+    
+        assert_eq!(image.src().to_string(), src);
+        assert_eq!(image.caption().as_ref().unwrap(), caption);
+    
+    }
+
+    #[test]
+    fn load_single_image_from_path() {
+
+        let src = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("test-resources").join("wikipedia-logo.png").to_string_lossy().to_string();
         let caption = "This is a *caption*";
 
         let nmd_text = format!("![{}]({})", caption, src);

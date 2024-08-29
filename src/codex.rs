@@ -193,6 +193,25 @@ impl Codex {
                 ))
             ),
             (
+                StandardTextModifier::AbridgedBookmarkWithId.identifier().clone(),
+                Box::new(ReplacementRule::new(
+                    StandardTextModifier::AbridgedBookmarkWithId.modifier_pattern().clone(),
+                    vec![
+                        Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, _, _, _, cco| {
+    
+                            Ok(CompilableText::from(vec![
+                                CompilableTextPart::new_fixed(format!(
+                                    r#"<div class="abridged-bookmark" id="{}"><div class="abridged-bookmark-title">"#,
+                                    ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
+                                ))
+                            ]))
+                        }))),
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::AbridgedBookmarkWithId.incompatible_modifiers())),
+                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div></div>"#)))
+                    ]
+                ))
+            ),
+            (
                 StandardTextModifier::EmbeddedStyleWithId.identifier().clone(),
                 Box::new(ReplacementRule::new(
                     StandardTextModifier::EmbeddedStyleWithId.modifier_pattern().clone(),
@@ -462,12 +481,23 @@ impl Codex {
                     ]
                 ))
             ),
-            //     (
-            //         StandardTextModifier::Emoji.identifier().clone(),
-            //         Box::new(ReplacementRule::new(StandardTextModifier::Emoji.modifier_pattern().clone(), vec![
-            //             ReplacementRuleReplacerPart::new_fixed(String::from(r#"<i class="em-svg em-${1}" aria-role="presentation"></i>"#)),
-            //         ]))
-            //     ),
+            (
+                StandardTextModifier::Emoji.identifier().clone(),
+                Box::new(ReplacementRule::new(
+                    StandardTextModifier::Emoji.modifier_pattern().clone(),
+                    vec![
+                        Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, _, _, _, _| {
+    
+                            Ok(CompilableText::from(vec![
+                                CompilableTextPart::new_fixed(format!(
+                                    r#"<i class="em-svg em-{}" aria-role="presentation"></i>"#,
+                                    captures.get(1).unwrap().as_str(),
+                                ))
+                            ]))
+                        }))),
+                    ]
+                ))
+            ),
             (
                 StandardTextModifier::Escape.identifier().clone(),
                 Box::new(ReplacementRule::new(

@@ -105,7 +105,7 @@ impl ImageResource {
         match self.inferring_mime_type() {
             Ok(ok) => ok,
             Err(err) => {
-                log::warn!("{}", err.to_string());
+                log::warn!("wrong inferring MIME type of image ({:?}): {}", backup.src(), err.to_string());
 
                 backup
             },
@@ -116,7 +116,6 @@ impl ImageResource {
     pub fn elaborating_relative_path_as_dossier_assets(mut self, base_location: &PathBuf) -> Self {
 
         match &self.src {
-            Source::Remote { url: _ } | Source::Base64String { base64: _ } | Source::Bytes { bytes: _ } => (),
             Source::Local { path } => {
 
                 let mut base_location: PathBuf = base_location.clone();
@@ -131,14 +130,18 @@ impl ImageResource {
         
                     if !path.exists() {
         
-                        log::debug!("{:?} not found, try adding images directory path", path);
-        
                         let image_file_name = path.file_name().unwrap();
         
                         path = base_location.join(dossier::ASSETS_DIR).join(dossier::IMAGES_DIR).join(image_file_name);
         
                         if !path.exists() {
+
+                            log::warn!("image src path {:?} not found also with images dossier assets path, try canonicalize path", path);
+
                             if let Ok(src) = fs::canonicalize(path.clone()) {
+
+                                log::info!("canonicalizing ok: {:?} -> {:?}", path, src);
+
                                 path = src;
                             }
                         }
@@ -147,6 +150,7 @@ impl ImageResource {
                     self.set_src(Source::Local { path });
                 }
             },
+            _ => (),
         }
 
         self
