@@ -187,7 +187,6 @@ body {
 .focus-block-quote, .focus-quote-block-quote {
     background-color: #f9f9f9;
     border-left: 4px solid #aaa;
-    display: block;
     font-style: italic;
     font-family: Georgia, "Times New Roman", Times, serif;
     font-size: 1.25em;

@@ -4,7 +4,7 @@ use super::ParagraphLoadingRule;
 use crate::{codex::{modifier::constants::NEW_LINE, Codex}, dossier::document::chapter::paragraph::{block_quote_paragraph::ExtendedBlockQuoteParagraph, Paragraph}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError, Loader}};
 
 
-static CHECK_EXTENDED_BLOCK_QUOTE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?:^(?m:^> \[!(.*)\]))").unwrap());
+static CHECK_EXTENDED_BLOCK_QUOTE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?m:> \[!(\w*)\])").unwrap());
 
 const DEFAULT_TYPE: &str = "quote";
 
@@ -87,7 +87,7 @@ mod test {
 
 
     #[test]
-    fn load() {
+    fn load_implicit_quote() {
         let nmd_text = concat!(
             "> p1a\n",
             "> p1b\n",
@@ -100,6 +100,27 @@ mod test {
         let paragraph = rule.inner_load(&nmd_text, &Codex::of_html(), &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();    
     
         assert_eq!(paragraph.extended_quote_type(), DEFAULT_TYPE);
+
+        assert_eq!(paragraph.paragraphs().len(), 2);
+    }
+
+    #[test]
+    fn load_explicit_quote() {
+        let nmd_text = concat!(
+            "\n\n",
+            "> [!IMPORTANT]\n",
+            "> p1a\n",
+            "> p1b\n",
+            ">\n",
+            "> p2a\n",
+            "\n\n"
+        );
+
+        let rule = BlockQuoteParagraphLoadingRule::new();
+
+        let paragraph = rule.inner_load(&nmd_text, &Codex::of_html(), &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();    
+    
+        assert_eq!(paragraph.extended_quote_type(), "important");
 
         assert_eq!(paragraph.paragraphs().len(), 2);
     }

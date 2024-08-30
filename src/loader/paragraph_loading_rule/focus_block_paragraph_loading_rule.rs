@@ -73,7 +73,7 @@ impl ParagraphLoadingRule for FocusBlockParagraphLoadingRule {
 mod test {
 
     use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, loader::loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}};
-    use super::{FocusBlockParagraphLoadingRule, DEFAULT_TYPE};
+    use super::FocusBlockParagraphLoadingRule;
 
 
     #[test]
