@@ -1,10 +1,7 @@
-use once_cell::sync::Lazy;
 use regex::Regex;
 use super::ParagraphLoadingRule;
-use crate::{codex::{modifier::constants::NEW_LINE, Codex}, dossier::document::chapter::paragraph::{block_quote_paragraph::ExtendedBlockQuoteParagraph, focus_block_paragraph::FocusBlockParagraph, Paragraph}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError, Loader}};
+use crate::{codex::Codex, dossier::document::chapter::paragraph::{focus_block_paragraph::FocusBlockParagraph, Paragraph}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError, Loader}};
 
-
-static CHECK_BLOCK_TYPE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?:^(?m:^> \[!(.*)\]))").unwrap());
 
 const DEFAULT_TYPE: &str = "quote";
 

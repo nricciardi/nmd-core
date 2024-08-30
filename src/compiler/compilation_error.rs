@@ -13,6 +13,9 @@ pub enum CompilationError {
     #[error("failed during elaboration")]
     ElaborationError,
 
+    #[error("failed during elaboration: {0}")]
+    ElaborationErrorVerbose(String),
+
     #[error("document name not found")]
     DocumentNameNotFound,
 

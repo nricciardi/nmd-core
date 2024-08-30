@@ -36,27 +36,34 @@ impl SingleCaptureGroupReplacementRuleReplacerPart {
 impl ReplacementRuleReplacerPart for SingleCaptureGroupReplacementRuleReplacerPart {
     fn compile(&self, captures: &Captures, compilable: &CompilableText, _format: &OutputFormat, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError> {
         
-        let capture = captures.get(self.capture_group).unwrap();
-                
-        let mut slice = compilable.parts_slice(capture.start(), capture.end())?;
+        if let Some(capture) = captures.get(self.capture_group) {
 
-        slice.par_iter_mut().for_each(|part| {
+            let mut slice = compilable.parts_slice(capture.start(), capture.end())?;
 
-            if let CompilableTextPartType::Compilable{ incompatible_modifiers } = part.part_type() {
-
-                let incompatible_modifiers = incompatible_modifiers.clone().extend(&self.incompatible_modifiers);
-
-                part.set_part_type(CompilableTextPartType::Compilable { incompatible_modifiers });
-
-                let new_content = text_utility::replace(part.content(), &self.post_replacing);
+            slice.par_iter_mut().for_each(|part| {
     
-                part.set_content(new_content);
+                if let CompilableTextPartType::Compilable{ incompatible_modifiers } = part.part_type() {
+    
+                    let incompatible_modifiers = incompatible_modifiers.clone().extend(&self.incompatible_modifiers);
+    
+                    part.set_part_type(CompilableTextPartType::Compilable { incompatible_modifiers });
+    
+                    let new_content = text_utility::replace(part.content(), &self.post_replacing);
+        
+                    part.set_content(new_content);
+    
+                }
+    
+            });
+    
+            return Ok(CompilableText::new(slice))
+        
+        } else {
 
-            }
-
-        });
-
-        Ok(CompilableText::new(slice))
+            return Err(CompilationError::ElaborationErrorVerbose(format!("capture group n. {} not found in {:?} of compilable {}", self.capture_group, captures, compilable.compilable_content())))
+        }
+                
+        
     }
 }
 

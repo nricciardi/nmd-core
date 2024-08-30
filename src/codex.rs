@@ -28,7 +28,6 @@ use crate::loader::paragraph_loading_rule::table_paragraph_loading_rule::TablePa
 use crate::loader::paragraph_loading_rule::ParagraphLoadingRule;
 use crate::output_format::OutputFormat;
 use crate::resource::resource_reference::ResourceReference;
-use crate::utility::nmd_unique_identifier::NmdUniqueIdentifier;
 use crate::utility::text_utility;
 use super::compiler::compilation_rule::constants::ESCAPE_HTML;
 use super::compiler::compilation_rule::html_cite_rule::HtmlCiteRule;
@@ -173,7 +172,7 @@ impl Codex {
                         Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<div class="bookmark"><div class="bookmark-title">"#))),
                         Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::Bookmark.incompatible_modifiers())),
                         Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div><div class="bookmark-description">"#))),
-                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(3, ESCAPE_HTML.clone(), StandardTextModifier::Bookmark.incompatible_modifiers())),
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(2, ESCAPE_HTML.clone(), StandardTextModifier::Bookmark.incompatible_modifiers())),
                         Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div></div>"#))),
                     ]
                 ))
