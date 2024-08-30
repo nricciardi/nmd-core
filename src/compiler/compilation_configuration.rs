@@ -66,6 +66,15 @@ pub struct CompilationConfiguration {
 
     #[getset(get = "pub", set = "pub")]
     resource_type: CompilableResourceType,
+
+    #[getset(get_copy = "pub", set = "pub")]
+    strict_greek_letters_check: bool,
+
+    #[getset(get_copy = "pub", set = "pub")]
+    strict_cite_check: bool,
+
+    #[getset(get_copy = "pub", set = "pub")]
+    strict_reference_check: bool,
 }
 
 impl CompilationConfiguration {
@@ -74,7 +83,8 @@ impl CompilationConfiguration {
                 compress_embed_image: bool, strict_image_src_check: bool,
                 parallelization: bool, list_bullets_configuration: Vec<ListBulletConfigurationRecord>, strict_list_check: bool, 
                 strict_focus_block_check: bool, references: TextReferenceMap, fast_draft: bool, bibliography: Option<Bibliography>,
-                theme: Theme, resource_type: CompilableResourceType) -> Self {
+                theme: Theme, resource_type: CompilableResourceType, strict_greek_letters_check: bool, strict_cite_check: bool,
+                strict_reference_check: bool,) -> Self {
 
         Self {
             input_location,
@@ -92,6 +102,9 @@ impl CompilationConfiguration {
             bibliography,
             theme,
             resource_type,
+            strict_cite_check,
+            strict_greek_letters_check,
+            strict_reference_check,
         }
     }
 }
@@ -114,6 +127,9 @@ impl Default for CompilationConfiguration {
             bibliography: None,
             theme: Theme::default(),
             resource_type: CompilableResourceType::default(),
+            strict_cite_check: true,
+            strict_greek_letters_check: true,
+            strict_reference_check: true,
         }
     }
 }

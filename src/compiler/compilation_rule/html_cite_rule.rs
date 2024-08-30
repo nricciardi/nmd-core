@@ -14,7 +14,7 @@ impl HtmlCiteRule {
     pub fn new() -> Self {
         Self {
             search_pattern: StandardTextModifier::Cite.modifier_pattern(),
-            search_pattern_regex: Regex::new(&StandardTextModifier::Cite.modifier_pattern()).unwrap(),
+            search_pattern_regex: StandardTextModifier::Cite.modifier_pattern_regex().clone(),
         }
     }
 }
@@ -50,17 +50,25 @@ impl CompilationRule for HtmlCiteRule {
                             );
             
                             compiled_parts.push(reference_part);
+
+                            continue;
                         }
                     }
                 }
 
                 log::error!("bibliography record with key: '{}' ('{}') not found: no replacement will be applied", bib_key, matc.get(0).unwrap().as_str());
                 
+                if compilation_configuration.strict_cite_check() {
+                    return Err(CompilationError::ElaborationErrorVerbose(format!("bibliography record with key: '{}' ('{}') not found: no replacement will be applied", bib_key, matc.get(0).unwrap().as_str())))
+                }
+
             } else {
 
                 log::error!("bibliography '{}' ('{}') not found: no replacement will be applied", bib_key, matc.get(0).unwrap().as_str());
 
-                // TODO: strict option with panic
+                if compilation_configuration.strict_cite_check() {
+                    return Err(CompilationError::ElaborationErrorVerbose(format!("bibliography '{}' ('{}') not found: no replacement will be applied", bib_key, matc.get(0).unwrap().as_str())))
+                }
             }
 
         }

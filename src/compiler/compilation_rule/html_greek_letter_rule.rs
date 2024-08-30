@@ -15,7 +15,7 @@ impl HtmlGreekLettersRule {
     pub fn new() -> Self {
         Self {
             search_pattern: StandardTextModifier::GreekLetter.modifier_pattern(),
-            search_pattern_regex: Regex::new(&StandardTextModifier::GreekLetter.modifier_pattern()).unwrap(),
+            search_pattern_regex: StandardTextModifier::GreekLetter.modifier_pattern_regex().clone(),
             greek_letters_map: HashMap::from([
                 ("a", r"alpha"),
                 ("b", r"beta"),
@@ -112,7 +112,7 @@ impl CompilationRule for HtmlGreekLettersRule {
         &self.search_pattern
     }
 
-    fn standard_compile(&self, compilable: &CompilableText, _format: &OutputFormat, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError> {
+    fn standard_compile(&self, compilable: &CompilableText, _format: &OutputFormat, compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError> {
 
         let mut compiled_parts = Vec::new();
 
@@ -126,11 +126,15 @@ impl CompilationRule for HtmlGreekLettersRule {
                 );
 
                 compiled_parts.push(reference_part);
-            }
-
-            log::error!("no greek letters found in '{}' ({})", compilable.compilable_content(), matc.get(0).unwrap().as_str());
             
-            // TODO: strict option with panic
+            } else {
+
+                log::error!("no greek letters found in '{}' ({})", compilable.compilable_content(), matc.get(0).unwrap().as_str());
+                
+                if compilation_configuration.strict_greek_letters_check() {
+                    return Err(CompilationError::ElaborationErrorVerbose(format!("no greek letters found in '{}' ({})", compilable.compilable_content(), matc.get(0).unwrap().as_str())))
+                }
+            }
         }
 
         Ok(CompilableText::new(compiled_parts))
@@ -139,4 +143,28 @@ impl CompilationRule for HtmlGreekLettersRule {
     fn search_pattern_regex(&self) -> &Regex {
         &self.search_pattern_regex
     }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{codex::modifier::ModifiersBucket, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::CompilationRule}, output_format::OutputFormat};
+
+    use super::HtmlGreekLettersRule;
+
+
+    #[test]
+    fn standard_compile() {
+        let rule = HtmlGreekLettersRule::new();
+
+        let compilable = CompilableText::from(vec![
+            CompilableTextPart::new_fixed(String::from("fixed1")),
+            CompilableTextPart::new_compilable(String::from("%aphib%"), ModifiersBucket::None),
+            CompilableTextPart::new_fixed(String::from("fixed2")),
+        ]);
+
+        let output = rule.compile(&compilable, &OutputFormat::Html, &CompilationConfiguration::default(), CompilationConfigurationOverLay::default()).unwrap();
+    
+        assert_eq!(output.parts().len(), 1);
+    }
+
 }

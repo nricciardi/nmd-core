@@ -16,7 +16,7 @@ impl ReferenceRule {
     pub fn new() -> Self {
         Self {
             search_pattern: StandardTextModifier::Reference.modifier_pattern(),
-            search_pattern_regex: Regex::new(&StandardTextModifier::Reference.modifier_pattern()).unwrap(),
+            search_pattern_regex: StandardTextModifier::Reference.modifier_pattern_regex().clone(),
         }
     }
 }
@@ -54,7 +54,9 @@ impl CompilationRule for ReferenceRule {
 
                 log::error!("reference '{}' ('{}') not found: no replacement will be applied", reference_key, matc.get(0).unwrap().as_str());
 
-                // TODO: strict option with panic
+                if compilation_configuration.strict_reference_check() {
+                    return Err(CompilationError::ElaborationErrorVerbose(format!("reference '{}' ('{}') not found: no replacement will be applied", reference_key, matc.get(0).unwrap().as_str())))
+                }
             }
 
         }

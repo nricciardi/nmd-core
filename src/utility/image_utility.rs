@@ -103,5 +103,7 @@ pub fn compile_image_resource_in_html(image: &ImageResource, img_classes: Vec<&s
         compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</figcaption>"#)));
     }
 
+    compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from("</figure>")));
+
     Ok(compilation_result)
 } 

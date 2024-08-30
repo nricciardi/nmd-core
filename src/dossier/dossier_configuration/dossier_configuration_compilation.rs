@@ -41,6 +41,15 @@ pub struct DossierConfigurationCompilation {
     #[serde(default = "no")]
     #[getset(get_copy = "pub", set = "pub")]
     strict_list_check: bool,
+
+    #[getset(get_copy = "pub", set = "pub")]
+    strict_greek_letters_check: bool,
+
+    #[getset(get_copy = "pub", set = "pub")]
+    strict_cite_check: bool,
+
+    #[getset(get_copy = "pub", set = "pub")]
+    strict_reference_check: bool,
 }
 
 impl Default for DossierConfigurationCompilation {
@@ -52,7 +61,10 @@ impl Default for DossierConfigurationCompilation {
             strict_image_src_check: true,
             parallelization: true,
             use_remote_addons: false,
-            strict_list_check: false
+            strict_list_check: false,
+            strict_cite_check: true,
+            strict_greek_letters_check: true,
+            strict_reference_check: true,
         }
     }
 }

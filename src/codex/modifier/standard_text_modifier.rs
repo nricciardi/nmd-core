@@ -161,7 +161,7 @@ impl StandardTextModifier {
             Self::Link => String::from(r"\[([^\]]+)\]\(([^)]+)\)"),
             Self::InlineCode => String::from(r"`(.*?)`"),
             Self::InlineMath => format!(r#"\$([^${}]+)\$"#, NEW_LINE),
-            Self::GreekLetter => String::from(r"%(.*?)%"),        // if it changes, fix greek letters rules
+            Self::GreekLetter => String::from(r"%(\w*?)%"),        // if it changes, fix greek letters rules
             Self::Escape => String::from(r"\\([\*\+\\~%\^\$@=\[\]!<>\{\}\(\)#-_\|\?&]+)"),
             Self::Reference => String::from(r"&([\w-]+)&"),
             Self::Cite => String::from(r"\^\[([\w_]+)\]"),
