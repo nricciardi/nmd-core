@@ -117,12 +117,12 @@ impl StandardParagraphModifier {
             Self::AbridgedImage => String::from(r"abridged-image"),
             Self::MultiImage => String::from("multi-image"),
             Self::Table => String::from("table"),
+            Self::CommentBlock => String::from("comment-block"),
 
-            _ => {
-
-                log::warn!("there is NOT a identifier for {:#?}", self);
-                String::from("#@§rule-todo#@§")
-            }
+            // _ => {
+            //     log::warn!("there is NOT a modifier pattern for {:#?}", self);
+            //     String::from(r"RULE TODO")
+            // }
         }
     }
 
@@ -131,6 +131,7 @@ impl StandardParagraphModifier {
         match *self {
             Self::Image => format!(r"!\[([^\]]*)\](?:{})?\(([^)]+)\)(?:\{{(.*)\}})?", IDENTIFIER_PATTERN),
             Self::CommonParagraph => String::from(r#"(?s:(.*?))"#),
+            Self::CommentBlock => String::from(r"<!--(?s:(.*?))-->"),
             Self::CodeBlock => format!(r"```\s?(\w+){}+(?s:(.*?)){}+```", NEW_LINE, NEW_LINE),
             Self::MathBlock => String::from(r#"\$\$((?s:.+?))\$\$"#),
             Self::ListItem => format!(r#"(?m:^([\t ]*)(-\[\]|-\[ \]|-\[x\]|-\[X\]|-|->|\||\*|\+|--|\d[\.)]?|[a-zA-Z]{{1,8}}[\.)]|&[^;]+;) (.*){}?)"#, NEW_LINE),
@@ -154,10 +155,10 @@ impl StandardParagraphModifier {
             Self::MultiImage => String::from(r"!!(?::([\w-]+):)?\[\[(?s:(.*?))\]\]"),
             Self::Table => format!(r"(\|(.*)\|{}?)+(?:\|(.*)\|)(?U:{}?(?:\[(.*)\])?(?:{})?(?:\{{(.*)\}})?)?", NEW_LINE, NEW_LINE, IDENTIFIER_PATTERN),
             
-            _ => {                                                                  // TODO
-                log::warn!("there is NOT a modifier pattern for {:#?}", self);
-                String::from(r"RULE TODO")
-            }
+            // _ => {
+            //     log::warn!("there is NOT a modifier pattern for {:#?}", self);
+            //     String::from(r"RULE TODO")
+            // }
         }
     }
 
@@ -175,6 +176,8 @@ impl StandardParagraphModifier {
             Self::MultiImage => ModifiersBucket::All,
             Self::CodeBlock => ModifiersBucket::All,
             Self::MathBlock => ModifiersBucket::All,
+            Self::CommentBlock => ModifiersBucket::All,
+
             _ => ModifiersBucket::None
         }
     }

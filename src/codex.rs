@@ -900,6 +900,19 @@ impl Codex {
                 ))
             ),
             (
+                StandardParagraphModifier::CommentBlock.identifier().clone(),
+                Box::new(ReplacementRuleParagraphLoadingRule::new(
+                    ReplacementRule::new(
+                        StandardParagraphModifier::CommentBlock.modifier_pattern_with_paragraph_separator().clone(),
+                        vec![
+                            Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<!--"#))),
+                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, Vec::new(), StandardParagraphModifier::CommentBlock.incompatible_modifiers())),
+                            Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"-->"#))),
+                        ]
+                    )
+                ))
+            ),
+            (
                 StandardParagraphModifier::CommonParagraph.identifier().clone(),
                 Box::new(ReplacementRuleParagraphLoadingRule::new(
                     ReplacementRule::new(

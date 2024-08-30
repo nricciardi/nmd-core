@@ -42,12 +42,15 @@ pub struct DossierConfigurationCompilation {
     #[getset(get_copy = "pub", set = "pub")]
     strict_list_check: bool,
 
+    #[serde(default = "yes")]
     #[getset(get_copy = "pub", set = "pub")]
     strict_greek_letters_check: bool,
 
+    #[serde(default = "yes")]
     #[getset(get_copy = "pub", set = "pub")]
     strict_cite_check: bool,
 
+    #[serde(default = "yes")]
     #[getset(get_copy = "pub", set = "pub")]
     strict_reference_check: bool,
 }
