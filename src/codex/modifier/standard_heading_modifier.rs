@@ -109,6 +109,6 @@ impl StandardHeading {
 
 impl Into<BaseModifier> for StandardHeading {
     fn into(self) -> BaseModifier {
-        BaseModifier::new(self.modifier_pattern(), self.incompatible_modifiers())
+        BaseModifier::new(self.modifier_pattern(), Regex::new(&self.modifier_pattern()).unwrap(), self.incompatible_modifiers())
     }
 }

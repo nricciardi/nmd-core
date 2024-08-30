@@ -20,6 +20,7 @@ use crate::compiler::compilation_rule::replacement_rule::replacement_rule_part::
 use crate::compiler::compilation_rule::replacement_rule::replacement_rule_part::single_capture_group_replacement_rule_part::SingleCaptureGroupReplacementRuleReplacerPart;
 use crate::compiler::compilation_rule::replacement_rule::ReplacementRule;
 use crate::loader::paragraph_loading_rule::block_quote_paragraph_loading_rule::BlockQuoteParagraphLoadingRule;
+use crate::loader::paragraph_loading_rule::focus_block_paragraph_loading_rule::FocusBlockParagraphLoadingRule;
 use crate::loader::paragraph_loading_rule::image_paragraph_loading_rule::ImageParagraphLoadingRule;
 use crate::loader::paragraph_loading_rule::list_paragraph_loading_rule::ListParagraphLoadingRule;
 use crate::loader::paragraph_loading_rule::replacement_rule_paragraph_loading_rule::ReplacementRuleParagraphLoadingRule;
@@ -114,14 +115,6 @@ impl Codex {
             self.text_compilation_rules.remove(id);
             self.paragraph_loading_rules.remove(id);
         });
-    }
-
-    fn html_nuid_tag_or_nothing(nuid: Option<&NmdUniqueIdentifier>) -> String {
-        if let Some(nuid) = nuid {
-            return format!(r#"data-nuid="{}""#, nuid);
-          }
-
-          String::new()
     }
 
     /// Standard HTML `Codex`
@@ -581,10 +574,10 @@ impl Codex {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<div class="identifier embedded-paragraph-style" id="{}" style="{}" {}>"#,
+                                        r#"<div class="identifier embedded-paragraph-style" id="{}" style="{}"{}>"#,
                                         ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
                                         captures.get(3).unwrap().as_str(),
-                                        Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
+                                        text_utility::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     ))
                                 ]))
                             }))),
@@ -604,9 +597,9 @@ impl Codex {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<div class="embedded-paragraph-style" style="{}" {}>"#,
+                                        r#"<div class="embedded-paragraph-style" style="{}"{}>"#,
                                         captures.get(2).unwrap().as_str(),
-                                        Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
+                                        text_utility::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     ))
                                 ]))
                             }))),
@@ -641,16 +634,36 @@ impl Codex {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<div class="identifier abridged-embedded-paragraph-style" id="{}" {} style="{} {} {}">"#,
+                                        r#"<div class="identifier abridged-embedded-paragraph-style" id="{}" style="{} {} {}"{}>"#,
                                         ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
-                                        Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                         color_style,
                                         bg_style,
                                         font_style,
+                                        text_utility::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     ))
                                 ]))
                             }))),
                             Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardParagraphModifier::AbridgedEmbeddedParagraphStyleWithId.incompatible_modifiers())),
+                            Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div>"#)))
+                        ]
+                    )
+                ))
+            ),
+            (
+                StandardParagraphModifier::Todo.identifier().clone(),
+                Box::new(ReplacementRuleParagraphLoadingRule::new(
+                    ReplacementRule::new(
+                        StandardParagraphModifier::Todo.modifier_pattern_with_paragraph_separator().clone(),
+                        vec![
+                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|_, compilable, _, _, _| {
+
+                                Ok(CompilableText::from(CompilableTextPart::new_fixed(format!(
+                                        r#"<div class="todo"{}><div class="todo-title"></div>"#,
+                                        text_utility::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
+                                    ))
+                                ))
+                            }))),
+                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardParagraphModifier::Todo.incompatible_modifiers())),
                             Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div>"#)))
                         ]
                     )
@@ -664,15 +677,12 @@ impl Codex {
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|_, compilable, _, _, _| {
 
-                                Ok(CompilableText::from(vec![
-                                    CompilableTextPart::new_fixed(format!(
-                                        r#"<div class="todo abridged-todo" {}>"#,
-                                        Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
+                                Ok(CompilableText::from(CompilableTextPart::new_fixed(format!(
+                                        r#"<div class="todo abridged-todo"{}><div class="todo-title"></div></div>"#,
+                                        text_utility::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     ))
-                                ]))
+                                ))
                             }))),
-                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardParagraphModifier::AbridgedTodo.incompatible_modifiers())),
-                            Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div>"#)))
                         ]
                     )
                 ))
@@ -685,12 +695,11 @@ impl Codex {
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|_, compilable, _, _, _| {
 
-                                Ok(CompilableText::from(vec![
-                                    CompilableTextPart::new_fixed(format!(
-                                        r#"<div class="todo multiline-todo" {}><div class="todo-title"></div><div class="todo-description">"#,
-                                        Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
+                                Ok(CompilableText::from(CompilableTextPart::new_fixed(format!(
+                                        r#"<div class="todo multiline-todo"{}><div class="todo-title"></div><div class="todo-description">"#,
+                                        text_utility::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     ))
-                                ]))
+                                ))
                             }))),
                             Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardParagraphModifier::MultilineTodo.incompatible_modifiers())),
                             Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div>"#)))
@@ -723,11 +732,11 @@ impl Codex {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<div class="abridged-embedded-paragraph-style" {} style="{} {} {}">"#,
-                                        Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
+                                        r#"<div class="abridged-embedded-paragraph-style" style="{} {} {}"{}>"#,
                                         color_style,
                                         bg_style,
                                         font_style,
+                                        text_utility::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     ))
                                 ]))
                             }))),
@@ -747,9 +756,9 @@ impl Codex {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<span class="identifier" id="{}" {}>"#,
+                                        r#"<span class="identifier" id="{}"{}>"#,
                                         ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
-                                        Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
+                                        text_utility::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     ))
                                 ]))
                             }))),
@@ -773,8 +782,8 @@ impl Codex {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<p class="math-block" {}>{}</p>"#,
-                                        Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
+                                        r#"<p class="math-block"{}>{}</p>"#,
+                                        text_utility::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                         captures.get(1).unwrap().as_str(),
                                     )
                                 )
@@ -811,8 +820,8 @@ impl Codex {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<pre {}><code class="{} code-block">{}</code></pre>"#,
-                                        Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
+                                        r#"<pre{}><code class="{} code-block">{}</code></pre>"#,
+                                        text_utility::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                         lang_class,
                                         text_utility::replace(captures.get(2).unwrap().as_str(), &ESCAPE_HTML),
                                     )
@@ -829,32 +838,7 @@ impl Codex {
             ),
             (
                 StandardParagraphModifier::FocusBlock.identifier().clone(),
-                Box::new(ReplacementRuleParagraphLoadingRule::new(
-                    ReplacementRule::new(
-                        StandardParagraphModifier::FocusBlock.modifier_pattern_with_paragraph_separator().clone(),
-                        vec![
-                            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
-
-                                let mut focus_block_type = String::from("quote");
-                                if let Some(t) = captures.get(1) {
-                                    focus_block_type = t.as_str().to_string();
-                                }
-
-                                Ok(CompilableText::from(vec![
-                                    CompilableTextPart::new_fixed(format!(
-                                        r#"<div class="focus-block focus-block-{}" {}><div class="focus-block-title focus-block-{}-title"></div><div class="focus-block-description focus-block-{}-description">"#,
-                                        focus_block_type,
-                                        Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
-                                        focus_block_type,
-                                        focus_block_type,
-                                    ))
-                                ]))
-                            }))),
-                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardParagraphModifier::FocusBlock.incompatible_modifiers())),
-                            Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div>"#)))
-                        ]
-                    )
-                ))
+                Box::new(FocusBlockParagraphLoadingRule::new(StandardParagraphModifier::FocusBlock.modifier_pattern_regex_with_paragraph_separator().clone())),
             ),
             (
                 StandardParagraphModifier::LineBreakDash.identifier().clone(),
@@ -866,8 +850,8 @@ impl Codex {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<hr class="line-break line-break-dash" {}>"#,
-                                        Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
+                                        r#"<hr class="line-break line-break-dash"{}>"#,
+                                        text_utility::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     )
                                 )
                                 ]))
@@ -886,8 +870,8 @@ impl Codex {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<hr class="line-break line-break-star" {}>"#,
-                                        Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
+                                        r#"<hr class="line-break line-break-star"{}>"#,
+                                        text_utility::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     )
                                 )
                                 ]))
@@ -906,8 +890,8 @@ impl Codex {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<hr class="line-break line-break-plus" {}>"#,
-                                        Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
+                                        r#"<hr class="line-break line-break-plus"{}>"#,
+                                        text_utility::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     )
                                 )
                                 ]))
@@ -926,8 +910,8 @@ impl Codex {
 
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<p class="paragraph" {}>"#,
-                                        Self::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
+                                        r#"<p class="paragraph"{}>"#,
+                                        text_utility::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     ))
                                 ]))
                             }))),

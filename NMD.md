@@ -610,20 +610,22 @@ Todo is a special tag to insert... TODOs
 @[todo](description)
 ```
 
-...or only as first characters of the line:
+...or only as first characters of the line (*abridged todo*):
 
 ```
 TODO: description
 todo: description
 ```
 
-Multiline todo:
+*Multiline* todo:
 
 ```
 TODO:
 this is a multiline todo
 :TODO
 ```
+
+> **Abridged and multiline todo** are paragraphs.
 
 #### Cite
 

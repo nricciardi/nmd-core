@@ -3,6 +3,7 @@ pub mod table_paragraph;
 pub mod list_paragraph;
 pub mod image_paragraph;
 pub mod block_quote_paragraph;
+pub mod focus_block_paragraph;
 
 
 use std::fmt::Display;

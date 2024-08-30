@@ -11,9 +11,9 @@ pub struct BaseModifier {
 }
 
 impl BaseModifier {
-    pub fn new(modifier_pattern: ModifierPattern, incompatible_modifiers: ModifiersBucket) -> Self {
+    pub fn new(modifier_pattern: ModifierPattern, regex: Regex, incompatible_modifiers: ModifiersBucket) -> Self {
         Self {
-            modifier_pattern_regex: Regex::new(&modifier_pattern).unwrap(),
+            modifier_pattern_regex: regex,
             modifier_pattern,
             incompatible_modifiers
         }

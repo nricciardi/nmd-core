@@ -1,6 +1,6 @@
 use oxipng::Options;
 use crate::{codex::modifier::ModifiersBucket, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, resource::{image_resource::ImageResource, source::Source, ResourceError}};
-use super::nmd_unique_identifier::NmdUniqueIdentifier;
+use super::{nmd_unique_identifier::NmdUniqueIdentifier, text_utility};
 
 
 pub fn set_image_base64_embed_src(image: &mut ImageResource, compression: bool) -> Result<(), ResourceError> {
@@ -52,14 +52,6 @@ pub fn compile_image_resource_in_html(image: &ImageResource, img_classes: Vec<&s
         id_attr = String::new();
     }
 
-    let nuid_attr: String;
-
-    if let Some(nuid) = nuid {
-        nuid_attr = format!(r#"data-nuid="{}""#, nuid);
-    } else {
-        nuid_attr = String::new();
-    }
-
     let style_attr: String;
 
     if let Some(style) = image.style() {
@@ -68,7 +60,7 @@ pub fn compile_image_resource_in_html(image: &ImageResource, img_classes: Vec<&s
         style_attr = String::new();
     }
 
-    compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<figure class="figure" {} {} {}>"#, id_attr, nuid_attr, style_attr)));
+    compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<figure class="figure" {} {} {}>"#, id_attr, text_utility::html_nuid_tag_or_nothing(nuid), style_attr)));
 
     // let html_alt: String;
 

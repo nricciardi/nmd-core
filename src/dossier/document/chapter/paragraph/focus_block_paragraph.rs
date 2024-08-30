@@ -5,7 +5,7 @@ use super::Paragraph;
 
 
 #[derive(Debug, Getters, Setters)]
-pub struct ExtendedBlockQuoteParagraph {
+pub struct FocusBlockParagraph {
 
     #[getset(get = "pub", set = "pub")]
     paragraphs: Vec<Box<dyn Paragraph>>,
@@ -23,7 +23,7 @@ pub struct ExtendedBlockQuoteParagraph {
     compiled_content: Option<CompilableText>,
 }
 
-impl ExtendedBlockQuoteParagraph {
+impl FocusBlockParagraph {
     
     pub fn new(raw_content: String, extended_quote_type: String, paragraphs: Vec<Box<dyn Paragraph>>) -> Self {
         Self {
@@ -36,14 +36,14 @@ impl ExtendedBlockQuoteParagraph {
     }
 }
 
-impl SelfCompile for ExtendedBlockQuoteParagraph {
+impl SelfCompile for FocusBlockParagraph {
     fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
         
         let mut compilation_result = CompilableText::new_empty();
 
-        let mut content = format!(r#"<div class="focus-quote-block focus-quote-block-{}"{}>"#, self.extended_quote_type, text_utility::html_nuid_tag_or_nothing(self.nuid.as_ref()));
-        content.push_str(&format!(r#"<div class="focus-quote-block-title focus-quote-block-{}-title"></div>"#, self.extended_quote_type));
-        content.push_str(&format!(r#"<div class="focus-quote-block-description focus-quote-block-{}-description">"#, self.extended_quote_type));
+        let mut content = format!(r#"<div class="focus-block focus-block-{}" {}>"#, self.extended_quote_type, text_utility::html_nuid_tag_or_nothing(self.nuid.as_ref()));
+        content.push_str(&format!(r#"<div class="focus-block-title focus-block-{}-title"></div>"#, self.extended_quote_type));
+        content.push_str(&format!(r#"<div class="focus-block-description focus-block-{}-description">"#, self.extended_quote_type));
 
         compilation_result.parts_mut().push(CompilableTextPart::new_fixed(content));
 
@@ -62,13 +62,13 @@ impl SelfCompile for ExtendedBlockQuoteParagraph {
 }
 
 
-impl CompiledTextAccessor for ExtendedBlockQuoteParagraph {
+impl CompiledTextAccessor for FocusBlockParagraph {
     fn compiled_text(&self) -> Option<&CompilableText> {
         self.compiled_content.as_ref()
     }
 }
 
-impl Paragraph for ExtendedBlockQuoteParagraph {
+impl Paragraph for FocusBlockParagraph {
     fn raw_content(&self) -> &String {
         &self.raw_content
     }
@@ -90,23 +90,51 @@ impl Paragraph for ExtendedBlockQuoteParagraph {
 #[cfg(test)]
 mod test {
 
-    use crate::{codex::Codex, compiler::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_loading_rule::{block_quote_paragraph_loading_rule::BlockQuoteParagraphLoadingRule, ParagraphLoadingRule}}, output_format::OutputFormat};
+    use crate::{codex::Codex, compiler::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, Loader}, output_format::OutputFormat};
 
-    #[test]
-    fn compile() {
-        let nmd_text = concat!(
-            "> p1a\n",
-            "> p1b\n",
-            ">\n",
-            "> p2a\n"
-        ).to_string();
+    fn load_and_compile_html(content: &str, expected_n: usize) -> String {
         
         let codex = Codex::of_html();
-        let rule = BlockQuoteParagraphLoadingRule::new();
-
-        let mut paragraph = rule.load(&nmd_text, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();    
     
-        paragraph.compile(&OutputFormat::Html, &codex, &CompilationConfiguration::default(), CompilationConfigurationOverLay::default()).unwrap();
+        let paragraphs = Loader::load_paragraphs_from_str(content, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
+
+        assert_eq!(paragraphs.len(), expected_n);
+
+        let mut compiled_content = String::new();
+
+        let cc = CompilationConfiguration::default();
+        let cco = CompilationConfigurationOverLay::default();
+
+        for mut paragraph in paragraphs {
+            paragraph.compile(&OutputFormat::Html, &codex, &cc, cco.clone()).unwrap();
+        
+            compiled_content.push_str(&paragraph.compiled_text().unwrap().content());
+        }
+
+        compiled_content
+    }
+
+    #[test]
+    fn two_focus_block() {
+
+        let nmd_text = concat!(
+            "::: warning\n",
+            "new warning\n\n",
+            "multiline\n",
+            ":::\n\n",
+            "\n",
+            "::: important\n",
+            "new important\n\n",
+            "multiline\n",
+            ":::\n\n",
+        );
+        
+        let compiled_content = load_and_compile_html(nmd_text, 2);
+
+        assert_eq!(compiled_content, concat!(
+            r#"<div class="focus-block focus-block-warning"><div class="focus-block-title focus-block-warning-title"></div><div class="focus-block-description focus-block-warning-description">warning</div></div>"#,
+            r#"<div class="focus-block focus-block-important"><div class="focus-block-title focus-block-important-title"></div><div class="focus-block-description focus-block-important-description">important</div></div>"#,
+        ));
     }
 
 }

@@ -80,6 +80,60 @@ mod test {
 
     use super::ReplacementRuleParagraph;
 
+
+    fn load_and_compile_html(content: &str, expected_n: usize) -> String {
+        
+        let codex = Codex::of_html();
+    
+        let paragraphs = Loader::load_paragraphs_from_str(content, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
+
+        assert_eq!(paragraphs.len(), expected_n);
+
+        let mut compiled_content = String::new();
+
+        let cc = CompilationConfiguration::default();
+        let cco = CompilationConfigurationOverLay::default();
+
+        for mut paragraph in paragraphs {
+            paragraph.compile(&OutputFormat::Html, &codex, &cc, cco.clone()).unwrap();
+        
+            compiled_content.push_str(&paragraph.compiled_text().unwrap().content());
+        }
+
+        compiled_content
+    }
+
+    #[test]
+    fn abridged_toto_load_and_compile() {
+
+        let nmd_text = concat!(   "\n\n",
+                                        "TODO\n\n",
+                                    );
+
+        let compiled_content = load_and_compile_html(nmd_text, 1);
+
+        assert_eq!(compiled_content, r#"<div class="todo abridged-todo"><div class="todo-title"></div></div>"#);
+    }
+
+
+    #[test]
+    fn common_paragraph_load_and_compile() {
+
+        let nmd_text = concat!(  "\n\n",
+                                            "p1\n\n\n",
+                                            "p2\n\n\n",
+                                            "p3a\np3b\np3c\n\n"
+                                        );
+
+        let compiled_content = load_and_compile_html(nmd_text, 3);
+
+        assert_eq!(compiled_content, concat!(
+            r#"<p class="paragraph">p1</p><p class="paragraph">p2</p><p class="paragraph">"#,
+            "p3a\np3b\np3c",
+            r#"</p>"#
+        ));
+    }
+
     #[test]
     fn paragraph_with_nuid() {
 

@@ -88,7 +88,7 @@ mod test {
 
     use std::sync::Arc;
 
-    use crate::{codex::{modifier::{standard_text_modifier::StandardTextModifier, ModifiersBucket}, Codex}, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{constants::ESCAPE_HTML, replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart, single_capture_group_replacement_rule_part::SingleCaptureGroupReplacementRuleReplacerPart, ReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}}, output_format::OutputFormat};
+    use crate::{codex::modifier::{standard_text_modifier::StandardTextModifier, ModifiersBucket}, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{constants::ESCAPE_HTML, replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart, single_capture_group_replacement_rule_part::SingleCaptureGroupReplacementRuleReplacerPart, ReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}}, output_format::OutputFormat};
 
 
     #[test]
@@ -238,32 +238,6 @@ mod test {
     // }
 
     // #[test]
-    // fn paragraph_parsing() {
-
-    //     let codex = Codex::of_html();
-
-    //     let compilation_configuration = CompilationConfiguration::default();
-
-    //     let parsing_rule = ReplacementRule::new(StandardParagraphModifier::CommonParagraph.modifier_pattern_with_paragraph_separator().clone(), vec![
-    //         ReplacementRuleReplacerPart::new_fixed(String::from("<p>")),
-    //         ReplacementRuleReplacerPart::new_mutable(String::from("$1")),
-    //         ReplacementRuleReplacerPart::new_fixed(String::from("</p>")),
-    //     ]);
-
-    //     let text_to_parse = concat!(  "\n\n",
-    //                                         "p1\n\n\n",
-    //                                         "p2\n\n\n",
-    //                                         "p3a\np3b\np3c\n\n"
-    //                                     );
-
-    //     let compilable: Box<dyn Compilable> = Box::new(GenericCompilable::from(text_to_parse.to_string()));
-
-    //     let parsed_text = parsing_rule.compile(&compilable, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
-
-    //     assert_eq!(parsed_text.content(), "<p>p1</p><p>p2</p><p>p3a\np3b\np3c</p>");
-    // }
-
-    // #[test]
     // fn code_block() {
 
     //     let codex = Codex::of_html(CodexConfiguration::default());
@@ -290,31 +264,5 @@ mod test {
     //     assert_eq!(parsed_text.content(), "<pre><code class=\"language-python codeblock\">print(\"hello world\")</code></pre>");
     // }
 
-    // #[test]
-    // fn focus_block() {
-
-    //     let codex = Codex::of_html(CodexConfiguration::default());
-        
-    //     let compilation_configuration = CompilationConfiguration::default();
-
-    //     let parsing_rule = ReplacementRule::new(StandardParagraphModifier::FocusBlock.modifier_pattern_with_paragraph_separator().clone(), vec![
-    //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"<div class="focus-block focus-block-$1">$2</div>"#)),
-    //         ReplacementRuleReplacerPart::new_mutable(String::from(r#"$2"#)),
-    //         ReplacementRuleReplacerPart::new_fixed(String::from(r#"</div>"#)),
-    //     ]).with_newline_fix(r"<br>".to_string());
-
-    //     let text_to_parse = concat!(
-    //         "# title 1",
-    //         "::: warning\nnew warning\n\nmultiline\n:::",
-    //         "\n",
-    //     );
-        
-    //     let compilable: Box<dyn Compilable> = Box::new(GenericCompilable::from(text_to_parse.to_string()));
-
-    //     let parsed_text = parsing_rule.compile(&compilable, &OutputFormat::Html, &codex, &compilation_configuration, Arc::new(RwLock::new(CompilationConfigurationOverLay::default()))).unwrap();
-    //     let parsed_text = parsed_text.content();
-
-    //     assert_ne!(parsed_text, text_to_parse);
-     
-    // }
+    
 }

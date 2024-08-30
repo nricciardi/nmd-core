@@ -21,7 +21,7 @@ pub trait Modifier: std::fmt::Debug + Sync + Send {
 
     fn modifier_pattern(&self) -> &ModifierPattern;
     
-    fn modifier_pattern_regex(&self) -> &Regex; 
+    fn modifier_pattern_regex(&self) -> &Regex;
 
     fn incompatible_modifiers(&self) -> &ModifiersBucket {
         &ModifiersBucket::None
@@ -36,6 +36,6 @@ impl PartialEq for dyn Modifier {
 
 impl Clone for Box<dyn Modifier> {
     fn clone(&self) -> Self {
-        Box::new(BaseModifier::new(self.modifier_pattern().clone(), self.incompatible_modifiers().clone()))
+        Box::new(BaseModifier::new(self.modifier_pattern().clone(), self.modifier_pattern_regex().clone(), self.incompatible_modifiers().clone()))
     }
 }

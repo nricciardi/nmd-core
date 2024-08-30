@@ -1,8 +1,34 @@
+use std::collections::HashMap;
+
+use once_cell::sync::Lazy;
+use regex::Regex;
+
 use super::{base_modifier::BaseModifier, constants::{IDENTIFIER_PATTERN, NEW_LINE}, ModifiersBucket, ModifierIdentifier, ModifierPattern};
 
 
 pub const PARAGRAPH_SEPARATOR_START: &str = r"(?m:^[ \t]*\r?\n)+";
 pub const PARAGRAPH_SEPARATOR_END: &str = r"(?m:[ \t]*\r?\n){2}";
+
+
+static MODIFIER_PATTERNS_REGEX: Lazy<HashMap<ModifierIdentifier, Regex>> = Lazy::new(|| {
+    let mut regex: HashMap<ModifierIdentifier, Regex> = HashMap::new();
+
+    StandardParagraphModifier::ordered().into_iter().for_each(|m| {
+        regex.insert(m.identifier(), Regex::new(&m.modifier_pattern()).unwrap());
+    });
+
+    regex
+});
+
+static MODIFIER_PATTERNS_WITH_PARAGRAPH_SEPARATOR_REGEX: Lazy<HashMap<ModifierIdentifier, Regex>> = Lazy::new(|| {
+    let mut regex: HashMap<ModifierIdentifier, Regex> = HashMap::new();
+
+    StandardParagraphModifier::ordered().into_iter().for_each(|m| {
+        regex.insert(m.identifier(), Regex::new(&m.modifier_pattern_with_paragraph_separator()).unwrap());
+    });
+
+    regex
+});
 
 
 #[derive(Debug, PartialEq, Clone)]
@@ -29,6 +55,7 @@ pub enum StandardParagraphModifier {
     EmbeddedParagraphStyle,
     ParagraphIdentifier,
     PageBreak,
+    Todo,
     AbridgedTodo,
     MultilineTodo,
 }
@@ -38,9 +65,15 @@ impl StandardParagraphModifier {
 
         //! they must have the compatibility order
         vec![
+            Self::CodeBlock,
+            Self::MathBlock,
             Self::Table,
-            Self::MultilineTodo,
+            Self::ExtendedBlockQuote,
+            Self::FocusBlock,
+            Self::List,
             Self::AbridgedTodo,
+            Self::MultilineTodo,
+            Self::Todo,
             Self::PageBreak,
             Self::ParagraphIdentifier,
             Self::EmbeddedParagraphStyleWithId,
@@ -50,15 +83,10 @@ impl StandardParagraphModifier {
             Self::LineBreakDash,
             Self::LineBreakStar,
             Self::LineBreakPlus,
-            Self::List,
             Self::MultiImage,
             Self::AbridgedImage,
             Self::Image,
-            Self::CodeBlock,
             Self::CommentBlock,
-            Self::ExtendedBlockQuote,
-            Self::FocusBlock,
-            Self::MathBlock,
             Self::CommonParagraph,
         ]
     }
@@ -83,6 +111,7 @@ impl StandardParagraphModifier {
             Self::EmbeddedParagraphStyleWithId => String::from("embedded-paragraph-style-with-id"),
             Self::EmbeddedParagraphStyle => String::from("embedded-paragraph-style"),
             Self::PageBreak => String::from("page-break"),
+            Self::Todo => String::from("todo"),
             Self::AbridgedTodo => String::from("abridged-todo"),
             Self::MultilineTodo => String::from("multiline-todo"),
             Self::AbridgedImage => String::from(r"abridged-image"),
@@ -118,7 +147,8 @@ impl StandardParagraphModifier {
             Self::EmbeddedParagraphStyleWithId => format!(r"\[\[(?sx:(.*?))\]\]{}?{}{}?\{{\{{(?xs:((?:.*?:.*?;?)))\}}\}}", NEW_LINE, IDENTIFIER_PATTERN, NEW_LINE),
             Self::EmbeddedParagraphStyle => String::from(r"\[\[(?sx:(.*?))\]\]\{\{(?xs:((?:.*?:.*?;?)))\}\}"),
             Self::PageBreak => String::from(r"(?m:^#{3,}$)"),
-            Self::AbridgedTodo => String::from(r"(?m:^(?i:TODO):?\s(?:(.*?))$)"),
+            Self::Todo => String::from(r"(?m:^(?i:TODO):?\s(?:(.*?))$)"),
+            Self::AbridgedTodo => String::from(r"(?m:^(?i:TODO)$)"),
             Self::MultilineTodo => String::from(r"(?i:TODO):(?s:(.*?)):(?i:TODO)"),
             Self::AbridgedImage => format!(r"!\[\((.*)\)\](?:{})?(?:\{{(.*)\}})?", IDENTIFIER_PATTERN),
             Self::MultiImage => String::from(r"!!(?::([\w-]+):)?\[\[(?s:(.*?))\]\]"),
@@ -148,11 +178,19 @@ impl StandardParagraphModifier {
             _ => ModifiersBucket::None
         }
     }
+
+    pub fn modifier_pattern_regex(&self) -> &Regex {
+        MODIFIER_PATTERNS_REGEX.get(&self.identifier()).unwrap()
+    }
+
+    pub fn modifier_pattern_regex_with_paragraph_separator(&self) -> &Regex {
+        MODIFIER_PATTERNS_WITH_PARAGRAPH_SEPARATOR_REGEX.get(&self.identifier()).unwrap()
+    }
 }
 
 impl Into<BaseModifier> for StandardParagraphModifier {
     fn into(self) -> BaseModifier {
-        BaseModifier::new(self.modifier_pattern_with_paragraph_separator(), self.incompatible_modifiers())
+        BaseModifier::new(self.modifier_pattern_with_paragraph_separator(), self.modifier_pattern_regex_with_paragraph_separator().clone(), self.incompatible_modifiers())
     }
 }
 

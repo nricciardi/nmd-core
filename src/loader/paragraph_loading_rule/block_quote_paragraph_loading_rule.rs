@@ -1,6 +1,5 @@
 use once_cell::sync::Lazy;
 use regex::Regex;
-
 use super::ParagraphLoadingRule;
 use crate::{codex::{modifier::constants::NEW_LINE, Codex}, dossier::document::chapter::paragraph::{block_quote_paragraph::ExtendedBlockQuoteParagraph, Paragraph}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError, Loader}};
 

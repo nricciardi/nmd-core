@@ -3,6 +3,7 @@ pub mod table_paragraph_loading_rule;
 pub mod image_paragraph_loading_rule;
 pub mod list_paragraph_loading_rule;
 pub mod block_quote_paragraph_loading_rule;
+pub mod focus_block_paragraph_loading_rule;
 
 
 use crate::{codex::Codex, dossier::document::chapter::paragraph::Paragraph};

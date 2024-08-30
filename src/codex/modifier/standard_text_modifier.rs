@@ -1,4 +1,21 @@
+use std::collections::HashMap;
+
+use once_cell::sync::Lazy;
+use regex::Regex;
+
 use super::{base_modifier::BaseModifier, constants::NEW_LINE, ModifiersBucket, ModifierIdentifier};
+
+
+static MODIFIER_PATTERNS_REGEX: Lazy<HashMap<ModifierIdentifier, Regex>> = Lazy::new(|| {
+    let mut regex: HashMap<ModifierIdentifier, Regex> = HashMap::new();
+
+    StandardTextModifier::ordered().into_iter().for_each(|m| {
+        regex.insert(m.identifier(), Regex::new(&m.modifier_pattern()).unwrap());
+    });
+
+    regex
+});
+
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum StandardTextModifier {
@@ -169,11 +186,15 @@ impl StandardTextModifier {
             _ => ModifiersBucket::None
         }
     }
+
+    pub fn modifier_pattern_regex(&self) -> &Regex {
+        MODIFIER_PATTERNS_REGEX.get(&self.identifier()).unwrap()
+    }
 }
 
 
 impl Into<BaseModifier> for StandardTextModifier {
     fn into(self) -> BaseModifier {
-        BaseModifier::new(self.modifier_pattern(), self.incompatible_modifiers())
+        BaseModifier::new(self.modifier_pattern(), self.modifier_pattern_regex().clone(), self.incompatible_modifiers())
     }
 }

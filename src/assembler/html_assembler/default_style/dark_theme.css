@@ -406,6 +406,7 @@ body {
 .toc {
     line-height: 2vh;
     color: #fdfdfd;
+    margin-bottom: 7vh;
 }
 
 .toc-title {

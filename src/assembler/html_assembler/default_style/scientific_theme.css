@@ -317,6 +317,11 @@ body {
 
 /* TABLE OF CONTENTS */
 
+.toc {
+    line-height: 2vh;
+    margin-bottom: 7vh;
+}
+
 .toc-title {
     font-size: 24pt;
     font-weight: bold;

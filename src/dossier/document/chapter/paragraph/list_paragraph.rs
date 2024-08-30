@@ -68,15 +68,7 @@ impl ListParagraph {
     fn html_standard_compile(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
         let mut compilation_result = CompilableText::new_empty();
 
-        let nuid_attr: String;
-
-        if let Some(nuid) = self.nuid.as_ref() {
-            nuid_attr = format!(r#"data-nuid="{}""#, nuid);
-        } else {
-            nuid_attr = String::new();
-        }
-
-        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<ul class="list" {}>"#, nuid_attr)));
+        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<ul class="list"{}>"#, text_utility::html_nuid_tag_or_nothing(self.nuid.as_ref()))));
 
         let mut items_found = 0;
 

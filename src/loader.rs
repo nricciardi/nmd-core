@@ -87,7 +87,16 @@ impl Loader {
 
         configuration_overlay.set_document_name(Some(document_name.to_string()));
 
-        let content = String::from(content);
+        let mut content = String::from(content);
+
+        // work-around to fix paragraph matching end line
+        while !content.starts_with(&(*DOUBLE_NEW_LINES)) {
+            content.insert_str(0, NEW_LINE);
+        }
+
+        while !content.ends_with(&(*DOUBLE_NEW_LINES)) {
+            content.push_str(NEW_LINE);
+        }
 
         let mut document_chapters: Vec<Chapter> = Vec::new();
 
