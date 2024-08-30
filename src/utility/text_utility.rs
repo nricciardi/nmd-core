@@ -21,3 +21,27 @@ pub fn html_nuid_tag_or_nothing(nuid: Option<&NmdUniqueIdentifier>) -> String {
 
       String::new()
 }
+
+/// return styles and classes
+pub fn split_styles_and_classes(content: &str) -> (String, String) {
+    let mut styles = String::new();
+    let mut classes = String::new();
+    
+    for item in content.split(";") {
+        let item = item.trim();
+
+        if item.starts_with(".") {
+        
+            classes.push_str(&item[1..item.len()]);
+            classes.push_str(" ");
+        
+        } else {
+
+            styles.push_str(item);
+            styles.push_str("; ");
+        }
+
+    }
+
+    (styles, classes)
+}

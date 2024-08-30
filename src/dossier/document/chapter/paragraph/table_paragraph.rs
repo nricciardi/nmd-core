@@ -29,7 +29,9 @@ pub struct TableParagraph {
 
     raw_id: Option<String>,
 
-    raw_style: Option<String>,
+    styles: Option<String>,
+
+    classes: Option<String>,
 
     raw_caption: Option<String>,
 
@@ -40,13 +42,14 @@ pub struct TableParagraph {
 
 impl TableParagraph {
 
-    pub fn new(raw_content: String, content: TableParagraphContent, raw_id: Option<String>, raw_style: Option<String>, raw_caption: Option<String>,) -> Self {
+    pub fn new(raw_content: String, content: TableParagraphContent, raw_id: Option<String>, styles: Option<String>, classes: Option<String>, raw_caption: Option<String>,) -> Self {
         Self {
             raw_content,
             content,
             raw_caption,
             raw_id,
-            raw_style,
+            styles,
+            classes,
             nuid: None,
             compiled_content: None
         }
@@ -91,14 +94,21 @@ impl TableParagraph {
 
     fn html_standard_compile(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
         
-        let mut html_table_attrs: Vec<(String, String)> = vec![(String::from("class"), String::from("table"))];
+        let mut classes = String::from("table");
+
+        if let Some(c) = &self.classes {
+            classes.push_str(" ");
+            classes.push_str(c);
+        }
+
+        let mut html_table_attrs: Vec<(String, String)> = vec![(String::from("class"), classes)];
 
         if let Some(ref id) = self.raw_id {
 
             html_table_attrs.push((String::from("id"), ResourceReference::of_internal_from_without_sharp(&id, compilation_configuration_overlay.document_name().as_ref())?.build_without_internal_sharp()));
         }
 
-        if let Some(ref style) = self.raw_style {
+        if let Some(ref style) = self.styles {
             html_table_attrs.push((String::from("style"), String::from(style.as_str())));
         }
     

@@ -217,12 +217,15 @@ impl Codex {
                     StandardTextModifier::EmbeddedStyleWithId.modifier_pattern().clone(),
                     vec![
                         Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, _, _, _, cco| {
-    
+
+                            let (styles, classes) = text_utility::split_styles_and_classes(captures.get(2).unwrap().as_str());
+
                             Ok(CompilableText::from(vec![
                                 CompilableTextPart::new_fixed(format!(
-                                    r#"<span class="identifier embedded-style" id="{}" style="{}">"#,
+                                    r#"<span class="identifier embedded-style {}" id="{}" style="{}">"#,
                                     ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
-                                    captures.get(3).unwrap().as_str(),
+                                    classes,
+                                    styles
                                 ))
                             ]))
                         }))),
@@ -237,11 +240,14 @@ impl Codex {
                     StandardTextModifier::EmbeddedStyle.modifier_pattern().clone(),
                     vec![
                         Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, _, _, _, _| {
-    
+
+                            let (styles, classes) = text_utility::split_styles_and_classes(captures.get(2).unwrap().as_str());
+
                             Ok(CompilableText::from(vec![
                                 CompilableTextPart::new_fixed(format!(
-                                    r#"<span class="identifier embedded-style" style="{}">"#,
-                                    captures.get(2).unwrap().as_str(),
+                                    r#"<span class="identifier embedded-style {}" style="{}">"#,
+                                    classes,
+                                    styles,
                                 ))
                             ]))
                         }))),
@@ -571,11 +577,14 @@ impl Codex {
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, cco| {
 
+                                let (styles, classes) = text_utility::split_styles_and_classes(captures.get(2).unwrap().as_str());
+
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<div class="identifier embedded-paragraph-style" id="{}" style="{}"{}>"#,
+                                        r#"<div class="identifier embedded-paragraph-style {}" id="{}" style="{}"{}>"#,
                                         ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
-                                        captures.get(3).unwrap().as_str(),
+                                        classes,
+                                        styles,
                                         text_utility::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     ))
                                 ]))
@@ -594,10 +603,13 @@ impl Codex {
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
 
+                                let (styles, classes) = text_utility::split_styles_and_classes(captures.get(2).unwrap().as_str());
+
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
-                                        r#"<div class="embedded-paragraph-style" style="{}"{}>"#,
-                                        captures.get(2).unwrap().as_str(),
+                                        r#"<div class="embedded-paragraph-style {}" style="{}"{}>"#,
+                                        classes,
+                                        styles,
                                         text_utility::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
                                     ))
                                 ]))

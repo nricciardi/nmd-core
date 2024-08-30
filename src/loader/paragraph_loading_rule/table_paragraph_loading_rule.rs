@@ -2,11 +2,11 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 
 use super::ParagraphLoadingRule;
-use crate::{codex::{modifier::constants::IDENTIFIER_PATTERN, Codex}, dossier::document::chapter::paragraph::{table_paragraph::{TableParagraph, TableParagraphContent, TableParagraphContentRow}, Paragraph}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError, Loader}, resource::table::{Table, TableCell, TableCellAlignment}};
+use crate::{codex::{modifier::constants::IDENTIFIER_PATTERN, Codex}, dossier::document::chapter::paragraph::{table_paragraph::{TableParagraph, TableParagraphContent, TableParagraphContentRow}, Paragraph}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError, Loader}, resource::table::{Table, TableCell, TableCellAlignment}, utility::text_utility};
 
 
-/// (caption, id, style)
-type TableMetadata = (Option<String>, Option<String>, Option<String>);
+/// (caption, id, styles, classes)
+type TableMetadata = (Option<String>, Option<String>, Option<String>, Option<String>);
 
 static EXTRACT_TABLE_METADATA_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&format!(r"(?:\[(.*)\])?(?:{})?(?:\{{(.*)\}})?", IDENTIFIER_PATTERN)).unwrap());
 
@@ -134,14 +134,15 @@ impl TableParagraphLoadingRule {
 
         if captures.is_none() {
             log::warn!("invalid table metadata: '{}'", s);
-            return (None, None, None);
+            return (None, None, None, None);
         }
 
         let captures = captures.unwrap();
 
         let mut caption: Option<String> = None;
         let mut id: Option<String> = None;
-        let mut style: Option<String> = None;
+        let mut styles: Option<String> = None;
+        let mut classes: Option<String> = None;
 
         if let Some(_caption) = captures.get(1) {
             caption = Some(_caption.as_str().to_string());
@@ -151,11 +152,15 @@ impl TableParagraphLoadingRule {
             id = Some(String::from(_id.as_str()));
         }
 
-        if let Some(_style) = captures.get(3) {
-            style = Some(_style.as_str().to_string());
+        if let Some(style) = captures.get(3) {
+
+            let (s, c) = text_utility::split_styles_and_classes(style.as_str());
+
+            styles = Some(s);
+            classes = Some(c);
         }
 
-        (caption, id, style)
+        (caption, id, styles, classes)
     }
 }
 
@@ -174,7 +179,8 @@ impl ParagraphLoadingRule for TableParagraphLoadingRule {
 
         let mut id: Option<String> = None;
         let mut caption: Option<String> = None;
-        let mut style: Option<String> = None;
+        let mut styles: Option<String> = None;
+        let mut classes: Option<String> = None;
 
         for (index, line) in lines.enumerate() {
 
@@ -182,7 +188,7 @@ impl ParagraphLoadingRule for TableParagraphLoadingRule {
             let trim_line = line.trim_start();
             if trim_line.starts_with("[") || trim_line.starts_with("{") || trim_line.starts_with("#") {
                     
-                (caption, id, style) = self.extract_table_metadata(trim_line);
+                (caption, id, styles, classes) = self.extract_table_metadata(trim_line);
             }
 
             let row = Self::extract_table_row_content_from_line(line);
@@ -232,9 +238,7 @@ impl ParagraphLoadingRule for TableParagraphLoadingRule {
             table.shift_last_body_row_to_footer();
         }
 
-        // TODO: table metadata
-
-        Ok(Box::new(TableParagraph::new(raw_content.to_string(), table, id, style, caption)))
+        Ok(Box::new(TableParagraph::new(raw_content.to_string(), table, id, styles, classes, caption)))
     }
 }
 

@@ -24,3 +24,6 @@ pub static INCOMPATIBLE_CHAPTER_HEADING_REGEX: Lazy<Vec<Regex>> = Lazy::new(|| {
         Regex::new(&StandardParagraphModifier::ExtendedBlockQuote.modifier_pattern()).unwrap(),
     ]
 });
+
+pub const STYLE: &str = r"(?xs:((?:.*?)))";
+pub const ABRIDGED_STYLE: &str = r"(.*?)(?s:;(.*?)(?:;(.*?))?)?";

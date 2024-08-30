@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-use super::{base_modifier::BaseModifier, constants::NEW_LINE, ModifiersBucket, ModifierIdentifier};
+use super::{base_modifier::BaseModifier, constants::{ABRIDGED_STYLE, NEW_LINE, STYLE}, ModifierIdentifier, ModifiersBucket};
 
 
 static MODIFIER_PATTERNS_REGEX: Lazy<HashMap<ModifierIdentifier, Regex>> = Lazy::new(|| {
@@ -140,11 +140,11 @@ impl StandardTextModifier {
             Self::Bookmark => String::from(r"@\[([^\]]*?)\]\((?s:(.*?))\)"),
             Self::BookmarkWithId => String::from(r"@\[([^\]]*?)\]#([\w-]*)\((?s:(.*?))\)"),
             Self::Todo => String::from(r"@\[(?i:TODO)\]\((?s:(.*?))\)"),
-            Self::AbridgedEmbeddedStyle => String::from(r"\[([^\]]*?)\]\{(.*?)(?s:;(.*?)(?:;(.*?))?)?\}"),
-            Self::AbridgedEmbeddedStyleWithId => format!(r"\[([^\]]*?)\]{}?#([\w-]*){}?\{{(.*?)(?s:;(.*?)(?:;(.*?))?)?\}}", NEW_LINE, NEW_LINE),
+            Self::AbridgedEmbeddedStyle => format!(r"\[([^\]]*?)\]\{{{}\}}", ABRIDGED_STYLE),
+            Self::AbridgedEmbeddedStyleWithId => format!(r"\[([^\]]*?)\]{}?#([\w-]*){}?\{{{}\}}", NEW_LINE, NEW_LINE, ABRIDGED_STYLE),
             Self::Identifier => format!(r"\[(.*?)\]{}?#([\w-]*)", NEW_LINE),
-            Self::EmbeddedStyleWithId => format!(r"\[([^\]]*?)\]{}?#([\w-]*){}?\{{\{{(?xs:((?:.*?:.*?;?)))\}}\}}", NEW_LINE, NEW_LINE),
-            Self::EmbeddedStyle => String::from(r"\[([^\]]*?)\]\{\{(?xs:((?:.*?:.*?;?)))\}\}"),
+            Self::EmbeddedStyleWithId => format!(r"\[([^\]]*?)\]{}?#([\w-]*){}?\{{\{{{}\}}\}}", NEW_LINE, NEW_LINE, STYLE),
+            Self::EmbeddedStyle => format!(r"\[([^\]]*?)\]\{{\{{{}\}}\}}", STYLE),
             Self::Highlight => String::from(r"==(.*)=="),
             Self::Comment => String::from(r"^//(.*)"),
             Self::Emoji => String::from(r":(\w*):"),

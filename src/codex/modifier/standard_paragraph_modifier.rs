@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-use super::{base_modifier::BaseModifier, constants::{IDENTIFIER_PATTERN, NEW_LINE}, ModifiersBucket, ModifierIdentifier, ModifierPattern};
+use super::{base_modifier::BaseModifier, constants::{ABRIDGED_STYLE, IDENTIFIER_PATTERN, NEW_LINE, STYLE}, ModifierIdentifier, ModifierPattern, ModifiersBucket};
 
 
 pub const PARAGRAPH_SEPARATOR_START: &str = r"(?m:^[ \t]*\r?\n)+";
@@ -142,11 +142,11 @@ impl StandardParagraphModifier {
             Self::LineBreakStar => String::from(r"(?m:^\*{3,})"),
             Self::LineBreakPlus => String::from(r"(?m:^\+{3,})"),
             Self::FocusBlock => format!(r":::\s?(\w+){}(?s:(.*?)){}:::", NEW_LINE, NEW_LINE),
-            Self::AbridgedEmbeddedParagraphStyle => String::from(r"\[\[(?sx:(.*?))\]\]\{(.*?)(?s:;(.*?)(?:;(.*?))?)?\}"),
-            Self::AbridgedEmbeddedParagraphStyleWithId => format!(r"\[\[(?sx:(.*?))\]\]{}?{}{}?\{{(.*?)(?s:;(.*?)(?:;(.*?))?)?\}}", NEW_LINE, IDENTIFIER_PATTERN, NEW_LINE),
+            Self::AbridgedEmbeddedParagraphStyle => format!(r"\[\[(?sx:(.*?))\]\]\{{{}\}}", ABRIDGED_STYLE),
+            Self::AbridgedEmbeddedParagraphStyleWithId => format!(r"\[\[(?sx:(.*?))\]\]{}?{}{}?\{{{}\}}", NEW_LINE, IDENTIFIER_PATTERN, NEW_LINE, ABRIDGED_STYLE),
             Self::ParagraphIdentifier => format!(r"\[\[(?sx:(.*?))\]\]{}?{}", NEW_LINE, IDENTIFIER_PATTERN),
-            Self::EmbeddedParagraphStyleWithId => format!(r"\[\[(?sx:(.*?))\]\]{}?{}{}?\{{\{{(?xs:((?:.*?:.*?;?)))\}}\}}", NEW_LINE, IDENTIFIER_PATTERN, NEW_LINE),
-            Self::EmbeddedParagraphStyle => String::from(r"\[\[(?sx:(.*?))\]\]\{\{(?xs:((?:.*?:.*?;?)))\}\}"),
+            Self::EmbeddedParagraphStyleWithId => format!(r"\[\[(?sx:(.*?))\]\]{}?{}{}?\{{\{{{}\}}\}}", NEW_LINE, IDENTIFIER_PATTERN, NEW_LINE, STYLE),
+            Self::EmbeddedParagraphStyle => format!(r"\[\[(?sx:(.*?))\]\]\{{\{{{}\}}\}}", STYLE),
             Self::PageBreak => String::from(r"(?m:^#{3,}$)"),
             Self::Todo => String::from(r"(?m:^(?i:TODO):?\s(?:(.*?))$)"),
             Self::AbridgedTodo => String::from(r"(?m:^(?i:TODO)$)"),
