@@ -473,7 +473,7 @@ impl Codex {
                             Ok(CompilableText::from(vec![
                                 CompilableTextPart::new_fixed(format!(
                                     r#"<a href="{}" class="link">"#,
-                                    ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
+                                    ResourceReference::of(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
                                 ))
                             ]))
                         }))),
