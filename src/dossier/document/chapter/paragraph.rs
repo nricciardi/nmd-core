@@ -4,6 +4,7 @@ pub mod list_paragraph;
 pub mod image_paragraph;
 pub mod block_quote_paragraph;
 pub mod focus_block_paragraph;
+pub mod metadata_wrapper_paragraph;
 
 
 use std::fmt::Display;

@@ -5,37 +5,67 @@ use super::Paragraph;
 
 
 #[derive(Debug, Getters, Setters)]
-pub struct ExtendedBlockQuoteParagraph {
+pub struct MetadataWrapperParagraph {
+
+    #[getset(set = "pub")]
+    raw_content: String,
 
     #[getset(get = "pub", set = "pub")]
     paragraphs: Vec<Box<dyn Paragraph>>,
-    
-    #[getset(get = "pub", set = "pub")]
-    extended_quote_type: String,
 
     #[getset(set = "pub")]
     nuid: Option<NmdUniqueIdentifier>,
 
-    #[getset(set = "pub")]
-    raw_content: String,
+    raw_id: Option<String>,
+
+    styles: Option<String>,
+
+    classes: Option<String>,
 
     #[getset(set = "pub")]
     compiled_content: Option<CompilableText>,
 }
 
-impl ExtendedBlockQuoteParagraph {
+impl MetadataWrapperParagraph {
     
-    pub fn new(raw_content: String, extended_quote_type: String, paragraphs: Vec<Box<dyn Paragraph>>) -> Self {
+    pub fn new(raw_content: String, paragraphs: Vec<Box<dyn Paragraph>>, raw_id: Option<String>, styles: Option<String>, classes: Option<String>,) -> Self {
         Self {
             raw_content,
             paragraphs,
-            extended_quote_type,
+            raw_id,
+            styles,
+            classes,
             nuid: None,
             compiled_content: None
         }
     }
 
     fn html_standard_compile(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
+        
+        let mut compilation_result = CompilableText::new_empty();
+
+        let nuid_attr = text_utility::html_nuid_tag_or_nothing(self.nuid.as_ref());
+
+        let mut content = format!(r#"<div class="{}" style="{}" {}>"#, &self.classes.unwrap_or(String::new()), &self.styles.unwrap_or(String::new()), nuid_attr);
+
+        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(content));
+
+        for paragraph in self.paragraphs.iter_mut() {
+            paragraph.standard_compile(&OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
+
+            compilation_result.parts_mut().append(&mut paragraph.compiled_text().unwrap().clone().parts_mut());
+        }
+
+        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from("</div>")));
+
+        self.compiled_content = Some(compilation_result);
+
+        Ok(())
+    }
+}
+
+impl SelfCompile for MetadataWrapperParagraph {
+    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
         
         let mut compilation_result = CompilableText::new_empty();
 
@@ -46,7 +76,7 @@ impl ExtendedBlockQuoteParagraph {
         compilation_result.parts_mut().push(CompilableTextPart::new_fixed(content));
 
         for paragraph in self.paragraphs.iter_mut() {
-            paragraph.standard_compile(&OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
+            paragraph.standard_compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
 
             compilation_result.parts_mut().append(&mut paragraph.compiled_text().unwrap().clone().parts_mut());
         }
@@ -59,23 +89,14 @@ impl ExtendedBlockQuoteParagraph {
     }
 }
 
-impl SelfCompile for ExtendedBlockQuoteParagraph {
-    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
-        
-        match format {
-            OutputFormat::Html => self.html_standard_compile(codex, compilation_configuration, compilation_configuration_overlay),
-        }
-    }
-}
 
-
-impl CompiledTextAccessor for ExtendedBlockQuoteParagraph {
+impl CompiledTextAccessor for MetadataWrapperParagraph {
     fn compiled_text(&self) -> Option<&CompilableText> {
         self.compiled_content.as_ref()
     }
 }
 
-impl Paragraph for ExtendedBlockQuoteParagraph {
+impl Paragraph for MetadataWrapperParagraph {
     fn raw_content(&self) -> &String {
         &self.raw_content
     }

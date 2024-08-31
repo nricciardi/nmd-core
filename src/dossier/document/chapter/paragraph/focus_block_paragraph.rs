@@ -34,11 +34,8 @@ impl FocusBlockParagraph {
             compiled_content: None
         }
     }
-}
 
-impl SelfCompile for FocusBlockParagraph {
-    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
-        
+    fn html_standard_compile(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
         let mut compilation_result = CompilableText::new_empty();
 
         let mut content = format!(r#"<div class="focus-block focus-block-{}" {}>"#, self.extended_quote_type, text_utility::html_nuid_tag_or_nothing(self.nuid.as_ref()));
@@ -48,7 +45,7 @@ impl SelfCompile for FocusBlockParagraph {
         compilation_result.parts_mut().push(CompilableTextPart::new_fixed(content));
 
         for paragraph in self.paragraphs.iter_mut() {
-            paragraph.standard_compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
+            paragraph.standard_compile(&OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
 
             compilation_result.parts_mut().append(&mut paragraph.compiled_text().unwrap().clone().parts_mut());
         }
@@ -58,6 +55,15 @@ impl SelfCompile for FocusBlockParagraph {
         self.compiled_content = Some(compilation_result);
 
         Ok(())
+    }
+}
+
+impl SelfCompile for FocusBlockParagraph {
+    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
+        
+        match format {
+            OutputFormat::Html => self.html_standard_compile(codex, compilation_configuration, compilation_configuration_overlay),
+        }
     }
 }
 
