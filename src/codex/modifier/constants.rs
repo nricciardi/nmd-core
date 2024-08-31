@@ -25,5 +25,5 @@ pub static INCOMPATIBLE_CHAPTER_HEADING_REGEX: Lazy<Vec<Regex>> = Lazy::new(|| {
     ]
 });
 
-pub const STYLE: &str = r"(?xs:((?:.*?)))";
+pub const STYLE: &str = r"(?xs:(.*?))";
 pub const ABRIDGED_STYLE: &str = r"(.*?)(?s:;(.*?)(?:;(.*?))?)?";
