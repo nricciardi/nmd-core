@@ -1,5 +1,5 @@
 use getset::{Getters, Setters};
-use crate::{codex::Codex, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile}, output_format::OutputFormat, utility::{nmd_unique_identifier::NmdUniqueIdentifier, text_utility}};
+use crate::{codex::Codex, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile}, output_format::OutputFormat, resource::resource_reference::ResourceReference, utility::{nmd_unique_identifier::NmdUniqueIdentifier, text_utility}};
 use super::Paragraph;
 
 
@@ -46,7 +46,19 @@ impl MetadataWrapperParagraph {
 
         let nuid_attr = text_utility::html_nuid_tag_or_nothing(self.nuid.as_ref());
 
-        let mut content = format!(r#"<div class="{}" style="{}" {}>"#, &self.classes.unwrap_or(String::new()), &self.styles.unwrap_or(String::new()), nuid_attr);
+        let id_attr;
+        if let Some(ref id) = self.raw_id {
+            id_attr = format!(
+                r#"id="{}""#,
+                ResourceReference::of_internal_from_without_sharp(id, compilation_configuration_overlay.document_name().as_ref())?.build()
+            );
+
+        } else {
+
+            id_attr = String::new();
+        }
+
+        let content = format!(r#"<div class="{}" style="{}" {} {}>"#, self.classes.as_ref().unwrap_or(&String::new()), self.styles.as_ref().unwrap_or(&String::new()), nuid_attr, id_attr);
 
         compilation_result.parts_mut().push(CompilableTextPart::new_fixed(content));
 
@@ -67,25 +79,9 @@ impl MetadataWrapperParagraph {
 impl SelfCompile for MetadataWrapperParagraph {
     fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
         
-        let mut compilation_result = CompilableText::new_empty();
-
-        let mut content = format!(r#"<div class="focus-quote-block focus-quote-block-{}"{}>"#, self.extended_quote_type, text_utility::html_nuid_tag_or_nothing(self.nuid.as_ref()));
-        content.push_str(&format!(r#"<div class="focus-quote-block-title focus-quote-block-{}-title"></div>"#, self.extended_quote_type));
-        content.push_str(&format!(r#"<div class="focus-quote-block-description focus-quote-block-{}-description">"#, self.extended_quote_type));
-
-        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(content));
-
-        for paragraph in self.paragraphs.iter_mut() {
-            paragraph.standard_compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
-
-            compilation_result.parts_mut().append(&mut paragraph.compiled_text().unwrap().clone().parts_mut());
+        match format {
+            OutputFormat::Html => self.html_standard_compile(codex, compilation_configuration, compilation_configuration_overlay),
         }
-
-        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from("</div></div>")));
-
-        self.compiled_content = Some(compilation_result);
-
-        Ok(())
     }
 }
 
