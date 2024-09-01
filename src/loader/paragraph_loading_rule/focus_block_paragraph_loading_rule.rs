@@ -1,4 +1,5 @@
 use regex::Regex;
+use getset::{Getters, Setters};
 use super::ParagraphLoadingRule;
 use crate::{codex::Codex, dossier::document::chapter::paragraph::{focus_block_paragraph::FocusBlockParagraph, Paragraph}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError, Loader}};
 
@@ -6,8 +7,10 @@ use crate::{codex::Codex, dossier::document::chapter::paragraph::{focus_block_pa
 const DEFAULT_TYPE: &str = "quote";
 
 
-#[derive(Debug)]
+#[derive(Debug, Getters, Setters, Clone)]
 pub struct FocusBlockParagraphLoadingRule {
+
+    #[getset(get = "pub", set = "pub")]
     loading_regex: Regex,
 }
 

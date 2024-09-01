@@ -1,25 +1,30 @@
 use std::sync::Arc;
-
+use getset::{Getters, Setters};
 use regex::Regex;
 use super::ParagraphLoadingRule;
 use crate::{codex::Codex, dossier::document::chapter::paragraph::{metadata_wrapper_paragraph::MetadataWrapperParagraph, Paragraph}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError, Loader}};
 
 
-const DEFAULT_TYPE: &str = "quote";
-
-
 pub type StyleElaborationFn = Arc<dyn Sync + Send + Fn(&str) -> (Option<String>, Option<String>)>;
 
 
+#[derive(Getters, Setters, Clone)]
 pub struct MetadataWrapperParagraphLoadingRule {
     
+    #[getset(get = "pub", set = "pub")]
     loading_regex: Regex,
 
+    #[getset(get = "pub", set = "pub")]
+    content_group: usize,
+
+    #[getset(get = "pub", set = "pub")]
     id_group: Option<usize>,
 
+    #[getset(get = "pub", set = "pub")]
     style_group: Option<usize>,
 
-    style_elaboration_fn: StyleElaborationFn,
+    #[getset(get = "pub", set = "pub")]
+    style_elaboration_fn: Option<StyleElaborationFn>,
 }
 
 impl std::fmt::Debug for MetadataWrapperParagraphLoadingRule {
@@ -31,9 +36,10 @@ impl std::fmt::Debug for MetadataWrapperParagraphLoadingRule {
 
 impl MetadataWrapperParagraphLoadingRule {
 
-    pub fn new(loading_regex: Regex, id_group: Option<usize>, style_group: Option<usize>, style_elaboration_fn: StyleElaborationFn,) -> Self {
+    pub fn new(loading_regex: Regex, content_group: usize, id_group: Option<usize>, style_group: Option<usize>, style_elaboration_fn: Option<StyleElaborationFn>,) -> Self {
         Self {
             loading_regex,
+            content_group,
             id_group,
             style_group,
             style_elaboration_fn,
@@ -57,16 +63,16 @@ impl MetadataWrapperParagraphLoadingRule {
             let mut styles: Option<String> = None;
             let mut classes: Option<String> = None;
 
-            if let Some(style_group) = self.id_group {
+            if let Some(style_group) = self.style_group {
                 if let Some(style) = captures.get(style_group) {
                 
-                    (styles, classes) = (self.style_elaboration_fn)(style.as_str());
+                    (styles, classes) = (self.style_elaboration_fn.as_ref().unwrap())(style.as_str());
                 }
             }
 
             
 
-            if let Some(body) = captures.get(2) {
+            if let Some(body) = captures.get(self.content_group) {
 
                 let paragraphs: Vec<Box<dyn Paragraph>> = Loader::load_paragraphs_from_str(body.as_str(), codex, configuration, configuration_overlay.clone())?;
         
@@ -103,25 +109,44 @@ impl ParagraphLoadingRule for MetadataWrapperParagraphLoadingRule {
 #[cfg(test)]
 mod test {
 
-    use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, loader::loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}};
-    use super::FocusBlockParagraphLoadingRule;
+    use std::sync::Arc;
+
+    use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, loader::loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, utility::text_utility};
+    use super::MetadataWrapperParagraphLoadingRule;
 
 
     #[test]
     fn load() {
         let nmd_text = concat!(
             "\n\n",
+            "[[\n",
+            "this is a paragraphs\n\n",
             "::: warning\n",
-            "new warning\n\n",
-            "multiline\n",
-            ":::\n\n",
+            "this is another paragraph\n",
+            ":::\n",
+            "]]\n",
+            "{{\n",
+            ".red\n",
+            "}}\n"
         );
 
-        let rule = FocusBlockParagraphLoadingRule::new(StandardParagraphModifier::FocusBlock.modifier_pattern_regex_with_paragraph_separator().clone());
+        let rule = MetadataWrapperParagraphLoadingRule::new(
+            StandardParagraphModifier::EmbeddedParagraphStyle.modifier_pattern_regex().clone(),
+            1,
+            None,
+            Some(2),
+            Some(Arc::new(|style| {
+                text_utility::split_styles_and_classes(style)
+            }))
+        );
 
         let paragraph = rule.inner_load(&nmd_text, &Codex::of_html(), &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();    
     
-        assert_eq!(paragraph.extended_quote_type(), "warning");
+        assert_eq!(paragraph.raw_id().as_ref(), None);
+
+        assert_eq!(paragraph.styles().as_ref(), None);
+
+        assert_eq!(paragraph.classes().as_ref().unwrap(), "red");
 
         assert_eq!(paragraph.paragraphs().len(), 2);
     }

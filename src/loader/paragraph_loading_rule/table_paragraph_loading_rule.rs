@@ -154,10 +154,7 @@ impl TableParagraphLoadingRule {
 
         if let Some(style) = captures.get(3) {
 
-            let (s, c) = text_utility::split_styles_and_classes(style.as_str());
-
-            styles = Some(s);
-            classes = Some(c);
+            (styles, classes) = text_utility::split_styles_and_classes(style.as_str());
         }
 
         (caption, id, styles, classes)

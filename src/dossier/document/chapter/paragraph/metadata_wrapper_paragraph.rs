@@ -16,13 +16,15 @@ pub struct MetadataWrapperParagraph {
     #[getset(set = "pub")]
     nuid: Option<NmdUniqueIdentifier>,
 
+    #[getset(get = "pub", set = "pub")]
     raw_id: Option<String>,
 
+    #[getset(get = "pub", set = "pub")]
     styles: Option<String>,
 
+    #[getset(get = "pub", set = "pub")]
     classes: Option<String>,
 
-    #[getset(set = "pub")]
     compiled_content: Option<CompilableText>,
 }
 

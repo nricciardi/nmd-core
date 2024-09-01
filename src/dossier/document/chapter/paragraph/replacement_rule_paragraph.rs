@@ -11,6 +11,7 @@ pub struct ReplacementRuleParagraph {
     #[getset(set = "pub")]
     raw_content: String,
 
+    #[getset(get = "pub", set = "pub")]
     replacement_rule: ReplacementRule,
 
     #[getset(set = "pub")]

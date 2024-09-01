@@ -6,12 +6,14 @@ use crate::{codex::Codex, compilable_text::{compilable_text_part::CompilableText
 const SINGLE_IMAGE_CLASSES: [&str; 1] = ["image"];
 const ABRIDGED_IMAGE_CLASSES: [&str; 2] = ["image", "abridged-image"];
 
-#[derive(Debug)]
+#[derive(Debug, Getters, Setters)]
 pub struct MultiImage {
     
+    #[getset(get = "pub", set = "pub")]
     pub alignment: String,
 
     /// (image resource, image alignment)
+    #[getset(get = "pub", set = "pub")]
     pub images: Vec<(ImageParagraphContent, String)>, 
 }
 

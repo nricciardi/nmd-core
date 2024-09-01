@@ -1,7 +1,7 @@
 use once_cell::sync::Lazy;
 use regex::Regex;
-
 use super::standard_paragraph_modifier::StandardParagraphModifier;
+
 
 pub const CHAPTER_TAGS_PATTERN: &str = r"(?:\r?\n@(.*))*";
 pub const CHAPTER_STYLE_PATTERN: &str = r"(\r?\n\{(?s:(.*))\})?";
@@ -27,3 +27,5 @@ pub static INCOMPATIBLE_CHAPTER_HEADING_REGEX: Lazy<Vec<Regex>> = Lazy::new(|| {
 
 pub const STYLE: &str = r"(?xs:(.*?))";
 pub const ABRIDGED_STYLE: &str = r"(.*?)(?s:;(.*?)(?:;(.*?))?)?";
+
+pub static ABRIDGED_STYLE_REGEX: Lazy<Regex> = Lazy::new(|| {Regex::new(ABRIDGED_STYLE).unwrap()});

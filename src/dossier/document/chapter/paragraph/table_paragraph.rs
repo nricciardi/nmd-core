@@ -25,17 +25,21 @@ pub struct TableParagraph {
     #[getset(set = "pub")]
     raw_content: String,
 
+    #[getset(get = "pub", set = "pub")]
     content: TableParagraphContent,
 
+    #[getset(get = "pub", set = "pub")]
     raw_id: Option<String>,
 
+    #[getset(get = "pub", set = "pub")]
     styles: Option<String>,
 
+    #[getset(get = "pub", set = "pub")]
     classes: Option<String>,
 
+    #[getset(get = "pub", set = "pub")]
     raw_caption: Option<String>,
 
-    #[getset(set = "pub")]
     compiled_content: Option<CompilableText>,
 
 }
