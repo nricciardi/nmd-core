@@ -555,12 +555,12 @@ impl Compiler {
         let matches = rule.find_iter(&compilable_content);
 
         if matches.len() == 0 {
-            log::debug!("'{}' => no matches with {:?}", compilable_content, rule);
+            log::debug!("'{}' => no matches with {:?} -> {:?}", compilable_content, rule_identifier, rule.search_pattern());
             
             return Ok(());
         }
 
-        log::debug!("'{}' => there is a match with {:#?}", compilable_content, rule);
+        log::debug!("'{}' => there is a match with {:?} -> {:?}", compilable_content, rule_identifier, rule.search_pattern());
 
         let mut compiled_parts: Vec<CompilableTextPart> = Vec::new();     // final output
 

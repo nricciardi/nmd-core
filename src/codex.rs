@@ -145,35 +145,34 @@ impl Codex {
                 )) as Box<dyn CompilationRule>
             ),
             (
-                StandardTextModifier::BookmarkWithId.identifier().clone(),
-                Box::new(ReplacementRule::new(
-                    StandardTextModifier::BookmarkWithId.modifier_pattern().clone(),
-                    vec![
-                        Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, _, _, _, cco| {
-    
-                            Ok(CompilableText::from(vec![
-                                CompilableTextPart::new_fixed(format!(
-                                    r#"<div class="bookmark" id="{}"><div class="bookmark-title">"#,
-                                    ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
-                                ))
-                            ]))
-                        }))),
-                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::BookmarkWithId.incompatible_modifiers())),
-                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div><div class="bookmark-description">"#))),
-                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(3, ESCAPE_HTML.clone(), StandardTextModifier::BookmarkWithId.incompatible_modifiers())),
-                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div></div>"#))),
-                    ]
-                ))
-            ),
-            (
                 StandardTextModifier::Bookmark.identifier().clone(),
                 Box::new(ReplacementRule::new(
                     StandardTextModifier::Bookmark.modifier_pattern().clone(),
                     vec![
-                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<div class="bookmark"><div class="bookmark-title">"#))),
+                        Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, _, _, _, cco| {
+
+                            let mut identifier_class = String::new();
+                            let mut id_attr = String::new();
+                            if let Some(raw_id) = captures.get(2) {
+                                id_attr = format!(
+                                    r#"id="{}""#,
+                                    ResourceReference::of_internal_from_without_sharp(raw_id.as_str(), cco.document_name().as_ref())?.build(),
+                                );
+
+                                identifier_class = String::from("identifier");
+                            }
+    
+                            Ok(CompilableText::from(vec![
+                                CompilableTextPart::new_fixed(format!(
+                                    r#"<div class="{} bookmark" {}><div class="bookmark-title">"#,
+                                    identifier_class,
+                                    id_attr
+                                ))
+                            ]))
+                        }))),
                         Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::Bookmark.incompatible_modifiers())),
                         Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div><div class="bookmark-description">"#))),
-                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(2, ESCAPE_HTML.clone(), StandardTextModifier::Bookmark.incompatible_modifiers())),
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(3, ESCAPE_HTML.clone(), StandardTextModifier::Bookmark.incompatible_modifiers())),
                         Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div></div>"#))),
                     ]
                 ))
@@ -187,51 +186,29 @@ impl Codex {
                 Box::new(ReplacementRule::new(
                     StandardTextModifier::AbridgedBookmark.modifier_pattern().clone(),
                     vec![
-                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<div class="abridged-bookmark"><div class="abridged-bookmark-title">"#))),
-                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::AbridgedBookmark.incompatible_modifiers())),
-                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div></div>"#))),
-                    ]
-                ))
-            ),
-            (
-                StandardTextModifier::AbridgedBookmarkWithId.identifier().clone(),
-                Box::new(ReplacementRule::new(
-                    StandardTextModifier::AbridgedBookmarkWithId.modifier_pattern().clone(),
-                    vec![
                         Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, _, _, _, cco| {
+
+                            let mut identifier_class = String::new();
+                            let mut id_attr = String::new();
+                            if let Some(raw_id) = captures.get(2) {
+                                id_attr = format!(
+                                    r#"id="{}""#,
+                                    ResourceReference::of_internal_from_without_sharp(raw_id.as_str(), cco.document_name().as_ref())?.build(),
+                                );
+
+                                identifier_class = String::from("identifier");
+                            }
     
                             Ok(CompilableText::from(vec![
                                 CompilableTextPart::new_fixed(format!(
-                                    r#"<div class="abridged-bookmark" id="{}"><div class="abridged-bookmark-title">"#,
-                                    ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
+                                    r#"<div class="{} abridged-bookmark" {}><div class="abridged-bookmark-title">"#,
+                                    identifier_class,
+                                    id_attr,
                                 ))
                             ]))
                         }))),
-                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::AbridgedBookmarkWithId.incompatible_modifiers())),
+                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::AbridgedBookmark.incompatible_modifiers())),
                         Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div></div>"#)))
-                    ]
-                ))
-            ),
-            (
-                StandardTextModifier::EmbeddedStyleWithId.identifier().clone(),
-                Box::new(ReplacementRule::new(
-                    StandardTextModifier::EmbeddedStyleWithId.modifier_pattern().clone(),
-                    vec![
-                        Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, _, _, _, cco| {
-
-                            let (styles, classes) = text_utility::split_styles_and_classes(captures.get(2).unwrap().as_str());
-
-                            Ok(CompilableText::from(vec![
-                                CompilableTextPart::new_fixed(format!(
-                                    r#"<span class="identifier embedded-style {}" id="{}" style="{}">"#,
-                                    ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
-                                    classes.unwrap_or(String::new()),
-                                    styles.unwrap_or(String::new())
-                                ))
-                            ]))
-                        }))),
-                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::EmbeddedStyleWithId.incompatible_modifiers())),
-                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</span>"#)))
                     ]
                 ))
             ),
@@ -240,15 +217,28 @@ impl Codex {
                 Box::new(ReplacementRule::new(
                     StandardTextModifier::EmbeddedStyle.modifier_pattern().clone(),
                     vec![
-                        Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, _, _, _, _| {
+                        Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, _, _, _, cco| {
 
-                            let (styles, classes) = text_utility::split_styles_and_classes(captures.get(2).unwrap().as_str());
+                            let (styles, classes) = text_utility::split_styles_and_classes(captures.get(3).unwrap().as_str());
+
+                            let mut identifier_class = String::new();
+                            let mut id_attr = String::new();
+                            if let Some(raw_id) = captures.get(2) {
+                                id_attr = format!(
+                                    r#"id="{}""#,
+                                    ResourceReference::of_internal_from_without_sharp(raw_id.as_str(), cco.document_name().as_ref())?.build(),
+                                );
+
+                                identifier_class = String::from("identifier");
+                            } 
 
                             Ok(CompilableText::from(vec![
                                 CompilableTextPart::new_fixed(format!(
-                                    r#"<span class="identifier embedded-style {}" style="{}">"#,
+                                    r#"<span class="{} embedded-style {}" {} style="{}">"#,
+                                    identifier_class,
                                     classes.unwrap_or(String::new()),
-                                    styles.unwrap_or(String::new()),
+                                    id_attr,
+                                    styles.unwrap_or(String::new())
                                 ))
                             ]))
                         }))),
@@ -258,11 +248,22 @@ impl Codex {
                 ))
             ),
             (
-                StandardTextModifier::AbridgedEmbeddedStyleWithId.identifier().clone(),
+                StandardTextModifier::AbridgedEmbeddedStyle.identifier().clone(),
                 Box::new(ReplacementRule::new(
-                    StandardTextModifier::AbridgedEmbeddedStyleWithId.modifier_pattern().clone(),
+                    StandardTextModifier::AbridgedEmbeddedStyle.modifier_pattern().clone(),
                     vec![
                         Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, _, _, _, cco| {
+
+                            let mut identifier_class = String::new();
+                            let mut id_attr = String::new();
+                            if let Some(raw_id) = captures.get(2) {
+                                id_attr = format!(
+                                    r#"id="{}""#,
+                                    ResourceReference::of_internal_from_without_sharp(raw_id.as_str(), cco.document_name().as_ref())?.build(),
+                                );
+
+                                identifier_class = String::from("identifier");
+                            } 
     
                             let mut color_style = String::new();
                             if let Some(color) = captures.get(4) {
@@ -281,44 +282,9 @@ impl Codex {
 
                             Ok(CompilableText::from(vec![
                                 CompilableTextPart::new_fixed(format!(
-                                    r#"<span class="identifier abridged-embedded-style" id="{}" style="{} {} {}">"#,
-                                    ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
-                                    color_style,
-                                    bg_style,
-                                    font_style,
-                                ))
-                            ]))
-                        }))),
-                        Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::AbridgedEmbeddedStyleWithId.incompatible_modifiers())),
-                        Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</span>"#)))
-                    ]
-                ))
-            ),
-            (
-                StandardTextModifier::AbridgedEmbeddedStyle.identifier().clone(),
-                Box::new(ReplacementRule::new(
-                    StandardTextModifier::AbridgedEmbeddedStyle.modifier_pattern().clone(),
-                    vec![
-                        Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, _, _, _, _| {
-
-                            let mut color_style = String::new();
-                            if let Some(color) = captures.get(3) {
-                                color_style = format!("color: {};", color.as_str());
-                            }
-
-                            let mut bg_style = String::new();
-                            if let Some(bg) = captures.get(4) {
-                                bg_style = format!("background-color: {};", bg.as_str());
-                            }
-
-                            let mut font_style = String::new();
-                            if let Some(font) = captures.get(5) {
-                                font_style = format!("font-family: {};", font.as_str());
-                            }
-    
-                            Ok(CompilableText::from(vec![
-                                CompilableTextPart::new_fixed(format!(
-                                    r#"<span class="abridged-embedded-style" style="{} {} {}">"#,
+                                    r#"<span class="{} abridged-embedded-style" {} style="{} {} {}">"#,
+                                    identifier_class,
+                                    id_attr,
                                     color_style,
                                     bg_style,
                                     font_style,
@@ -571,29 +537,26 @@ impl Codex {
                     ))
             ),
             (
-                StandardParagraphModifier::EmbeddedParagraphStyleWithId.identifier().clone(),
+                StandardParagraphModifier::EmbeddedParagraphStyle.identifier().clone(),
                 Box::new(MetadataWrapperParagraphLoadingRule::new(
-                    StandardParagraphModifier::EmbeddedParagraphStyleWithId.modifier_pattern_regex_with_paragraph_separator().clone(),
+                    StandardParagraphModifier::EmbeddedParagraphStyle.modifier_pattern_regex_with_paragraph_separator().clone(),
                     1,
                     Some(2),
                     Some(3),
-                    Some(Arc::new(|style| {
-                        text_utility::split_styles_and_classes_with_default(style, (None, Some(String::from("identifier embedded-paragraph-style"))))
+                    Some(Arc::new(|style, there_is_id| {
+
+                        if there_is_id {
+
+                            text_utility::split_styles_and_classes_with_default(style, (None, Some(String::from("identifier embedded-paragraph-style"))))
+                        
+                        } else {
+
+                            text_utility::split_styles_and_classes_with_default(style, (None, Some(String::from("embedded-paragraph-style"))))
+                        }
+
                     })),
                 ))
             ),
-            // (
-            //     StandardParagraphModifier::EmbeddedParagraphStyle.identifier().clone(),
-            //     Box::new(MetadataWrapperParagraphLoadingRule::new(
-            //         StandardParagraphModifier::EmbeddedParagraphStyle.modifier_pattern_regex_with_paragraph_separator().clone(),
-            //         1,
-            //         None,
-            //         Some(2),
-            //         Some(Arc::new(|style| {
-            //             text_utility::split_styles_and_classes_with_default(style, (None, Some(String::from("embedded-paragraph-style"))))
-            //         })),
-            //     ))
-            // ),
             (
                 StandardParagraphModifier::ParagraphIdentifier.identifier().clone(),
                 Box::new(MetadataWrapperParagraphLoadingRule::new(
@@ -604,69 +567,6 @@ impl Codex {
                     None,
                 ))
             ),
-            // TODO: incompatible with EmbeddedParagraphStyle
-            // (
-            //     StandardParagraphModifier::AbridgedEmbeddedParagraphStyleWithId.identifier().clone(),
-            //     Box::new(MetadataWrapperParagraphLoadingRule::new(
-            //         StandardParagraphModifier::AbridgedEmbeddedParagraphStyleWithId.modifier_pattern_regex_with_paragraph_separator().clone(),
-            //         1,
-            //         Some(2),
-            //         Some(3),
-            //         Some(Arc::new(|style| {
-
-            //             let mut styles = String::new();
-
-            //             if let Some(captures) = ABRIDGED_STYLE_REGEX.captures(style) {
-
-            //                 if let Some(color) = captures.get(2) {
-            //                     styles.push_str(&format!("color: {}; ", color.as_str()));
-            //                 }
-    
-            //                 if let Some(bg) = captures.get(3) {
-            //                     styles.push_str(&format!("background-color: {}; ", bg.as_str()));
-            //                 }
-    
-            //                 if let Some(font) = captures.get(4) {
-            //                     styles.push_str(&format!("font-family: {};", font.as_str()));
-            //                 }
-            //             }
-
-            //             (Some(styles), Some(String::from("identifier abridged-embedded-paragraph-style")))
-            //         })),
-            //     ))
-            // ),
-            // (
-            //     StandardParagraphModifier::AbridgedEmbeddedParagraphStyle.identifier().clone(),
-            //     Box::new(MetadataWrapperParagraphLoadingRule::new(
-            //         StandardParagraphModifier::AbridgedEmbeddedParagraphStyle.modifier_pattern_regex_with_paragraph_separator().clone(),
-            //         1,
-            //         None,
-            //         Some(2),
-            //         Some(Arc::new(|style| {
-
-            //             println!("AbridgedEmbeddedParagraphStyle: {}", style);
-
-            //             let mut styles = String::new();
-
-            //             if let Some(captures) = ABRIDGED_STYLE_REGEX.captures(style) {
-
-            //                 if let Some(color) = captures.get(2) {
-            //                     styles.push_str(&format!("color: {}; ", color.as_str()));
-            //                 }
-    
-            //                 if let Some(bg) = captures.get(3) {
-            //                     styles.push_str(&format!("background-color: {}; ", bg.as_str()));
-            //                 }
-    
-            //                 if let Some(font) = captures.get(4) {
-            //                     styles.push_str(&format!("font-family: {};", font.as_str()));
-            //                 }
-            //             }
-
-            //             (Some(styles), Some(String::from("abridged-embedded-paragraph-style")))
-            //         })),
-            //     ))
-            // ),
             (
                 StandardParagraphModifier::Todo.identifier().clone(),
                 Box::new(ReplacementRuleParagraphLoadingRule::new(
@@ -925,7 +825,7 @@ mod test {
                 ),
                 (
                     String::from("e"),
-                    Box::new(Into::<BaseModifier>::into(StandardTextModifier::BookmarkWithId)) as Box<dyn Modifier>
+                    Box::new(Into::<BaseModifier>::into(StandardTextModifier::Bookmark)) as Box<dyn Modifier>
                 ),
                 (
                     String::from("c"),

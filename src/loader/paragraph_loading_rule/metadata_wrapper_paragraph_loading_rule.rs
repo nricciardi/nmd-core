@@ -5,7 +5,7 @@ use super::ParagraphLoadingRule;
 use crate::{codex::Codex, dossier::document::chapter::paragraph::{metadata_wrapper_paragraph::MetadataWrapperParagraph, Paragraph}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError, Loader}};
 
 
-pub type StyleElaborationFn = Arc<dyn Sync + Send + Fn(&str) -> (Option<String>, Option<String>)>;
+pub type StyleElaborationFn = Arc<dyn Sync + Send + Fn(&str, bool) -> (Option<String>, Option<String>)>;
 
 
 #[derive(Getters, Setters, Clone)]
@@ -51,11 +51,13 @@ impl MetadataWrapperParagraphLoadingRule {
         if let Some(captures) = self.loading_regex.captures(raw_content) {
 
             let mut raw_id: Option<String> = None;
+            let mut there_is_id = false;
 
             if let Some(id_group) = self.id_group {
                 if let Some(id) = captures.get(id_group) {
                 
                     raw_id = Some(id.as_str().to_string());
+                    there_is_id = true;
     
                 }
             }
@@ -66,7 +68,7 @@ impl MetadataWrapperParagraphLoadingRule {
             if let Some(style_group) = self.style_group {
                 if let Some(style) = captures.get(style_group) {
                 
-                    (styles, classes) = (self.style_elaboration_fn.as_ref().unwrap())(style.as_str());
+                    (styles, classes) = (self.style_elaboration_fn.as_ref().unwrap())(style.as_str(), there_is_id);
                 }
             }
 
@@ -131,11 +133,11 @@ mod test {
         );
 
         let rule = MetadataWrapperParagraphLoadingRule::new(
-            StandardParagraphModifier::EmbeddedParagraphStyleWithId.modifier_pattern_regex().clone(),
+            StandardParagraphModifier::EmbeddedParagraphStyle.modifier_pattern_regex().clone(),
             1,
             Some(2),
             Some(3),
-            Some(Arc::new(|style| {
+            Some(Arc::new(|style, _| {
                 text_utility::split_styles_and_classes(style)
             }))
         );

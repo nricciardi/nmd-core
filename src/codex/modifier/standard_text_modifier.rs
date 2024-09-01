@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-use super::{base_modifier::BaseModifier, constants::{ABRIDGED_STYLE_PATTERN, NEW_LINE, STYLE_PATTERN}, ModifierIdentifier, ModifiersBucket};
+use super::{base_modifier::BaseModifier, constants::{ABRIDGED_STYLE_PATTERN, IDENTIFIER_PATTERN, NEW_LINE, STYLE_PATTERN}, ModifierIdentifier, ModifiersBucket};
 
 
 static MODIFIER_PATTERNS_REGEX: Lazy<HashMap<ModifierIdentifier, Regex>> = Lazy::new(|| {
@@ -27,9 +27,7 @@ pub enum StandardTextModifier {
     Strikethrough,
     Underlined,
     Link,
-    AbridgedEmbeddedStyleWithId,
     AbridgedEmbeddedStyle,
-    EmbeddedStyleWithId,
     EmbeddedStyle,
     Identifier,
     Highlight,
@@ -42,8 +40,6 @@ pub enum StandardTextModifier {
     Comment,
     AbridgedBookmark,
     Bookmark,
-    AbridgedBookmarkWithId,
-    BookmarkWithId,
     Todo,
     Checkbox,
     CheckboxChecked,
@@ -65,13 +61,9 @@ impl StandardTextModifier {
             Self::Escape,
             Self::GreekLetter,
             Self::Todo,
-            Self::BookmarkWithId,
             Self::Bookmark,
-            Self::AbridgedBookmarkWithId,
             Self::AbridgedBookmark,
-            Self::EmbeddedStyleWithId,
             Self::EmbeddedStyle,
-            Self::AbridgedEmbeddedStyleWithId,
             Self::AbridgedEmbeddedStyle,
             Self::Identifier,
             Self::Highlight,
@@ -94,15 +86,13 @@ impl StandardTextModifier {
 
     pub fn identifier(&self) -> ModifierIdentifier {
         match self {
+            // Self::AbridgedBookmark => String::from("abridged-bookmark"),
             Self::AbridgedBookmark => String::from("abridged-bookmark"),
-            Self::AbridgedBookmarkWithId => String::from("abridged-bookmark-with-id"),
+            // Self::Bookmark => String::from("bookmark"),
             Self::Bookmark => String::from("bookmark"),
-            Self::BookmarkWithId => String::from("bookmark-with-id"),
             Self::Todo => String::from("todo"),
             Self::AbridgedEmbeddedStyle => String::from("abridged-embedded-style"),
-            Self::AbridgedEmbeddedStyleWithId => String::from("abridged-embedded-style-with-id"),
             Self::Identifier => String::from("identifier"),
-            Self::EmbeddedStyleWithId => String::from("embedded-style-with-id"),
             Self::EmbeddedStyle => String::from("embedded-style"),
             Self::Highlight => String::from("highlight"),
             Self::Comment => String::from("comment"),
@@ -135,16 +125,12 @@ impl StandardTextModifier {
     
     pub fn modifier_pattern(&self) -> String {
         match *self {
-            Self::AbridgedBookmark => String::from(r"@\[([^\]]*?)\]"),
-            Self::AbridgedBookmarkWithId => String::from(r"@\[([^\]]*?)\]#([\w-]*)"),
-            Self::Bookmark => String::from(r"@\[([^\]]*?)\]\((?s:(.*?))\)"),
-            Self::BookmarkWithId => String::from(r"@\[([^\]]*?)\]#([\w-]*)\((?s:(.*?))\)"),
+            Self::AbridgedBookmark => format!(r"@\[([^\]]*?)\](?:{})?", IDENTIFIER_PATTERN),
+            Self::Bookmark => format!(r"@\[([^\]]*?)\](?:{})?\((?s:(.*?))\)", IDENTIFIER_PATTERN),
             Self::Todo => String::from(r"@\[(?i:TODO)\]\((?s:(.*?))\)"),
-            Self::AbridgedEmbeddedStyle => format!(r"\[([^\]\n]*?)\]\{{{}\}}", ABRIDGED_STYLE_PATTERN),
-            Self::AbridgedEmbeddedStyleWithId => format!(r"\[([^\]\n]*?)\]{}?#([\w-]*){}?\{{{}\}}", NEW_LINE, NEW_LINE, ABRIDGED_STYLE_PATTERN),
+            Self::AbridgedEmbeddedStyle => format!(r"\[([^\]\n]*?)\]{}?(?:{})?{}?\{{{}\}}", NEW_LINE, IDENTIFIER_PATTERN, NEW_LINE, ABRIDGED_STYLE_PATTERN),
             Self::Identifier => format!(r"\[(.*?)\]{}?#([\w-]*)", NEW_LINE),
-            Self::EmbeddedStyleWithId => format!(r"\[([^\]\n]*?)\]{}?#([\w-]*){}?\{{\{{{}\}}\}}", NEW_LINE, NEW_LINE, STYLE_PATTERN),
-            Self::EmbeddedStyle => format!(r"\[([^\]\n]*?)\]\{{\{{{}\}}\}}", STYLE_PATTERN),
+            Self::EmbeddedStyle => format!(r"\[([^\]\n]*?)\]{}?(?:{})?{}?\{{\{{{}\}}\}}", NEW_LINE, IDENTIFIER_PATTERN, NEW_LINE, STYLE_PATTERN),
             Self::Highlight => String::from(r"==(.*)=="),
             Self::Comment => String::from(r"^//(.*)"),
             Self::Emoji => String::from(r":(\w*):"),
