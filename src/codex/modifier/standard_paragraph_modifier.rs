@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-use super::{base_modifier::BaseModifier, constants::{ABRIDGED_STYLE, IDENTIFIER_PATTERN, NEW_LINE, STYLE}, ModifierIdentifier, ModifierPattern, ModifiersBucket};
+use super::{base_modifier::BaseModifier, constants::{IDENTIFIER_PATTERN, NEW_LINE, STYLE_PATTERN}, ModifierIdentifier, ModifierPattern, ModifiersBucket};
 
 
 pub const PARAGRAPH_SEPARATOR_START: &str = r"(?m:^[ \t]*\r?\n)+";
@@ -49,10 +49,12 @@ pub enum StandardParagraphModifier {
     LineBreakStar,
     LineBreakPlus,
     CommonParagraph,
-    AbridgedEmbeddedParagraphStyleWithId,
-    AbridgedEmbeddedParagraphStyle,
+
+    // TODO: incompatible with EmbeddedParagraphStyleWithId
+    // AbridgedEmbeddedParagraphStyleWithId,
+    // AbridgedEmbeddedParagraphStyle,
     EmbeddedParagraphStyleWithId,
-    EmbeddedParagraphStyle,
+    // EmbeddedParagraphStyle,
     ParagraphIdentifier,
     PageBreak,
     Todo,
@@ -67,6 +69,9 @@ impl StandardParagraphModifier {
         vec![
             Self::CodeBlock,
             Self::MathBlock,
+            Self::EmbeddedParagraphStyleWithId,
+            // Self::EmbeddedParagraphStyle,
+            Self::ParagraphIdentifier,
             Self::Table,
             Self::ExtendedBlockQuote,
             Self::FocusBlock,
@@ -75,11 +80,8 @@ impl StandardParagraphModifier {
             Self::MultilineTodo,
             Self::Todo,
             Self::PageBreak,
-            Self::ParagraphIdentifier,
-            Self::EmbeddedParagraphStyleWithId,
-            Self::EmbeddedParagraphStyle,
-            Self::AbridgedEmbeddedParagraphStyleWithId,
-            Self::AbridgedEmbeddedParagraphStyle,
+            // Self::AbridgedEmbeddedParagraphStyleWithId,
+            // Self::AbridgedEmbeddedParagraphStyle,
             Self::LineBreakDash,
             Self::LineBreakStar,
             Self::LineBreakPlus,
@@ -105,11 +107,11 @@ impl StandardParagraphModifier {
             Self::LineBreakStar => String::from("line-break-star"),
             Self::LineBreakPlus => String::from("line-break-plus"),
             Self::FocusBlock => String::from("focus-block"),
-            Self::AbridgedEmbeddedParagraphStyle => String::from("abridged-embedded-paragraph-style"),
-            Self::AbridgedEmbeddedParagraphStyleWithId => String::from("abridged-embedded-paragraph-style-with-id"),
+            // Self::AbridgedEmbeddedParagraphStyle => String::from("abridged-embedded-paragraph-style"),
+            // Self::AbridgedEmbeddedParagraphStyleWithId => String::from("abridged-embedded-paragraph-style-with-id"),
             Self::ParagraphIdentifier => String::from("paragraph-identifier"),
             Self::EmbeddedParagraphStyleWithId => String::from("embedded-paragraph-style-with-id"),
-            Self::EmbeddedParagraphStyle => String::from("embedded-paragraph-style"),
+            // Self::EmbeddedParagraphStyle => String::from("embedded-paragraph-style"),
             Self::PageBreak => String::from("page-break"),
             Self::Todo => String::from("todo"),
             Self::AbridgedTodo => String::from("abridged-todo"),
@@ -129,7 +131,7 @@ impl StandardParagraphModifier {
     // Return the modifier pattern
     pub fn modifier_pattern(&self) -> ModifierPattern {
         match *self {
-            Self::Image => format!(r"!\[([^\]]*)\](?:{})?\(([^)]+)\)(?:\{{(.*)\}})?", IDENTIFIER_PATTERN),
+            Self::Image => format!(r"!\[([^\]]*)\](?:{})?\(([^)]+)\)(?:\{{\{{{}\}}\}})?", IDENTIFIER_PATTERN, STYLE_PATTERN),
             Self::CommonParagraph => String::from(r#"(?s:(.*?))"#),
             Self::CommentBlock => String::from(r"<!--(?s:(.*?))-->"),
             Self::CodeBlock => format!(r"```\s?(\w+){}+(?s:(.*?)){}+```", NEW_LINE, NEW_LINE),
@@ -142,18 +144,18 @@ impl StandardParagraphModifier {
             Self::LineBreakStar => String::from(r"(?m:^\*{3,})"),
             Self::LineBreakPlus => String::from(r"(?m:^\+{3,})"),
             Self::FocusBlock => format!(r":::\s?(\w+){}(?s:(.*?)){}:::", NEW_LINE, NEW_LINE),
-            Self::AbridgedEmbeddedParagraphStyle => format!(r"\[\[(?sx:(.*?))\]\]{}*\{{{}\}}", NEW_LINE, ABRIDGED_STYLE),
-            Self::AbridgedEmbeddedParagraphStyleWithId => format!(r"\[\[(?sx:(.*?))\]\]{}*{}{}*\{{{}\}}", NEW_LINE, IDENTIFIER_PATTERN, NEW_LINE, ABRIDGED_STYLE),
-            Self::ParagraphIdentifier => format!(r"\[\[(?sx:(.*?))\]\]{}*{}", NEW_LINE, IDENTIFIER_PATTERN),
-            Self::EmbeddedParagraphStyleWithId => format!(r"\[\[(?sx:(.*?))\]\]{}*{}{}*\{{\{{{}\}}\}}", NEW_LINE, IDENTIFIER_PATTERN, NEW_LINE, STYLE),
-            Self::EmbeddedParagraphStyle => format!(r"\[\[(?sx:(.*?))\]\]{}*\{{\{{{}\}}\}}", NEW_LINE, STYLE),
+            Self::ParagraphIdentifier => format!(r"\[\[(?sx:(.*?))\]\]{}?{}", NEW_LINE, IDENTIFIER_PATTERN),
+            Self::EmbeddedParagraphStyleWithId => format!(r"\[\[(?sx:(.*?))\]\]{}?(?:{})?{}?\{{\{{{}\}}\}}", NEW_LINE, IDENTIFIER_PATTERN, NEW_LINE, STYLE_PATTERN),
+            // Self::EmbeddedParagraphStyle => format!(r"\[\[(?sx:(.*?))\]\]{}?\{{\{{{}\}}\}}", NEW_LINE, STYLE_PATTERN),
+            // Self::AbridgedEmbeddedParagraphStyle => format!(r"\[\[(?sx:(.*?))\]\]{}?\{{{}\}}", NEW_LINE, ABRIDGED_STYLE),
+            // Self::AbridgedEmbeddedParagraphStyleWithId => format!(r"\[\[(?sx:(.*?))\]\]{}?{}{}*\{{{}\}}", NEW_LINE, IDENTIFIER_PATTERN, NEW_LINE, ABRIDGED_STYLE),
             Self::PageBreak => String::from(r"(?m:^#{3,}$)"),
             Self::Todo => String::from(r"(?m:^(?i:TODO):?\s(?:(.*?))$)"),
             Self::AbridgedTodo => String::from(r"(?m:^(?i:TODO)$)"),
             Self::MultilineTodo => String::from(r"(?i:TODO):(?s:(.*?)):(?i:TODO)"),
-            Self::AbridgedImage => format!(r"!\[\((.*)\)\](?:{})?(?:\{{(.*)\}})?", IDENTIFIER_PATTERN),
+            Self::AbridgedImage => format!(r"!\[\((.*)\)\](?:{})?(?:\{{\{{{}\}}\}})?", IDENTIFIER_PATTERN, STYLE_PATTERN),
             Self::MultiImage => String::from(r"!!(?::([\w-]+):)?\[\[(?s:(.*?))\]\]"),
-            Self::Table => format!(r"(\|(.*)\|{}?)+(?:\|(.*)\|)(?U:{}?(?:\[(.*)\])?(?:{})?(?:\{{(.*)\}})?)?", NEW_LINE, NEW_LINE, IDENTIFIER_PATTERN),
+            Self::Table => format!(r"(\|(.*)\|{}?)+(?:\|(.*)\|)(?U:{}?(?:\[(.*)\])?(?:{})?(?:\{{\{{{}\}}\}})?)?", NEW_LINE, NEW_LINE, IDENTIFIER_PATTERN, STYLE_PATTERN),
             
             // _ => {
             //     log::warn!("there is NOT a modifier pattern for {:#?}", self);

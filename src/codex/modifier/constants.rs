@@ -25,7 +25,8 @@ pub static INCOMPATIBLE_CHAPTER_HEADING_REGEX: Lazy<Vec<Regex>> = Lazy::new(|| {
     ]
 });
 
-pub const STYLE: &str = r"(?xs:(.*?))";
-pub const ABRIDGED_STYLE: &str = r"(.*?)(?s:;(.*?)(?:;(.*?))?)?";
+pub const STYLE_PATTERN: &str = r"([^{}]*(?:\.(?:\w+|\d+)\s*|(?:\w+\s*:\s*[^;{}]+\s*;?))*)";
+pub const ABRIDGED_STYLE_PATTERN: &str = r"((#?[\w\d\-]+)?;(#?[\w\d\-]+)?;?([\w\d\-]+)?)";
 
-pub static ABRIDGED_STYLE_REGEX: Lazy<Regex> = Lazy::new(|| {Regex::new(ABRIDGED_STYLE).unwrap()});
+pub static STYLE_REGEX: Lazy<Regex> = Lazy::new(|| {Regex::new(STYLE_PATTERN).unwrap()});
+pub static ABRIDGED_STYLE_REGEX: Lazy<Regex> = Lazy::new(|| {Regex::new(ABRIDGED_STYLE_PATTERN).unwrap()});

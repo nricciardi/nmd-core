@@ -52,15 +52,23 @@ pub fn compile_image_resource_in_html(image: &ImageResource, img_classes: Vec<&s
         id_attr = String::new();
     }
 
-    let style_attr: String;
+    let styles: String;
+    let classes: String;
 
     if let Some(style) = image.style() {
-        style_attr = format!(r#"style="{}""#, style);
+
+        let (s, c) = text_utility::split_styles_and_classes(style);
+
+        styles = s.unwrap_or(String::new());
+        classes = c.unwrap_or(String::new());
+    
     } else {
-        style_attr = String::new();
+
+        styles = String::new();
+        classes = String::new();
     }
 
-    compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<figure class="figure" {} {} {}>"#, id_attr, text_utility::html_nuid_tag_or_nothing(nuid), style_attr)));
+    compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<figure class="figure {}" style="{}" {} {}>"#, classes, styles, id_attr, text_utility::html_nuid_tag_or_nothing(nuid))));
 
     // let html_alt: String;
 

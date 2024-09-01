@@ -10,7 +10,6 @@ use std::sync::Arc;
 use getset::{Getters, Setters};
 use indexmap::IndexMap;
 use modifier::base_modifier::BaseModifier;
-use modifier::constants::ABRIDGED_STYLE_REGEX;
 use modifier::Modifier;
 use self::modifier::standard_paragraph_modifier::StandardParagraphModifier;
 use self::modifier::standard_text_modifier::StandardTextModifier;
@@ -266,17 +265,17 @@ impl Codex {
                         Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, _, _, _, cco| {
     
                             let mut color_style = String::new();
-                            if let Some(color) = captures.get(3) {
+                            if let Some(color) = captures.get(4) {
                                 color_style = format!("color: {};", color.as_str());
                             }
 
                             let mut bg_style = String::new();
-                            if let Some(bg) = captures.get(4) {
+                            if let Some(bg) = captures.get(5) {
                                 bg_style = format!("background-color: {};", bg.as_str());
                             }
 
                             let mut font_style = String::new();
-                            if let Some(font) = captures.get(5) {
+                            if let Some(font) = captures.get(6) {
                                 font_style = format!("font-family: {};", font.as_str());
                             }
 
@@ -303,17 +302,17 @@ impl Codex {
                         Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, _, _, _, _| {
 
                             let mut color_style = String::new();
-                            if let Some(color) = captures.get(2) {
+                            if let Some(color) = captures.get(3) {
                                 color_style = format!("color: {};", color.as_str());
                             }
 
                             let mut bg_style = String::new();
-                            if let Some(bg) = captures.get(3) {
+                            if let Some(bg) = captures.get(4) {
                                 bg_style = format!("background-color: {};", bg.as_str());
                             }
 
                             let mut font_style = String::new();
-                            if let Some(font) = captures.get(4) {
+                            if let Some(font) = captures.get(5) {
                                 font_style = format!("font-family: {};", font.as_str());
                             }
     
@@ -583,18 +582,18 @@ impl Codex {
                     })),
                 ))
             ),
-            (
-                StandardParagraphModifier::EmbeddedParagraphStyle.identifier().clone(),
-                Box::new(MetadataWrapperParagraphLoadingRule::new(
-                    StandardParagraphModifier::EmbeddedParagraphStyle.modifier_pattern_regex_with_paragraph_separator().clone(),
-                    1,
-                    None,
-                    Some(2),
-                    Some(Arc::new(|style| {
-                        text_utility::split_styles_and_classes_with_default(style, (None, Some(String::from("embedded-paragraph-style"))))
-                    })),
-                ))
-            ),
+            // (
+            //     StandardParagraphModifier::EmbeddedParagraphStyle.identifier().clone(),
+            //     Box::new(MetadataWrapperParagraphLoadingRule::new(
+            //         StandardParagraphModifier::EmbeddedParagraphStyle.modifier_pattern_regex_with_paragraph_separator().clone(),
+            //         1,
+            //         None,
+            //         Some(2),
+            //         Some(Arc::new(|style| {
+            //             text_utility::split_styles_and_classes_with_default(style, (None, Some(String::from("embedded-paragraph-style"))))
+            //         })),
+            //     ))
+            // ),
             (
                 StandardParagraphModifier::ParagraphIdentifier.identifier().clone(),
                 Box::new(MetadataWrapperParagraphLoadingRule::new(
@@ -605,66 +604,69 @@ impl Codex {
                     None,
                 ))
             ),
-            (
-                StandardParagraphModifier::AbridgedEmbeddedParagraphStyleWithId.identifier().clone(),
-                Box::new(MetadataWrapperParagraphLoadingRule::new(
-                    StandardParagraphModifier::EmbeddedParagraphStyle.modifier_pattern_regex_with_paragraph_separator().clone(),
-                    1,
-                    Some(2),
-                    Some(3),
-                    Some(Arc::new(|style| {
+            // TODO: incompatible with EmbeddedParagraphStyle
+            // (
+            //     StandardParagraphModifier::AbridgedEmbeddedParagraphStyleWithId.identifier().clone(),
+            //     Box::new(MetadataWrapperParagraphLoadingRule::new(
+            //         StandardParagraphModifier::AbridgedEmbeddedParagraphStyleWithId.modifier_pattern_regex_with_paragraph_separator().clone(),
+            //         1,
+            //         Some(2),
+            //         Some(3),
+            //         Some(Arc::new(|style| {
 
-                        let mut styles = String::new();
+            //             let mut styles = String::new();
 
-                        if let Some(captures) = ABRIDGED_STYLE_REGEX.captures(style) {
+            //             if let Some(captures) = ABRIDGED_STYLE_REGEX.captures(style) {
 
-                            if let Some(color) = captures.get(1) {
-                                styles.push_str(&format!("color: {}; ", color.as_str()));
-                            }
+            //                 if let Some(color) = captures.get(2) {
+            //                     styles.push_str(&format!("color: {}; ", color.as_str()));
+            //                 }
     
-                            if let Some(bg) = captures.get(2) {
-                                styles.push_str(&format!("background-color: {}; ", bg.as_str()));
-                            }
+            //                 if let Some(bg) = captures.get(3) {
+            //                     styles.push_str(&format!("background-color: {}; ", bg.as_str()));
+            //                 }
     
-                            if let Some(font) = captures.get(3) {
-                                styles.push_str(&format!("font-family: {};", font.as_str()));
-                            }
-                        }
+            //                 if let Some(font) = captures.get(4) {
+            //                     styles.push_str(&format!("font-family: {};", font.as_str()));
+            //                 }
+            //             }
 
-                        (Some(styles), Some(String::from("identifier abridged-embedded-paragraph-style")))
-                    })),
-                ))
-            ),
-            (
-                StandardParagraphModifier::AbridgedEmbeddedParagraphStyle.identifier().clone(),
-                Box::new(MetadataWrapperParagraphLoadingRule::new(
-                    StandardParagraphModifier::AbridgedEmbeddedParagraphStyle.modifier_pattern_regex_with_paragraph_separator().clone(),
-                    1,
-                    None,
-                    Some(2),
-                    Some(Arc::new(|style| {
+            //             (Some(styles), Some(String::from("identifier abridged-embedded-paragraph-style")))
+            //         })),
+            //     ))
+            // ),
+            // (
+            //     StandardParagraphModifier::AbridgedEmbeddedParagraphStyle.identifier().clone(),
+            //     Box::new(MetadataWrapperParagraphLoadingRule::new(
+            //         StandardParagraphModifier::AbridgedEmbeddedParagraphStyle.modifier_pattern_regex_with_paragraph_separator().clone(),
+            //         1,
+            //         None,
+            //         Some(2),
+            //         Some(Arc::new(|style| {
 
-                        let mut styles = String::new();
+            //             println!("AbridgedEmbeddedParagraphStyle: {}", style);
 
-                        if let Some(captures) = ABRIDGED_STYLE_REGEX.captures(style) {
+            //             let mut styles = String::new();
 
-                            if let Some(color) = captures.get(1) {
-                                styles.push_str(&format!("color: {}; ", color.as_str()));
-                            }
+            //             if let Some(captures) = ABRIDGED_STYLE_REGEX.captures(style) {
+
+            //                 if let Some(color) = captures.get(2) {
+            //                     styles.push_str(&format!("color: {}; ", color.as_str()));
+            //                 }
     
-                            if let Some(bg) = captures.get(2) {
-                                styles.push_str(&format!("background-color: {}; ", bg.as_str()));
-                            }
+            //                 if let Some(bg) = captures.get(3) {
+            //                     styles.push_str(&format!("background-color: {}; ", bg.as_str()));
+            //                 }
     
-                            if let Some(font) = captures.get(3) {
-                                styles.push_str(&format!("font-family: {};", font.as_str()));
-                            }
-                        }
+            //                 if let Some(font) = captures.get(4) {
+            //                     styles.push_str(&format!("font-family: {};", font.as_str()));
+            //                 }
+            //             }
 
-                        (Some(styles), Some(String::from("abridged-embedded-paragraph-style")))
-                    })),
-                ))
-            ),
+            //             (Some(styles), Some(String::from("abridged-embedded-paragraph-style")))
+            //         })),
+            //     ))
+            // ),
             (
                 StandardParagraphModifier::Todo.identifier().clone(),
                 Box::new(ReplacementRuleParagraphLoadingRule::new(

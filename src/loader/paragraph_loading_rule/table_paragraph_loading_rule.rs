@@ -2,13 +2,13 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 
 use super::ParagraphLoadingRule;
-use crate::{codex::{modifier::constants::IDENTIFIER_PATTERN, Codex}, dossier::document::chapter::paragraph::{table_paragraph::{TableParagraph, TableParagraphContent, TableParagraphContentRow}, Paragraph}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError, Loader}, resource::table::{Table, TableCell, TableCellAlignment}, utility::text_utility};
+use crate::{codex::{modifier::constants::{IDENTIFIER_PATTERN, STYLE_PATTERN}, Codex}, dossier::document::chapter::paragraph::{table_paragraph::{TableParagraph, TableParagraphContent, TableParagraphContentRow}, Paragraph}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError, Loader}, resource::table::{Table, TableCell, TableCellAlignment}, utility::text_utility};
 
 
 /// (caption, id, styles, classes)
 type TableMetadata = (Option<String>, Option<String>, Option<String>, Option<String>);
 
-static EXTRACT_TABLE_METADATA_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&format!(r"(?:\[(.*)\])?(?:{})?(?:\{{(.*)\}})?", IDENTIFIER_PATTERN)).unwrap());
+static EXTRACT_TABLE_METADATA_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&format!(r"(?:\[(.*)\])?(?:{})?(?:\{{\{{{}\}}\}})?", IDENTIFIER_PATTERN, STYLE_PATTERN)).unwrap());
 
 
 #[derive(Debug)]
@@ -302,7 +302,7 @@ mod test {
             "| This is a line |  $0$  |  $0$  |  $0$  |  $0$  |  $0$  |  $0$  |  $1$  |  $0$  |\n",
             "|---|\n",
             "||footer|\n",
-            "[Caption]#table-id{color:red;}",
+            "[Caption]#table-id{{color:red;}}",
             "\n\n"
         );
 

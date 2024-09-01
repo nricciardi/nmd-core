@@ -642,19 +642,14 @@ some text^[bibliography-key]
 
 #### Embedded style
 
-**Style class**: `embedded-paragraph-style`, `abridged-embedded-paragraph-style`
+**Style class**: `embedded-paragraph-style`
 
 ```
 [[Custom text
 style]]{{style}}
 ```
 
-`style` is literally the css-like style to apply.
-
-```
-[[Custom text
-style]]{}
-```
+`style` is literally the css-like style or class (with `.` before) to apply.
 
 #### Image
 

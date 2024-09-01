@@ -131,10 +131,10 @@ mod test {
         );
 
         let rule = MetadataWrapperParagraphLoadingRule::new(
-            StandardParagraphModifier::EmbeddedParagraphStyle.modifier_pattern_regex().clone(),
+            StandardParagraphModifier::EmbeddedParagraphStyleWithId.modifier_pattern_regex().clone(),
             1,
-            None,
             Some(2),
+            Some(3),
             Some(Arc::new(|style| {
                 text_utility::split_styles_and_classes(style)
             }))
