@@ -31,7 +31,6 @@ pub enum StandardTextModifier {
     EmbeddedStyle,
     Identifier,
     Highlight,
-    ColoredText,
     Emoji,
     Superscript,
     Subscript,
@@ -86,9 +85,7 @@ impl StandardTextModifier {
 
     pub fn identifier(&self) -> ModifierIdentifier {
         match self {
-            // Self::AbridgedBookmark => String::from("abridged-bookmark"),
             Self::AbridgedBookmark => String::from("abridged-bookmark"),
-            // Self::Bookmark => String::from("bookmark"),
             Self::Bookmark => String::from("bookmark"),
             Self::Todo => String::from("todo"),
             Self::AbridgedEmbeddedStyle => String::from("abridged-embedded-style"),
@@ -114,12 +111,6 @@ impl StandardTextModifier {
             Self::Escape => String::from("escape"),
             Self::Reference => String::from("reference"),
             Self::Cite => String::from("cite"),
-
-            _ => {
-
-                log::warn!("there is NOT a identifier for {:#?}", self);
-                String::from("#@§rule-todo#@§")
-            }
         }
     }
     
@@ -151,11 +142,6 @@ impl StandardTextModifier {
             Self::Escape => String::from(r"\\([\*\+\\~%\^\$@=\[\]!<>\{\}\(\)#-_\|\?&]+)"),
             Self::Reference => String::from(r"&([\w-]+)&"),
             Self::Cite => String::from(r"\^\[([\w_]+)\]"),
-            
-            _ => {
-                log::warn!("there is NOT a modifier pattern for {:#?}", self);
-                String::from(r"RULE TODO")
-            }                                               // TODO
         }
     }
 

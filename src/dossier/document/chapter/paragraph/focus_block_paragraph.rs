@@ -124,6 +124,7 @@ mod test {
     fn two_focus_block() {
 
         let nmd_text = concat!(
+            "\n\n",
             "::: warning\n",
             "new warning\n\n",
             "multiline\n",
@@ -138,8 +139,8 @@ mod test {
         let compiled_content = load_and_compile_html(nmd_text, 2);
 
         assert_eq!(compiled_content, concat!(
-            r#"<div class="focus-block focus-block-warning"><div class="focus-block-title focus-block-warning-title"></div><div class="focus-block-description focus-block-warning-description">warning</div></div>"#,
-            r#"<div class="focus-block focus-block-important"><div class="focus-block-title focus-block-important-title"></div><div class="focus-block-description focus-block-important-description">important</div></div>"#,
+            r#"<div class="focus-block focus-block-warning" ><div class="focus-block-title focus-block-warning-title"></div><div class="focus-block-description focus-block-warning-description"><p class="paragraph">new warning</p><p class="paragraph">multiline</p></div></div>"#,
+            r#"<div class="focus-block focus-block-important" ><div class="focus-block-title focus-block-important-title"></div><div class="focus-block-description focus-block-important-description"><p class="paragraph">new important</p><p class="paragraph">multiline</p></div></div>"#,
         ));
     }
 

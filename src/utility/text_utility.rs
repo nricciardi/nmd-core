@@ -41,7 +41,7 @@ pub fn split_styles_and_classes_with_default(content: &str, default: (Option<Sty
             
             } else {
     
-                classes.push_str(" ");
+                styles.push_str(" ");
                 styles.push_str(item);
                 styles.push_str(";");
             }

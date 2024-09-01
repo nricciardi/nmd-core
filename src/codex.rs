@@ -829,7 +829,7 @@ mod test {
                 ),
                 (
                     String::from("c"),
-                    Box::new(Into::<BaseModifier>::into(StandardTextModifier::ColoredText)) as Box<dyn Modifier>
+                    Box::new(Into::<BaseModifier>::into(StandardTextModifier::Underlined)) as Box<dyn Modifier>
                 ),
                 (
                     String::from("i"),
