@@ -660,7 +660,7 @@ style]]{{style}}
 
 ![Image]#id(http://url/a.png)
 
-![Image]#id(http://url/a.png){maring:0;width:50vw}
+![Image]#id(http://url/a.png){{maring:0;width:50vw}}
 ```
 
 ##### Abridged Image
@@ -672,7 +672,7 @@ style]]{{style}}
 
 ![(http://url/a.png)]#id
 
-![(http://url/a.png)]#id{maring:0;width:50vw}
+![(http://url/a.png)]#id{{maring:0;width:50vw}}
 ```
 
 ##### Multi Image
@@ -681,8 +681,8 @@ style]]{{style}}
 
 ```
 !!:space-between:[[
-:center:![(wikipedia-logo.png)]#image-7{width:70%}
-![Wikipedia](./assets/images/wikipedia-logo.png){width:45%;margin:0;}
+:center:![(wikipedia-logo.png)]#image-7{{width:70%}}
+![Wikipedia](./assets/images/wikipedia-logo.png){{width:45%;margin:0;}}
 ]]
 ```
 
@@ -918,7 +918,7 @@ Each table has an table head, body and footer (like HTML tables). A table can ha
 | Paragraph   | Text       :| And more      |
 |---|
 || Footer     |
-[Caption]#table-id{style}
+[Caption]#table-id{{style}}
 ```
 
 `:` to specify cell alignment

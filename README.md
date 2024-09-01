@@ -1,7 +1,7 @@
 ![Logo](images/logo.png)
 
 [![License](https://img.shields.io/badge/license-GPL3-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-v0.39.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.40.0-blue.svg)](CHANGELOG.md)
 
 # NMD core
 

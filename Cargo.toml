@@ -1,9 +1,9 @@
 [package]
 name = "nmd-core"
-version = "0.39.0"
+version = "0.40.0"
 authors = ["Nicola Ricciardi"]
 edition = "2021"
-description = "Official NMD compiler"
+description = "Official NMD compiler core"
 readme = "README.md"
 repository = "https://github.com/nricciardi/nmd-core"
 license-file = "LICENSE"
@@ -44,12 +44,3 @@ criterion = { version = "0.5.1", features = ["html_reports"] }
 [profile.profiling]
 inherits = "release"
 debug = true
-
-
-[[bench]]
-name = "loading_dossier_benchmark"
-harness = false
-
-[[bench]]
-name = "loading_document_benchmark"
-harness = false
