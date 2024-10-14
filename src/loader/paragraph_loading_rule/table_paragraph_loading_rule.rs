@@ -1,4 +1,5 @@
 use once_cell::sync::Lazy;
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use regex::Regex;
 
 use super::ParagraphLoadingRule;
@@ -119,7 +120,9 @@ impl TableParagraphLoadingRule {
                     cell.remove(cell.len() - 1);
                 }
 
-                let paragraphs = Loader::load_paragraphs_from_str(&cell, codex, configuration, configuration_overlay.clone())?;
+                let paragraph_blocks = Loader::load_paragraphs_from_str(&cell, codex, configuration, configuration_overlay.clone())?;
+
+                let paragraphs: Vec<Box<dyn Paragraph>> = paragraph_blocks.into_par_iter().map(|block| TryInto::<Box<dyn Paragraph>>::try_into(block).unwrap()).collect();
 
                 cells.push(TableCell::ContentCell { content: paragraphs, alignment: align});
             }
@@ -247,7 +250,7 @@ mod test {
 
     use indexmap::IndexMap;
 
-    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, Modifier}, Codex}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_loading_rule::ParagraphLoadingRule, Loader}};
+    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, Modifier}, Codex}, loader::{block::BlockContent, loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_loading_rule::ParagraphLoadingRule, Loader}};
 
     use super::TableParagraphLoadingRule;
 
@@ -288,9 +291,11 @@ mod test {
 
         assert_eq!(paragraphs.len(), 1);
 
-        let table_paragraph = &paragraphs[0];
+        if let BlockContent::Paragraph(p) = &paragraphs[0].content() {
 
-        assert_eq!(table_paragraph.raw_content(), nmd_text);
+            assert_eq!(p.raw_content(), nmd_text);
+
+        }
     }
 
     #[test]
@@ -312,9 +317,11 @@ mod test {
 
         assert_eq!(paragraphs.len(), 1);
 
-        let table_paragraph = &paragraphs[0];
+        if let BlockContent::Paragraph(p) = &paragraphs[0].content() {
 
-        assert_eq!(table_paragraph.raw_content(), nmd_text);
+            assert_eq!(p.raw_content(), nmd_text);
+
+        }
     }
 
 }

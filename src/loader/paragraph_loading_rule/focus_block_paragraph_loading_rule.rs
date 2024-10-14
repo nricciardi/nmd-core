@@ -1,3 +1,4 @@
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use regex::Regex;
 use getset::{Getters, Setters};
 use super::ParagraphLoadingRule;
@@ -39,8 +40,10 @@ impl FocusBlockParagraphLoadingRule {
 
             if let Some(body) = captures.get(2) {
 
-                let paragraphs: Vec<Box<dyn Paragraph>> = Loader::load_paragraphs_from_str(body.as_str(), codex, configuration, configuration_overlay.clone())?;
+                let paragraph_blocks = Loader::load_paragraphs_from_str(body.as_str(), codex, configuration, configuration_overlay.clone())?;
         
+                let paragraphs: Vec<Box<dyn Paragraph>> = paragraph_blocks.into_par_iter().map(|block| TryInto::<Box<dyn Paragraph>>::try_into(block).unwrap()).collect();
+                
                 Ok(FocusBlockParagraph::new(
                     raw_content.to_string(),
                     focus_block_type,

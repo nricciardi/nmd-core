@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use getset::{Getters, Setters};
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use regex::Regex;
 use super::ParagraphLoadingRule;
 use crate::{codex::Codex, dossier::document::chapter::paragraph::{metadata_wrapper_paragraph::MetadataWrapperParagraph, Paragraph}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError, Loader}};
@@ -76,8 +77,11 @@ impl MetadataWrapperParagraphLoadingRule {
 
             if let Some(body) = captures.get(self.content_group) {
 
-                let paragraphs: Vec<Box<dyn Paragraph>> = Loader::load_paragraphs_from_str(body.as_str(), codex, configuration, configuration_overlay.clone())?;
+                let paragraph_blocks = Loader::load_paragraphs_from_str(body.as_str(), codex, configuration, configuration_overlay.clone())?;
         
+                let paragraphs: Vec<Box<dyn Paragraph>> = paragraph_blocks.into_par_iter().map(|block| TryInto::<Box<dyn Paragraph>>::try_into(block).unwrap()).collect();
+
+
                 Ok(MetadataWrapperParagraph::new(
                     raw_content.to_string(),
                     paragraphs,

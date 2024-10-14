@@ -19,14 +19,13 @@ use rayon::slice::ParallelSliceMut;
 use regex::Regex;
 use thiserror::Error;
 use crate::codex::modifier::base_modifier::BaseModifier;
-use crate::codex::modifier::constants::NEW_LINE;
 use crate::codex::modifier::standard_heading_modifier::StandardHeading;
 use crate::codex::modifier::Modifier;
 use crate::dossier::document::chapter::paragraph::Paragraph;
 use crate::resource::disk_resource::DiskResource;
 use crate::resource::resource_reference::ResourceReferenceError;
 use crate::resource::{Resource, ResourceError};
-use crate::utility::{file_utility, text_utility};
+use crate::utility::text_utility;
 use super::codex::modifier::constants::CHAPTER_STYLE_PATTERN;
 use super::codex::Codex;
 use super::dossier::document::chapter::chapter_tag::ChapterTag;
@@ -36,8 +35,6 @@ use super::dossier::{document::{chapter::heading::{Heading, HeadingLevel}, Chapt
 
 
 static CHAPTER_STYLE_PATTERN_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(CHAPTER_STYLE_PATTERN).unwrap());
-static DOUBLE_NEW_LINES: Lazy<String> = Lazy::new(|| format!("{}{}", NEW_LINE, NEW_LINE));
-static TRIPLE_NEW_LINES: Lazy<String> = Lazy::new(|| format!("{}{}{}", NEW_LINE, NEW_LINE, NEW_LINE));
 
 
 #[derive(Error, Debug)]
@@ -52,7 +49,10 @@ pub enum LoadError {
     ElaborationError(String),
     
     #[error(transparent)]
-    IoError(#[from] io::Error)
+    IoError(#[from] io::Error),
+
+    #[error("block error: {0}")]
+    BlockError(String)
 }
 
 impl Clone for LoadError {
@@ -363,8 +363,6 @@ impl Loader {
         Ok(headings_and_chapter_tags)
     }
 
-    // TODO: return Option of (heading, tags)
-    // TODO: doesn't use section of content in which there is also a paragraph
     /// Load the chapter heading and metadata from `&str`. This method returns a tuple with optional heading and a chapter tags vector.
     fn parse_chapter_heading_and_tags_from_str(content: &str, last_heading_level: &mut HeadingLevel, codex: &Codex, configuration: &LoaderConfiguration) -> Result<Option<(Block, Vec<Block>)>, LoadError> {
 

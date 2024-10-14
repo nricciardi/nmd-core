@@ -1,4 +1,5 @@
 use once_cell::sync::Lazy;
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use regex::Regex;
 use super::ParagraphLoadingRule;
 use crate::{codex::{modifier::constants::NEW_LINE, Codex}, dossier::document::chapter::paragraph::{block_quote_paragraph::ExtendedBlockQuoteParagraph, Paragraph}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError, Loader}};
@@ -60,7 +61,9 @@ impl BlockQuoteParagraphLoadingRule {
             block_quote_body_content.push_str(c.as_str());
         }
         
-        let paragraphs: Vec<Box<dyn Paragraph>> = Loader::load_paragraphs_from_str(&block_quote_body_content, codex, configuration, configuration_overlay.clone())?;
+        let paragraph_blocks = Loader::load_paragraphs_from_str(&block_quote_body_content, codex, configuration, configuration_overlay.clone())?;
+
+        let paragraphs: Vec<Box<dyn Paragraph>> = paragraph_blocks.into_par_iter().map(|block| TryInto::<Box<dyn Paragraph>>::try_into(block).unwrap()).collect();
         
         Ok(ExtendedBlockQuoteParagraph::new(
             raw_content.to_string(),
