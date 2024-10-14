@@ -3,6 +3,9 @@ use regex::Regex;
 use super::nmd_unique_identifier::NmdUniqueIdentifier;
 
 
+pub fn normalize_newlines(input: &str) -> String {
+    input.replace("\r\n", "\n").replace("\r", "\n")
+}
 
 pub fn replace(content: &str, replacements: &Vec<(Regex, String)>) -> String {
     let mut result = String::from(content);

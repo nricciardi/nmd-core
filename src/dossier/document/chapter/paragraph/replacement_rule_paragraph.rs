@@ -77,7 +77,7 @@ impl Paragraph for ReplacementRuleParagraph {
 mod test {
     use std::sync::Arc;
 
-    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, standard_text_modifier::StandardTextModifier, Modifier, ModifiersBucket}, Codex, CodexCompilationRulesMap, CodexLoadingRulesMap, CodexModifiersMap}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart, single_capture_group_replacement_rule_part::SingleCaptureGroupReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, Loader}, output_format::OutputFormat};
+    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, standard_text_modifier::StandardTextModifier, Modifier, ModifiersBucket}, Codex, CodexCompilationRulesMap, CodexLoadingRulesMap, CodexModifiersMap}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart, single_capture_group_replacement_rule_part::SingleCaptureGroupReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile}, dossier::document::chapter::paragraph::Paragraph, loader::{block::BlockContent, loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, Loader}, output_format::OutputFormat};
 
     use super::ReplacementRuleParagraph;
 
@@ -95,7 +95,10 @@ mod test {
         let cc = CompilationConfiguration::default();
         let cco = CompilationConfigurationOverLay::default();
 
-        for mut paragraph in paragraphs {
+        for paragraph in paragraphs {
+
+            let mut paragraph: Box<dyn Paragraph> = paragraph.try_into().unwrap();
+
             paragraph.compile(&OutputFormat::Html, &codex, &cc, cco.clone()).unwrap();
         
             compiled_content.push_str(&paragraph.compiled_text().unwrap().content());
@@ -152,20 +155,24 @@ mod test {
         assert_eq!(paragraphs.len(), 1);
 
         let paragraph = &mut paragraphs[0];
+        
+        if let BlockContent::Paragraph(ref mut paragraph) = paragraph.content_mut() {
+            paragraph.set_nuid(Some(String::from("nuid-test")));
 
-        paragraph.set_nuid(Some(String::from("nuid-test")));
+            paragraph.compile(
+                &OutputFormat::Html,
+                &codex,
+                &CompilationConfiguration::default(),
+                CompilationConfigurationOverLay::default()
+            ).unwrap();
 
-        paragraph.compile(
-            &OutputFormat::Html,
-            &codex,
-            &CompilationConfiguration::default(),
-            CompilationConfigurationOverLay::default()
-        ).unwrap();
+            assert_eq!(
+                paragraph.compiled_text().unwrap().content(),
+                r#"<p class="paragraph" data-nuid="nuid-test">This is a <strong class="bold">common paragraph</strong></p>"#
+            )
+        }
 
-        assert_eq!(
-            paragraph.compiled_text().unwrap().content(),
-            r#"<p class="paragraph" data-nuid="nuid-test">This is a <strong class="bold">common paragraph</strong></p>"#
-        )
+        panic!("paragraph not loaded");
 
     }
 

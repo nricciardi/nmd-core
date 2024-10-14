@@ -96,7 +96,7 @@ impl Paragraph for FocusBlockParagraph {
 #[cfg(test)]
 mod test {
 
-    use crate::{codex::Codex, compiler::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, Loader}, output_format::OutputFormat};
+    use crate::{codex::Codex, compiler::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, dossier::document::chapter::paragraph::Paragraph, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, Loader}, output_format::OutputFormat};
 
     fn load_and_compile_html(content: &str, expected_n: usize) -> String {
         
@@ -111,7 +111,10 @@ mod test {
         let cc = CompilationConfiguration::default();
         let cco = CompilationConfigurationOverLay::default();
 
-        for mut paragraph in paragraphs {
+        for paragraph in paragraphs {
+
+            let mut paragraph: Box<dyn Paragraph> = paragraph.try_into().unwrap();
+
             paragraph.compile(&OutputFormat::Html, &codex, &cc, cco.clone()).unwrap();
         
             compiled_content.push_str(&paragraph.compiled_text().unwrap().content());

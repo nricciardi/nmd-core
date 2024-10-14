@@ -3,14 +3,14 @@
 
 pub mod loader_configuration;
 pub mod paragraph_loading_rule;
-mod block;
+pub mod block;
 
 
 use std::collections::HashSet;
 use std::io;
 use std::path::PathBuf;
 use std::str::FromStr;
-use block::Block;
+use block::{Block, BlockContent};
 use getset::{Getters, Setters};
 use loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay};
 use once_cell::sync::Lazy;
@@ -19,13 +19,14 @@ use rayon::slice::ParallelSliceMut;
 use regex::Regex;
 use thiserror::Error;
 use crate::codex::modifier::base_modifier::BaseModifier;
-use crate::codex::modifier::constants::{INCOMPATIBLE_CHAPTER_HEADING_REGEX, NEW_LINE};
+use crate::codex::modifier::constants::NEW_LINE;
 use crate::codex::modifier::standard_heading_modifier::StandardHeading;
 use crate::codex::modifier::Modifier;
 use crate::dossier::document::chapter::paragraph::Paragraph;
 use crate::resource::disk_resource::DiskResource;
 use crate::resource::resource_reference::ResourceReferenceError;
 use crate::resource::{Resource, ResourceError};
+use crate::utility::{file_utility, text_utility};
 use super::codex::modifier::constants::CHAPTER_STYLE_PATTERN;
 use super::codex::Codex;
 use super::dossier::document::chapter::chapter_tag::ChapterTag;
@@ -70,191 +71,85 @@ pub struct Loader {
 
 impl Loader {
 
-    /// Count number of newlines at string start.
-    /// It counts number of '\n' characters
-    fn count_newlines_at_start(s: &str) -> usize {
-        s.bytes().take_while(|&b| b == b'\n').count()
-    }
-
-    /// Count number of newlines at string end.
-    /// It counts number of '\n' characters
-    fn count_newlines_at_end(s: &str) -> usize {
-        s.bytes().rev().take_while(|&b| b == b'\n').count()
-    }
 
     pub fn load_document_from_str(document_name: &str, content: &str, codex: &Codex, configuration: &LoaderConfiguration, mut configuration_overlay: LoaderConfigurationOverLay) -> Result<Document, LoadError> {
 
         log::info!("loading document '{}' from its content...", document_name);
 
+        // TODO: is really needed?
+        let content = &text_utility::normalize_newlines(content);
+
         configuration_overlay.set_document_name(Some(document_name.to_string()));
 
-        let paragraphs = Self::load_paragraphs_from_str(content, codex, configuration, configuration_overlay.clone())?;
+        let mut paragraphs = Self::load_paragraphs_from_str(content, codex, configuration, configuration_overlay.clone())?;
 
         let mut incompatible_ranges: Vec<(usize, usize)> = paragraphs.par_iter().map(|p| (p.start(), p.end())).collect();
 
         incompatible_ranges.par_sort_by(|a, b| a.0.cmp(&b.0));
 
-        let headings_and_chapter_tags = Self::load_headings_and_chapter_tags_from_str(content, codex, incompatible_ranges, configuration)?;
+        let mut headings_and_chapter_tags = Self::load_headings_and_chapter_tags_from_str(content, codex, incompatible_ranges, configuration)?;
 
         let mut blocks: Vec<Block> = Vec::new();
     
         blocks.append(&mut paragraphs);
         blocks.append(&mut headings_and_chapter_tags);
 
-        blocks.par_sort_by(|a, b| a.start().cmp(&b.start()));
+        let document = Self::create_document_by_blocks(document_name, blocks)?;
 
-        
+        log::info!("document '{}' loaded (preamble: {}, chapters: {})", document_name, document.preamble().is_empty(), document.chapters().len());
+
+        Ok(document)      
     }
 
-    /// Load a document from a raw string, so `document_name` must be provided
-    /*pub fn load_document_from_str(document_name: &str, content: &str, codex: &Codex, configuration: &LoaderConfiguration, mut configuration_overlay: LoaderConfigurationOverLay) -> Result<Document, LoadError> {
+    fn create_document_by_blocks(document_name: &str, mut blocks: Vec<Block>) -> Result<Document, LoadError> {
 
-        log::info!("loading document '{}' from its content...", document_name);
-
-        configuration_overlay.set_document_name(Some(document_name.to_string()));
-
-        let mut content = String::from(content);
-
-        // work-around to fix paragraph matching end line
-        while !content.starts_with(&(*DOUBLE_NEW_LINES)) {
-            content.insert_str(0, NEW_LINE);
-        }
-
-        while !content.ends_with(&(*DOUBLE_NEW_LINES)) {
-            content.push_str(NEW_LINE);
-        }
-
-        let mut document_chapters: Vec<Chapter> = Vec::new();
-
-        log::debug!("start to find chapter borders in document '{}'", document_name);
-
-        // usize: chapter start/end position
-        let mut incompatible_chapter_heading_borders: Vec<(usize, usize)> = Vec::new();
-
-        INCOMPATIBLE_CHAPTER_HEADING_REGEX.iter().for_each(|regex| {            // TODO: par_iter
-            regex.find_iter(&content).for_each(|m| {
-                incompatible_chapter_heading_borders.push((m.start(), m.end()));
-            });
-        });
-
-        // usize: chapter start/end position
-        // String: chapter heading + options found
-        let mut chapter_borders: Vec<(usize, usize, String)> = Vec::new();
-
-        for heading in StandardHeading::ordered() {
-
-            let heading_modifier = Into::<BaseModifier>::into(heading);
-
-            heading_modifier.modifier_pattern_regex().find_iter(content.as_str()).for_each(|m| {
-
-                let matched_str = m.as_str().to_string();
-
-                let start = m.start();
-                let end = m.end();
-
-                let overlap_chapter = chapter_borders.par_iter().find_any(|c| {
-                    (c.0 >= start && c.1 <= end) ||     // current paragraph contains p
-                    (c.0 <= start && c.1 >= end) ||     // p contains current paragraph
-                    (c.0 <= start && c.1 >= start && c.1 <= end) ||     // left overlap
-                    (c.0 >= start && c.0 <= end && c.1 >= end)          // right overlap
-                });
-
-                if let Some(p) = overlap_chapter {     // => overlap
-                    log::debug!("discarded chapter because there is an overlap between {} and {} using pattern {:?}:\n{:#?}\n", start, end, heading_modifier, p);
-                    return
-                }
-
-                let not_heading = incompatible_chapter_heading_borders.par_iter().find_any(|border| {
-                    (border.0 <= start && border.1 >= start) ||
-                    (border.0 <= end && border.1 >= end)
-                });
-
-                if let Some(p) = not_heading {     // => overlap
-                    log::debug!("discarded chapter:\n{}\nbecause there is in an incompatible slice between {} and {} ({:#?})", m.as_str(), start, end, p);
-                    return
-                }
-
-                log::debug!("find chapter between {} and {}: {:?}", start, end, &matched_str);
-
-                let cb = (
-                    start,
-                    end,
-                    matched_str
-                );
-
-                log::debug!("push in chapter_borders: {:?}", cb);
-
-                chapter_borders.push(cb);
-
-            });
-        }
-
-        chapter_borders.par_sort_by(|a, b| a.0.cmp(&b.0));
-
-        log::debug!("loading {} chapters of document '{}'...", chapter_borders.len(), document_name);
-
-        let mut last_heading_level: HeadingLevel = 0;
-
-        // build chapters
-        for index in 0..chapter_borders.len() {
-
-            log::debug!("load chapter {:?}", chapter_borders[index]);
-
-            let _start = chapter_borders[index].0;
-            let end = chapter_borders[index].1;
-            let raw_content = &chapter_borders[index].2;
-
-            let (heading, tags) = Self::load_chapter_heading_and_tags_from_str(raw_content, last_heading_level, codex, configuration);
-
-            if heading.is_none() {
-                return Err(LoadError::ResourceError(ResourceError::ResourceNotFound("heading".to_string())))
-            }
-
-            let heading = heading.unwrap();
-
-            last_heading_level = heading.level();
-
-            let mut next_start: usize = content.len();
-
-            if index < chapter_borders.len() - 1 {
-                next_start = chapter_borders[index + 1].0;
-            }
-
-            let sub_content = content.get(end..next_start).unwrap();     // exclude heading
-
-            let paragraphs = Self::load_paragraphs_from_str(sub_content, codex, configuration, configuration_overlay.clone())?;
-
-            document_chapters.push(Chapter::new(heading, tags, paragraphs));
-        }
-
-        let mut preamble_end = content.len();
-
-        if chapter_borders.len() > 0 {
-            preamble_end = chapter_borders[0].0;
-        }
-
-        let preamble: Vec<Box<dyn Paragraph>>;
-        
-        if preamble_end > 0 {      // => there is a preamble
+        if !blocks.windows(2).all(|w| w[0].start() <= w[1].start()) {
             
-            log::debug!("preamble found in document '{}'", document_name);
-
-            let s = String::from(content.get(0..preamble_end).unwrap());
-
-            preamble = Self::load_paragraphs_from_str(&s, codex, configuration, configuration_overlay.clone())?;
-        
-        } else {
-
-            log::debug!("preamble not found in document '{}'", document_name);
-
-            preamble = Vec::new();
+            blocks.par_sort_by(|a, b| a.start().cmp(&b.start()));
         }
 
-        log::info!("document '{}' loaded", document_name);
+        log::debug!("create document '{}' using blocks: {:?}", document_name, blocks);
 
-        Ok(Document::new(document_name.to_string(), preamble, document_chapters))
+        let mut preamble: Vec<Box<dyn Paragraph>> = Vec::new();
+        let mut current_chapter: Option<Chapter> = None;
+        let mut chapters: Vec<Chapter> = Vec::new(); 
 
-    }*/
+        for block in blocks {
+
+            match Into::<BlockContent>::into(block) {
+                BlockContent::Paragraph(paragraph) => {
+
+                    if let Some(ref mut cc) = current_chapter {
+
+                        cc.paragraphs_mut().push(paragraph);
+
+                    } else {
+                        preamble.push(paragraph);
+                    }
+
+                },
+                BlockContent::Heading(heading) => {
+
+                    if let Some(cc) = current_chapter.take() {
+                        chapters.push(cc);
+                    }
+
+                    current_chapter = Some(Chapter::new(heading, Vec::new(), Vec::new()));
+                },
+                BlockContent::ChapterTag(chapter_tag) => {
+
+                    assert!(current_chapter.is_some());
+
+                    current_chapter.as_mut().unwrap().tags_mut().push(chapter_tag);
+
+                },
+            }
+        }
+
+        
+        Ok(Document::new(document_name.to_string(), preamble, chapters))
+    }
+
 
     /// Load a document from its path (`PathBuf`). The document have to exist.
     pub fn load_document_from_path(path_buf: &PathBuf, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Document, LoadError> {
@@ -277,7 +172,11 @@ impl Loader {
         }
     }
 
-    /// Load paragraphs from `&str` using `Codex`. Paragraphs are returned not in order, you should use `start` and `end` to sort if you want.
+    /// Load paragraphs from `&str` using `Codex`.
+    /// 
+    /// Paragraphs are returned not in order, you should use `start` and `end` to sort if you want.
+    /// 
+    /// Assume `\n` instead of `\r\n` as new line, if you are on Windows please replace `\r\n` before use this method.
     pub fn load_paragraphs_from_str(content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Vec<Block>, LoadError> {
 
         if content.trim().is_empty() {
@@ -388,6 +287,8 @@ impl Loader {
     /// Load headings and chapter tags from `&str` not in incompatible ranges.
     /// 
     /// Assuming that ranges of `incompatible_ranges` are correct.
+    /// 
+    /// Assume `\n` instead of `\r\n` as new line, if you are on Windows please replace `\r\n` before use this method (you can use `normalize_newlines` of utilities).
     fn load_headings_and_chapter_tags_from_str(content: &str, codex: &Codex, incompatible_ranges: Vec<(usize, usize)>, configuration: &LoaderConfiguration) -> Result<Vec<Block>, LoadError> {
        
         incompatible_ranges.par_iter().for_each(|range| assert!(range.0 <= range.1));
