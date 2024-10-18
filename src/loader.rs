@@ -25,7 +25,6 @@ use crate::dossier::document::chapter::paragraph::Paragraph;
 use crate::resource::disk_resource::DiskResource;
 use crate::resource::resource_reference::ResourceReferenceError;
 use crate::resource::{Resource, ResourceError};
-use crate::utility::text_utility;
 use super::codex::modifier::constants::CHAPTER_STYLE_PATTERN;
 use super::codex::Codex;
 use super::dossier::document::chapter::chapter_tag::ChapterTag;
@@ -76,8 +75,8 @@ impl Loader {
 
         log::info!("loading document '{}' from its content...", document_name);
 
-        // TODO: is really needed?
-        let content = &text_utility::normalize_newlines(content);
+        // TODO: is needed?
+        // let content = &text_utility::normalize_newlines(content);
 
         configuration_overlay.set_document_name(Some(document_name.to_string()));
 
