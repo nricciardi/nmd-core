@@ -5,7 +5,6 @@ use crate::{codex::{modifier::{standard_paragraph_modifier::StandardParagraphMod
 
 
 static SEARCH_LIST_ITEM_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&StandardParagraphModifier::ListItem.modifier_pattern()).unwrap());
-static _SEARCH_LIST_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&StandardParagraphModifier::List.modifier_pattern_with_paragraph_separator()).unwrap());
 
 pub const LIST_ITEM_INDENTATION: &str = r#"<span class="list-item-indentation"></span>"#;
 

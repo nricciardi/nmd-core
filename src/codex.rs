@@ -529,7 +529,7 @@ impl Codex {
                     StandardParagraphModifier::PageBreak.identifier().clone(),
                     Box::new(ReplacementRuleParagraphLoadingRule::new(
                         ReplacementRule::new(
-                            StandardParagraphModifier::PageBreak.modifier_pattern_with_paragraph_separator().clone(),
+                            StandardParagraphModifier::PageBreak.modifier_pattern().clone(),
                             vec![
                                 Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<div class="page-break"></div>"#)))
                             ]
@@ -539,7 +539,7 @@ impl Codex {
             (
                 StandardParagraphModifier::EmbeddedParagraphStyle.identifier().clone(),
                 Box::new(MetadataWrapperParagraphLoadingRule::new(
-                    StandardParagraphModifier::EmbeddedParagraphStyle.modifier_pattern_regex_with_paragraph_separator().clone(),
+                    StandardParagraphModifier::EmbeddedParagraphStyle.modifier_pattern_regex().clone(),
                     1,
                     Some(2),
                     Some(3),
@@ -560,7 +560,7 @@ impl Codex {
             (
                 StandardParagraphModifier::ParagraphIdentifier.identifier().clone(),
                 Box::new(MetadataWrapperParagraphLoadingRule::new(
-                    StandardParagraphModifier::ParagraphIdentifier.modifier_pattern_regex_with_paragraph_separator().clone(),
+                    StandardParagraphModifier::ParagraphIdentifier.modifier_pattern_regex().clone(),
                     1,
                     Some(2),
                     None,
@@ -571,7 +571,7 @@ impl Codex {
                 StandardParagraphModifier::Todo.identifier().clone(),
                 Box::new(ReplacementRuleParagraphLoadingRule::new(
                     ReplacementRule::new(
-                        StandardParagraphModifier::Todo.modifier_pattern_with_paragraph_separator().clone(),
+                        StandardParagraphModifier::Todo.modifier_pattern().clone(),
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|_, compilable, _, _, _| {
 
@@ -591,7 +591,7 @@ impl Codex {
                 StandardParagraphModifier::AbridgedTodo.identifier().clone(),
                 Box::new(ReplacementRuleParagraphLoadingRule::new(
                     ReplacementRule::new(
-                        StandardParagraphModifier::AbridgedTodo.modifier_pattern_with_paragraph_separator().clone(),
+                        StandardParagraphModifier::AbridgedTodo.modifier_pattern().clone(),
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|_, compilable, _, _, _| {
 
@@ -609,7 +609,7 @@ impl Codex {
                 StandardParagraphModifier::MultilineTodo.identifier().clone(),
                 Box::new(ReplacementRuleParagraphLoadingRule::new(
                     ReplacementRule::new(
-                        StandardParagraphModifier::MultilineTodo.modifier_pattern_with_paragraph_separator().clone(),
+                        StandardParagraphModifier::MultilineTodo.modifier_pattern().clone(),
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|_, compilable, _, _, _| {
 
@@ -633,7 +633,7 @@ impl Codex {
                 StandardParagraphModifier::MathBlock.identifier().clone(),
                 Box::new(ReplacementRuleParagraphLoadingRule::new(
                     ReplacementRule::new(
-                        StandardParagraphModifier::MathBlock.modifier_pattern_with_paragraph_separator().clone(),
+                        StandardParagraphModifier::MathBlock.modifier_pattern().clone(),
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
 
@@ -666,7 +666,7 @@ impl Codex {
                 StandardParagraphModifier::CodeBlock.identifier().clone(),
                 Box::new(ReplacementRuleParagraphLoadingRule::new(
                     ReplacementRule::new(
-                        StandardParagraphModifier::CodeBlock.modifier_pattern_with_paragraph_separator().clone(),
+                        StandardParagraphModifier::CodeBlock.modifier_pattern().clone(),
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
 
@@ -695,13 +695,13 @@ impl Codex {
             ),
             (
                 StandardParagraphModifier::FocusBlock.identifier().clone(),
-                Box::new(FocusBlockParagraphLoadingRule::new(StandardParagraphModifier::FocusBlock.modifier_pattern_regex_with_paragraph_separator().clone())),
+                Box::new(FocusBlockParagraphLoadingRule::new(StandardParagraphModifier::FocusBlock.modifier_pattern_regex().clone())),
             ),
             (
                 StandardParagraphModifier::LineBreakDash.identifier().clone(),
                 Box::new(ReplacementRuleParagraphLoadingRule::new(
                     ReplacementRule::new(
-                        StandardParagraphModifier::LineBreakDash.modifier_pattern_with_paragraph_separator().clone(),
+                        StandardParagraphModifier::LineBreakDash.modifier_pattern().clone(),
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|_, compilable, _, _, _| {
 
@@ -721,7 +721,7 @@ impl Codex {
                 StandardParagraphModifier::LineBreakStar.identifier().clone(),
                 Box::new(ReplacementRuleParagraphLoadingRule::new(
                     ReplacementRule::new(
-                        StandardParagraphModifier::LineBreakDash.modifier_pattern_with_paragraph_separator().clone(),
+                        StandardParagraphModifier::LineBreakDash.modifier_pattern().clone(),
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|_, compilable, _, _, _| {
 
@@ -741,7 +741,7 @@ impl Codex {
                 StandardParagraphModifier::LineBreakPlus.identifier().clone(),
                 Box::new(ReplacementRuleParagraphLoadingRule::new(
                     ReplacementRule::new(
-                        StandardParagraphModifier::LineBreakDash.modifier_pattern_with_paragraph_separator().clone(),
+                        StandardParagraphModifier::LineBreakDash.modifier_pattern().clone(),
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|_, compilable, _, _, _| {
 
@@ -761,7 +761,7 @@ impl Codex {
                 StandardParagraphModifier::CommentBlock.identifier().clone(),
                 Box::new(ReplacementRuleParagraphLoadingRule::new(
                     ReplacementRule::new(
-                        StandardParagraphModifier::CommentBlock.modifier_pattern_with_paragraph_separator().clone(),
+                        StandardParagraphModifier::CommentBlock.modifier_pattern().clone(),
                         vec![
                             Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<!--"#))),
                             Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, Vec::new(), StandardParagraphModifier::CommentBlock.incompatible_modifiers())),
@@ -774,7 +774,7 @@ impl Codex {
                 StandardParagraphModifier::CommonParagraph.identifier().clone(),
                 Box::new(ReplacementRuleParagraphLoadingRule::new(
                     ReplacementRule::new(
-                        StandardParagraphModifier::CommonParagraph.modifier_pattern_with_paragraph_separator().clone(),
+                        StandardParagraphModifier::CommonParagraph.modifier_pattern().clone(),
                         vec![
                             Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|_, compilable, _, _, _| {
 

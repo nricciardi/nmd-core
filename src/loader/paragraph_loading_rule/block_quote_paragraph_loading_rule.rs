@@ -2,7 +2,7 @@ use once_cell::sync::Lazy;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use regex::Regex;
 use super::ParagraphLoadingRule;
-use crate::{codex::{modifier::constants::NEW_LINE, Codex}, dossier::document::chapter::paragraph::{block_quote_paragraph::ExtendedBlockQuoteParagraph, Paragraph}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError, Loader}};
+use crate::{codex::{modifier::constants::NEW_LINE_PATTERN, Codex}, dossier::document::chapter::paragraph::{block_quote_paragraph::ExtendedBlockQuoteParagraph, Paragraph}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError, Loader}};
 
 
 static CHECK_EXTENDED_BLOCK_QUOTE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?m:> \[!(\w*)\])").unwrap());
@@ -55,7 +55,7 @@ impl BlockQuoteParagraphLoadingRule {
             let mut c = String::from(line[1..].trim_start());
 
             if c.is_empty() {
-                c = format!("{}{}", NEW_LINE, NEW_LINE);
+                c = format!("{}{}", NEW_LINE_PATTERN, NEW_LINE_PATTERN);
             }
 
             block_quote_body_content.push_str(c.as_str());

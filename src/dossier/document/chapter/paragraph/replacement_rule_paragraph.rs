@@ -192,7 +192,7 @@ mod test {
         );
 
         let replacement_rule = ReplacementRule::new(
-            StandardParagraphModifier::CommonParagraph.modifier_pattern_with_paragraph_separator(),
+            StandardParagraphModifier::CommonParagraph.modifier_pattern(),
             vec![
                 Arc::new(ClosureReplacementRuleReplacerPart::new(
                     Arc::new(

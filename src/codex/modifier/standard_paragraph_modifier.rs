@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-use super::{base_modifier::BaseModifier, constants::{IDENTIFIER_PATTERN, NEW_LINE, STYLE_PATTERN}, ModifierIdentifier, ModifierPattern, ModifiersBucket};
+use super::{base_modifier::BaseModifier, constants::{build_strict_reserved_line_pattern, IDENTIFIER_PATTERN, MULTI_LINES_CONTENT_PATTERN, MULTI_LINES_CONTENT_WITHOUT_HEADINGS_PATTERN, NEW_LINE_PATTERN, STYLE_PATTERN}, ModifierIdentifier, ModifierPattern, ModifiersBucket};
 
 
 pub const PARAGRAPH_SEPARATOR_START: &str = r"(?m:^[ \t]*\r?\n)+";
@@ -20,15 +20,6 @@ static MODIFIER_PATTERNS_REGEX: Lazy<HashMap<ModifierIdentifier, Regex>> = Lazy:
     regex
 });
 
-static MODIFIER_PATTERNS_WITH_PARAGRAPH_SEPARATOR_REGEX: Lazy<HashMap<ModifierIdentifier, Regex>> = Lazy::new(|| {
-    let mut regex: HashMap<ModifierIdentifier, Regex> = HashMap::new();
-
-    StandardParagraphModifier::ordered().into_iter().for_each(|m| {
-        regex.insert(m.identifier(), Regex::new(&m.modifier_pattern_with_paragraph_separator()).unwrap());
-    });
-
-    regex
-});
 
 
 #[derive(Debug, PartialEq, Clone)]
@@ -121,39 +112,33 @@ impl StandardParagraphModifier {
     pub fn modifier_pattern(&self) -> ModifierPattern {
         match *self {
             Self::Image => format!(r"!\[([^\]]*)\](?:{})?\(([^)]+)\)(?:\{{\{{{}\}}\}})?", IDENTIFIER_PATTERN, STYLE_PATTERN),
-            Self::CommonParagraph => String::from(r#"(?s:(.*?))"#),
+            Self::CommonParagraph => format!("{}{}{}", MULTI_LINES_CONTENT_WITHOUT_HEADINGS_PATTERN, NEW_LINE_PATTERN, NEW_LINE_PATTERN),
             Self::CommentBlock => String::from(r"<!--(?s:(.*?))-->"),
-            Self::CodeBlock => format!(r"```\s?(\w+){}+(?s:(.*?)){}+```", NEW_LINE, NEW_LINE),
-            Self::MathBlock => String::from(r#"\$\$((?s:.+?))\$\$"#),
-            Self::ListItem => format!(r#"(?m:^([\t ]*)(-\[\]|-\[ \]|-\[x\]|-\[X\]|-|->|\||\*|\+|--|\d[\.)]?|[a-zA-Z]{{1,8}}[\.)]|&[^;]+;) (.*){}?)"#, NEW_LINE),
+            Self::CodeBlock => format!(r"```\s?(\w+){}+(?s:(.*?)){}+```", NEW_LINE_PATTERN, NEW_LINE_PATTERN),
+            Self::MathBlock => format!(r"{}{}{}", build_strict_reserved_line_pattern(r"\$\$"), MULTI_LINES_CONTENT_PATTERN, build_strict_reserved_line_pattern(r"\$\$")),
+            Self::ListItem => format!(r#"(?m:^([\t ]*)(-\[\]|-\[ \]|-\[x\]|-\[X\]|-|->|\||\*|\+|--|\d[\.)]?|[a-zA-Z]{{1,8}}[\.)]|&[^;]+;) (.*){}?)"#, NEW_LINE_PATTERN),
             Self::List => format!(r#"((?:{}+)+)"#, Self::ListItem.modifier_pattern()),
             Self::ExtendedBlockQuoteLine => String::from(r"(?m:^> (.*))"),
             Self::ExtendedBlockQuote => format!(r"(?ms:^> .*?)"),
             Self::LineBreakDash => String::from(r"(?m:^-{3,})"),
             Self::LineBreakStar => String::from(r"(?m:^\*{3,})"),
             Self::LineBreakPlus => String::from(r"(?m:^\+{3,})"),
-            Self::FocusBlock => format!(r":::\s?(\w+){}(?s:(.*?)){}:::", NEW_LINE, NEW_LINE),
-            Self::ParagraphIdentifier => format!(r"\[\[(?sx:(.*?))\]\]{}?{}", NEW_LINE, IDENTIFIER_PATTERN),
-            Self::EmbeddedParagraphStyle => format!(r"\[\[(?sx:(.*?))\]\]{}?(?:{})?{}?\{{\{{{}\}}\}}", NEW_LINE, IDENTIFIER_PATTERN, NEW_LINE, STYLE_PATTERN),
+            Self::FocusBlock => format!(r":::\s?(\w+){}(?s:(.*?)){}:::", NEW_LINE_PATTERN, NEW_LINE_PATTERN),
+            Self::ParagraphIdentifier => format!(r"\[\[(?sx:(.*?))\]\]{}?{}", NEW_LINE_PATTERN, IDENTIFIER_PATTERN),
+            Self::EmbeddedParagraphStyle => format!(r"\[\[(?sx:(.*?))\]\]{}?(?:{})?{}?\{{\{{{}\}}\}}", NEW_LINE_PATTERN, IDENTIFIER_PATTERN, NEW_LINE_PATTERN, STYLE_PATTERN),
             Self::PageBreak => String::from(r"(?m:^#{3,}$)"),
             Self::Todo => String::from(r"(?m:^(?i:TODO):?\s(?:(.*?))$)"),
             Self::AbridgedTodo => String::from(r"(?m:^(?i:TODO)$)"),
             Self::MultilineTodo => String::from(r"(?i:TODO):(?s:(.*?)):(?i:TODO)"),
             Self::AbridgedImage => format!(r"!\[\((.*)\)\](?:{})?(?:\{{\{{{}\}}\}})?", IDENTIFIER_PATTERN, STYLE_PATTERN),
             Self::MultiImage => String::from(r"!!(?::([\w-]+):)?\[\[(?s:(.*?))\]\]"),
-            Self::Table => format!(r"(\|(.*)\|{}?)+(?:\|(.*)\|)(?U:{}?(?:\[(.*)\])?(?:{})?(?:\{{\{{{}\}}\}})?)?", NEW_LINE, NEW_LINE, IDENTIFIER_PATTERN, STYLE_PATTERN),
+            Self::Table => format!(r"(\|(.*)\|{}?)+(?:\|(.*)\|)(?U:{}?(?:\[(.*)\])?(?:{})?(?:\{{\{{{}\}}\}})?)?", NEW_LINE_PATTERN, NEW_LINE_PATTERN, IDENTIFIER_PATTERN, STYLE_PATTERN),
             
             // _ => {
             //     log::warn!("there is NOT a modifier pattern for {:#?}", self);
             //     String::from(r"RULE TODO")
             // }
         }
-    }
-
-    pub fn modifier_pattern_with_paragraph_separator(&self) -> String {
-        let mp = self.modifier_pattern();
-
-        format!(r"{}{}{}", PARAGRAPH_SEPARATOR_START, mp, PARAGRAPH_SEPARATOR_END)
     }
 
     pub fn incompatible_modifiers(&self) -> ModifiersBucket {
@@ -173,15 +158,11 @@ impl StandardParagraphModifier {
     pub fn modifier_pattern_regex(&self) -> &Regex {
         MODIFIER_PATTERNS_REGEX.get(&self.identifier()).unwrap()
     }
-
-    pub fn modifier_pattern_regex_with_paragraph_separator(&self) -> &Regex {
-        MODIFIER_PATTERNS_WITH_PARAGRAPH_SEPARATOR_REGEX.get(&self.identifier()).unwrap()
-    }
 }
 
 impl Into<BaseModifier> for StandardParagraphModifier {
     fn into(self) -> BaseModifier {
-        BaseModifier::new(self.modifier_pattern_with_paragraph_separator(), self.modifier_pattern_regex_with_paragraph_separator().clone(), self.incompatible_modifiers())
+        BaseModifier::new(self.modifier_pattern(), self.modifier_pattern_regex().clone(), self.incompatible_modifiers())
     }
 }
 
@@ -195,7 +176,7 @@ mod test {
     #[test]
     #[cfg(not(windows))]
     fn match_list() {
-        let regex = Regex::new(StandardParagraphModifier::List.modifier_pattern_with_paragraph_separator().as_str()).unwrap();
+        let regex = Regex::new(StandardParagraphModifier::List.modifier_pattern().as_str()).unwrap();
 
         let list = concat!(
             "\n",

@@ -107,7 +107,7 @@ impl Loader {
             blocks.par_sort_by(|a, b| a.start().cmp(&b.start()));
         }
 
-        log::debug!("create document '{}' using blocks: {:?}", document_name, blocks);
+        log::debug!("create document '{}' using blocks: {:#?}", document_name, blocks);
 
         let mut preamble: Vec<Box<dyn Paragraph>> = Vec::new();
         let mut current_chapter: Option<Chapter> = None;
@@ -123,6 +123,7 @@ impl Loader {
                         cc.paragraphs_mut().push(paragraph);
 
                     } else {
+
                         preamble.push(paragraph);
                     }
 
@@ -132,6 +133,8 @@ impl Loader {
                     if let Some(cc) = current_chapter.take() {
                         chapters.push(cc);
                     }
+
+                    assert!(current_chapter.is_none());
 
                     current_chapter = Some(Chapter::new(heading, Vec::new(), Vec::new()));
                 },
@@ -144,6 +147,12 @@ impl Loader {
                 },
             }
         }
+
+        if let Some(cc) = current_chapter.take() {
+            chapters.push(cc);
+        }
+
+        log::debug!("document '{}' has {} chapters and preamble {}", document_name, chapters.len(), !preamble.is_empty());
 
         
         Ok(Document::new(document_name.to_string(), preamble, chapters))
@@ -183,7 +192,7 @@ impl Loader {
             return Ok(Vec::new());
         }
 
-        log::debug!("loading paragraph:\n{}", content);
+        log::debug!("loading paragraph from string:\n{}", content);
 
         let mut paragraphs: Vec<Block> = Vec::new();
 
@@ -198,7 +207,7 @@ impl Loader {
                 assert!(!m.is_empty());
 
                 let m_start = m.start();
-                let m_end = m.end();
+                let m_end = m.end() - 1;        // -1 because will use less/greater *or equal*
                 
                 log::debug!("found paragraph using '{}': {:?} between {} and {}:\n{}", codex_identifier, search_pattern, m_start, m_end, m.as_str());
 
@@ -304,7 +313,7 @@ impl Loader {
                 let matched_str = m.as_str().to_string();
 
                 let m_start = m.start();
-                let m_end = m.end();
+                let m_end = m.end() - 1;        // -1 because will use less/greater *or equal*
 
                 let incompatible = incompatible_ranges.par_iter().find_any(|range| {
 

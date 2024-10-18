@@ -1,14 +1,18 @@
 use once_cell::sync::Lazy;
 use regex::Regex;
 
+pub fn build_strict_reserved_line_pattern(delimiter: &str) -> String {
+    format!(r"(?ms)^[ \t]*{}[ \t]*$", delimiter)
+}
 
 pub const CHAPTER_TAGS_PATTERN: &str = r"(?:\r?\n@(.*))*";
 pub const CHAPTER_STYLE_PATTERN: &str = r"(\r?\n\{(?s:(.*))\})?";
 pub const IDENTIFIER_PATTERN: &str = r"#([\w-]+)";
+pub const NEW_LINE_PATTERN: &str = r"[\r\n]";
+pub const MULTI_LINES_CONTENT_PATTERN: &str = r"([\s\S]*?)";
+pub const MULTI_LINES_CONTENT_WITHOUT_HEADINGS_PATTERN: &str = r"(?m)^([^#\n][\s\S]*?)";
 
 pub const MAX_HEADING_LEVEL: u32 = 6;
-
-pub const NEW_LINE: &str = "\n";
 
 
 pub const STYLE_PATTERN: &str = r"([^{}]*(?:\.(?:\w+|\d+)\s*|(?:\w+\s*:\s*[^;{}]+\s*;?))*)";

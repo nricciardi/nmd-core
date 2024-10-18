@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-use super::{base_modifier::BaseModifier, constants::{ABRIDGED_STYLE_PATTERN, IDENTIFIER_PATTERN, NEW_LINE, STYLE_PATTERN}, ModifierIdentifier, ModifiersBucket};
+use super::{base_modifier::BaseModifier, constants::{ABRIDGED_STYLE_PATTERN, IDENTIFIER_PATTERN, NEW_LINE_PATTERN, STYLE_PATTERN}, ModifierIdentifier, ModifiersBucket};
 
 
 static MODIFIER_PATTERNS_REGEX: Lazy<HashMap<ModifierIdentifier, Regex>> = Lazy::new(|| {
@@ -119,9 +119,9 @@ impl StandardTextModifier {
             Self::AbridgedBookmark => format!(r"@\[([^\]]*?)\](?:{})?", IDENTIFIER_PATTERN),
             Self::Bookmark => format!(r"@\[([^\]]*?)\](?:{})?\((?s:(.*?))\)", IDENTIFIER_PATTERN),
             Self::Todo => String::from(r"@\[(?i:TODO)\]\((?s:(.*?))\)"),
-            Self::AbridgedEmbeddedStyle => format!(r"\[([^\]\n]*?)\]{}?(?:{})?{}?\{{{}\}}", NEW_LINE, IDENTIFIER_PATTERN, NEW_LINE, ABRIDGED_STYLE_PATTERN),
-            Self::Identifier => format!(r"\[(.*?)\]{}?#([\w-]*)", NEW_LINE),
-            Self::EmbeddedStyle => format!(r"\[([^\]\n]*?)\]{}?(?:{})?{}?\{{\{{{}\}}\}}", NEW_LINE, IDENTIFIER_PATTERN, NEW_LINE, STYLE_PATTERN),
+            Self::AbridgedEmbeddedStyle => format!(r"\[([^\]\n]*?)\]{}?(?:{})?{}?\{{{}\}}", NEW_LINE_PATTERN, IDENTIFIER_PATTERN, NEW_LINE_PATTERN, ABRIDGED_STYLE_PATTERN),
+            Self::Identifier => format!(r"\[(.*?)\]{}?#([\w-]*)", NEW_LINE_PATTERN),
+            Self::EmbeddedStyle => format!(r"\[([^\]\n]*?)\]{}?(?:{})?{}?\{{\{{{}\}}\}}", NEW_LINE_PATTERN, IDENTIFIER_PATTERN, NEW_LINE_PATTERN, STYLE_PATTERN),
             Self::Highlight => String::from(r"==(.*)=="),
             Self::Comment => String::from(r"^//(.*)"),
             Self::Emoji => String::from(r":(\w*):"),
@@ -137,7 +137,7 @@ impl StandardTextModifier {
             Self::Underlined => String::from(r"\+\+(.*?)\+\+"),
             Self::Link => String::from(r"\[([^\]]+)\]\(([^)]+)\)"),
             Self::InlineCode => String::from(r"`(.*?)`"),
-            Self::InlineMath => format!(r#"\$([^${}]+)\$"#, NEW_LINE),
+            Self::InlineMath => format!(r#"\$([^${}]+)\$"#, NEW_LINE_PATTERN),
             Self::GreekLetter => String::from(r"%(\w*?)%"),        // if it changes, fix greek letters rules
             Self::Escape => String::from(r"\\([\*\+\\~%\^\$@=\[\]!<>\{\}\(\)#-_\|\?&]+)"),
             Self::Reference => String::from(r"&([\w-]+)&"),
