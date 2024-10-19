@@ -102,7 +102,7 @@ mod test {
         
         let codex = Codex::of_html();
     
-        let paragraphs = Loader::load_paragraphs_from_str(content, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
+        let paragraphs = Loader::load_paragraphs_from_str_with_workaround(content, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
 
         assert_eq!(paragraphs.len(), expected_n);
 

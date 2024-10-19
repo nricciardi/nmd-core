@@ -120,7 +120,7 @@ impl TableParagraphLoadingRule {
                     cell.remove(cell.len() - 1);
                 }
 
-                let paragraph_blocks = Loader::load_paragraphs_from_str(&cell, codex, configuration, configuration_overlay.clone())?;
+                let paragraph_blocks = Loader::load_paragraphs_from_str_with_workaround(&cell, codex, configuration, configuration_overlay.clone())?;
 
                 let paragraphs: Vec<Box<dyn Paragraph>> = paragraph_blocks.into_par_iter().map(|block| TryInto::<Box<dyn Paragraph>>::try_into(block).unwrap()).collect();
 
@@ -287,7 +287,7 @@ mod test {
 
         let codex = codex();
         
-        let paragraphs = Loader::load_paragraphs_from_str(&nmd_text, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
+        let paragraphs = Loader::load_paragraphs_from_str_with_workaround(&nmd_text, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
 
         assert_eq!(paragraphs.len(), 1);
 
@@ -313,7 +313,7 @@ mod test {
 
         let codex = codex();
         
-        let paragraphs = Loader::load_paragraphs_from_str(&nmd_text, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
+        let paragraphs = Loader::load_paragraphs_from_str_with_workaround(&nmd_text, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
 
         assert_eq!(paragraphs.len(), 1);
 

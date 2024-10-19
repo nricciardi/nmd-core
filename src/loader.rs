@@ -80,7 +80,7 @@ impl Loader {
 
         configuration_overlay.set_document_name(Some(document_name.to_string()));
 
-        let mut paragraphs = Self::load_paragraphs_from_str(content, codex, configuration, configuration_overlay.clone())?;
+        let mut paragraphs = Self::load_paragraphs_from_str_with_workaround(content, codex, configuration, configuration_overlay.clone())?;
 
         let mut incompatible_ranges: Vec<(usize, usize)> = paragraphs.par_iter().map(|p| (p.start(), p.end())).collect();
 
@@ -183,10 +183,8 @@ impl Loader {
     /// Load paragraphs from `&str` using `Codex`.
     /// 
     /// Paragraphs are returned not in order, you should use `start` and `end` to sort if you want.
-    /// 
-    /// Assume `\n` instead of `\r\n` as new line, if you are on Windows please replace `\r\n` before use this method.
     pub fn load_paragraphs_from_str(content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Vec<Block>, LoadError> {
-
+        
         if content.trim().is_empty() {
             log::debug!("skip paragraphs loading: empty content");
             return Ok(Vec::new());
@@ -248,6 +246,30 @@ impl Loader {
         // paragraphs.par_sort_by(|a, b| a.start().cmp(&b.start()));
 
         Ok(paragraphs)
+    }
+
+    /// Load paragraphs from `&str` using `Codex` with new lines work-around for common paragraphs.
+    pub fn load_paragraphs_from_str_with_workaround(content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Vec<Block>, LoadError> {
+
+        let has_new_lines_at_end = |c: &str| c.ends_with("\n\n") || c.ends_with("\n\r\n");
+
+        if has_new_lines_at_end(content) {
+
+            return Self::load_paragraphs_from_str(content, codex, configuration, configuration_overlay.clone());
+
+        } else {
+
+            // work-around common-paragraph
+            let mut content = String::from(content);
+    
+            while !has_new_lines_at_end(&content) {
+                content.push_str("\n");
+            }
+    
+            let content: &str = &content;
+
+            return Self::load_paragraphs_from_str(content, codex, configuration, configuration_overlay.clone());
+        }
     }
 
 
@@ -635,7 +657,7 @@ paragraph 1b
 
         let codex = Codex::of_html();
 
-        let paragraphs = Loader::load_paragraphs_from_str(content, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
+        let paragraphs = Loader::load_paragraphs_from_str_with_workaround(content, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
 
         assert_eq!(paragraphs.len(), 3)
     }

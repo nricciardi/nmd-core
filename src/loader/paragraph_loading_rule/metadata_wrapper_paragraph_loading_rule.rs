@@ -77,7 +77,7 @@ impl MetadataWrapperParagraphLoadingRule {
 
             if let Some(body) = captures.get(self.content_group) {
 
-                let paragraph_blocks = Loader::load_paragraphs_from_str(body.as_str(), codex, configuration, configuration_overlay.clone())?;
+                let paragraph_blocks = Loader::load_paragraphs_from_str_with_workaround(body.as_str(), codex, configuration, configuration_overlay.clone())?;
         
                 let paragraphs: Vec<Box<dyn Paragraph>> = paragraph_blocks.into_par_iter().map(|block| TryInto::<Box<dyn Paragraph>>::try_into(block).unwrap()).collect();
 

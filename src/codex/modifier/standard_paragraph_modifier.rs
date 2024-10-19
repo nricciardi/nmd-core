@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-use super::{base_modifier::BaseModifier, constants::{build_strict_reserved_line_pattern, IDENTIFIER_PATTERN, MULTI_LINES_CONTENT_PATTERN, MULTI_LINES_CONTENT_WITHOUT_HEADINGS_PATTERN, NEW_LINE_PATTERN, STYLE_PATTERN}, ModifierIdentifier, ModifierPattern, ModifiersBucket};
+use super::{base_modifier::BaseModifier, constants::{build_strict_reserved_line_pattern, IDENTIFIER_PATTERN, MULTI_LINES_CONTENT_PATTERN, MULTI_LINES_CONTENT_EXCLUDING_HEADINGS_PATTERN, NEW_LINE_PATTERN, STYLE_PATTERN}, ModifierIdentifier, ModifierPattern, ModifiersBucket};
 
 
 pub const PARAGRAPH_SEPARATOR_START: &str = r"(?m:^[ \t]*\r?\n)+";
@@ -111,10 +111,12 @@ impl StandardParagraphModifier {
     // Return the modifier pattern
     pub fn modifier_pattern(&self) -> ModifierPattern {
         match *self {
-            Self::Image => format!(r"!\[([^\]]*)\](?:{})?\(([^)]+)\)(?:\{{\{{{}\}}\}})?", IDENTIFIER_PATTERN, STYLE_PATTERN),
-            Self::CommonParagraph => format!("{}{}{}", MULTI_LINES_CONTENT_WITHOUT_HEADINGS_PATTERN, NEW_LINE_PATTERN, NEW_LINE_PATTERN),
-            Self::CommentBlock => String::from(r"<!--(?s:(.*?))-->"),
-            Self::CodeBlock => format!(r"```\s?(\w+){}+(?s:(.*?)){}+```", NEW_LINE_PATTERN, NEW_LINE_PATTERN),
+            Self::Image => build_strict_reserved_line_pattern(&format!(r"!\[([^\]]*)\](?:{})?\(([^)]+)\)(?:\{{\{{{}\}}\}})?", IDENTIFIER_PATTERN, STYLE_PATTERN)),
+            Self::AbridgedImage => build_strict_reserved_line_pattern(&format!(r"!\[\((.*)\)\](?:{})?(?:\{{\{{{}\}}\}})?", IDENTIFIER_PATTERN, STYLE_PATTERN)),
+            Self::MultiImage => build_strict_reserved_line_pattern(r"!!(?::([\w-]+):)?\[\[(?s:(.*?))\]\]"),
+            Self::CommonParagraph => format!("{}{}{}", MULTI_LINES_CONTENT_EXCLUDING_HEADINGS_PATTERN, NEW_LINE_PATTERN, NEW_LINE_PATTERN),
+            Self::CommentBlock => format!(r"<!--(?s:(.*?))-->"),
+            Self::CodeBlock => format!(r"{}{}{}{}", build_strict_reserved_line_pattern(r"```[ \t]*(\w+)?"), NEW_LINE_PATTERN, MULTI_LINES_CONTENT_PATTERN, build_strict_reserved_line_pattern("```")),
             Self::MathBlock => format!(r"{}{}{}", build_strict_reserved_line_pattern(r"\$\$"), MULTI_LINES_CONTENT_PATTERN, build_strict_reserved_line_pattern(r"\$\$")),
             Self::ListItem => format!(r#"(?m:^([\t ]*)(-\[\]|-\[ \]|-\[x\]|-\[X\]|-|->|\||\*|\+|--|\d[\.)]?|[a-zA-Z]{{1,8}}[\.)]|&[^;]+;) (.*){}?)"#, NEW_LINE_PATTERN),
             Self::List => format!(r#"((?:{}+)+)"#, Self::ListItem.modifier_pattern()),
@@ -130,8 +132,6 @@ impl StandardParagraphModifier {
             Self::Todo => String::from(r"(?m:^(?i:TODO):?\s(?:(.*?))$)"),
             Self::AbridgedTodo => String::from(r"(?m:^(?i:TODO)$)"),
             Self::MultilineTodo => String::from(r"(?i:TODO):(?s:(.*?)):(?i:TODO)"),
-            Self::AbridgedImage => format!(r"!\[\((.*)\)\](?:{})?(?:\{{\{{{}\}}\}})?", IDENTIFIER_PATTERN, STYLE_PATTERN),
-            Self::MultiImage => String::from(r"!!(?::([\w-]+):)?\[\[(?s:(.*?))\]\]"),
             Self::Table => format!(r"(\|(.*)\|{}?)+(?:\|(.*)\|)(?U:{}?(?:\[(.*)\])?(?:{})?(?:\{{\{{{}\}}\}})?)?", NEW_LINE_PATTERN, NEW_LINE_PATTERN, IDENTIFIER_PATTERN, STYLE_PATTERN),
             
             // _ => {

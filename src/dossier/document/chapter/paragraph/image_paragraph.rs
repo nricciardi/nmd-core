@@ -1,6 +1,6 @@
 use build_html::{Container, Html, HtmlContainer};
 use getset::{Getters, Setters};
-use crate::{codex::Codex, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, resource::{image_resource::ImageResource, source::Source}, utility::{image_utility, nmd_unique_identifier::NmdUniqueIdentifier}};
+use crate::{codex::Codex, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, resource::{image_resource::ImageResource, source::Source, ResourceError}, utility::{image_utility, nmd_unique_identifier::NmdUniqueIdentifier}};
 
 
 const SINGLE_IMAGE_CLASSES: [&str; 1] = ["image"];
@@ -86,7 +86,12 @@ impl ImageParagraph {
                         
                         } else {
 
-                            image.set_src(Source::Local { path: std::fs::canonicalize(path).unwrap() });
+                            let path = match std::fs::canonicalize(path) {
+                                Ok(p) => p,
+                                Err(_) => return Err(CompilationError::ResourceError(ResourceError::ResourceNotFound(path.to_string_lossy().to_string()))),
+                            };
+
+                            image.set_src(Source::Local { path });
                         }
 
                         let mut compilable_text = image_utility::compile_image_resource_in_html(image, img_classes, nuid)?;

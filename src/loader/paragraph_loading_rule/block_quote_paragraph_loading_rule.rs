@@ -61,7 +61,7 @@ impl BlockQuoteParagraphLoadingRule {
             block_quote_body_content.push_str(c.as_str());
         }
         
-        let paragraph_blocks = Loader::load_paragraphs_from_str(&block_quote_body_content, codex, configuration, configuration_overlay.clone())?;
+        let paragraph_blocks = Loader::load_paragraphs_from_str_with_workaround(&block_quote_body_content, codex, configuration, configuration_overlay.clone())?;
 
         let paragraphs: Vec<Box<dyn Paragraph>> = paragraph_blocks.into_par_iter().map(|block| TryInto::<Box<dyn Paragraph>>::try_into(block).unwrap()).collect();
         
