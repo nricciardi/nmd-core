@@ -120,9 +120,7 @@ impl TableParagraphLoadingRule {
                     cell.remove(cell.len() - 1);
                 }
 
-                let paragraph_blocks = Loader::load_paragraphs_from_str_with_workaround(&cell, codex, configuration, configuration_overlay.clone())?;
-
-                let paragraphs: Vec<Box<dyn Paragraph>> = paragraph_blocks.into_par_iter().map(|block| TryInto::<Box<dyn Paragraph>>::try_into(block).unwrap()).collect();
+                let inner_blocks = Loader::load_from_str(&cell, codex, configuration, configuration_overlay.clone())?;
 
                 cells.push(TableCell::ContentCell { content: paragraphs, alignment: align});
             }
