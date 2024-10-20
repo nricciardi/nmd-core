@@ -38,7 +38,7 @@ use super::compiler::compilation_rule::CompilationRule;
 
 
 pub type CodexIdentifier = String;
-pub type CodexModifiersMap = IndexMap<CodexIdentifier, Box<dyn Modifier>>;
+pub type CodexModifiersOrderedMap = IndexMap<CodexIdentifier, Box<dyn Modifier>>;
 pub type CodexCompilationRulesMap = HashMap<CodexIdentifier, Box<dyn CompilationRule>>;
 pub type CodexLoadingRulesMap = HashMap<CodexIdentifier, Box<dyn ParagraphLoadingRule>>;
 
@@ -53,10 +53,10 @@ pub struct Codex {
 
 
     #[getset(get = "pub", set = "pub")]
-    text_modifiers: CodexModifiersMap,
+    text_modifiers: CodexModifiersOrderedMap,
 
     #[getset(get = "pub", set = "pub")]
-    paragraph_modifiers: CodexModifiersMap,
+    paragraph_modifiers: CodexModifiersOrderedMap,
 
     // #[getset(get = "pub", set = "pub")]
     // chapter_modifiers: CodexModifiersMap,
@@ -81,7 +81,7 @@ impl Codex {
     }
 
     /// Create a new `Codex`
-    pub fn new(text_modifiers: CodexModifiersMap, paragraph_modifiers: CodexModifiersMap,
+    pub fn new(text_modifiers: CodexModifiersOrderedMap, paragraph_modifiers: CodexModifiersOrderedMap,
                 text_compilation_rules: CodexCompilationRulesMap, paragraph_loading_rules: CodexLoadingRulesMap,) -> Self {
 
         // TODO: check if there are all necessary rules based on theirs type
@@ -120,13 +120,13 @@ impl Codex {
     /// Standard HTML `Codex`
     pub fn of_html() -> Self {
 
-        let mut text_modifiers: CodexModifiersMap = CodexModifiersMap::new();
+        let mut text_modifiers: CodexModifiersOrderedMap = CodexModifiersOrderedMap::new();
 
         StandardTextModifier::ordered().into_iter().for_each(|tm| {
             text_modifiers.insert(tm.identifier(), Box::new(Into::<BaseModifier>::into(tm)) as Box<dyn Modifier>);
         });
 
-        let mut paragraph_modifiers: CodexModifiersMap = CodexModifiersMap::new();
+        let mut paragraph_modifiers: CodexModifiersOrderedMap = CodexModifiersOrderedMap::new();
 
         StandardParagraphModifier::ordered().into_iter().for_each(|tm| {
             paragraph_modifiers.insert(tm.identifier(), Box::new(Into::<BaseModifier>::into(tm)) as Box<dyn Modifier>);

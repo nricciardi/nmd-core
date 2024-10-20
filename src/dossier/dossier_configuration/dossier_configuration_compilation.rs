@@ -53,6 +53,10 @@ pub struct DossierConfigurationCompilation {
     #[serde(default = "yes")]
     #[getset(get_copy = "pub", set = "pub")]
     strict_reference_check: bool,
+
+    #[serde(default = "yes")]
+    #[getset(get_copy = "pub", set = "pub")]
+    strict_paragraph_loading_rules_check: bool,
 }
 
 impl Default for DossierConfigurationCompilation {
@@ -68,6 +72,7 @@ impl Default for DossierConfigurationCompilation {
             strict_cite_check: true,
             strict_greek_letters_check: true,
             strict_reference_check: true,
+            strict_paragraph_loading_rules_check: true,
         }
     }
 }
