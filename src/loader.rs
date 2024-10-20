@@ -14,6 +14,7 @@ use block::{Block, BlockContent};
 use getset::{Getters, Setters};
 use loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay};
 use once_cell::sync::Lazy;
+use paragraph_loading_rule::ParagraphLoadingRule;
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, IntoParallelRefMutIterator, ParallelIterator};
 use rayon::slice::ParallelSliceMut;
 use regex::Regex;
@@ -21,7 +22,6 @@ use thiserror::Error;
 use crate::codex::modifier::base_modifier::BaseModifier;
 use crate::codex::modifier::standard_heading_modifier::StandardHeading;
 use crate::codex::modifier::Modifier;
-use crate::codex::{CodexLoadingRulesMap, CodexModifiersOrderedMap};
 use crate::dossier::document::chapter::paragraph::Paragraph;
 use crate::resource::disk_resource::DiskResource;
 use crate::resource::resource_reference::ResourceReferenceError;
@@ -77,13 +77,9 @@ impl Loader {
 
         configuration_overlay.set_document_name(Some(document_name.to_string()));
         
+        let mut blocks: Vec<Block> = Self::load_from_str(content, codex, configuration, configuration_overlay.clone())?;
 
-
-
-
-
-
-        let mut blocks: Vec<Block> = Vec::new();
+        blocks.par_sort_by(|a, b| a.start().cmp(&b.start()));
 
         let document = Self::create_document_by_blocks(document_name, blocks)?;
 
@@ -92,7 +88,21 @@ impl Loader {
         Ok(document)      
     }
 
-    fn load_from_str(content: &str, content_offset: usize, codex: &Codex, paragraph_modifier_index: usize, configuration: &LoaderConfiguration, mut configuration_overlay: LoaderConfigurationOverLay) -> Result<Vec<Block>, LoadError> {
+    /// Load content from `&str` based on `Codex`
+    /// 
+    /// Blocks are not sorted, sort if you want:
+    /// 
+    /// ```rust
+    /// blocks.par_sort_by(|a, b| a.start().cmp(&b.start()));
+    /// ```
+    fn load_from_str(content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Vec<Block>, LoadError> {
+        Self::inner_load_from_str(content, 0, codex, 0, configuration, configuration_overlay.clone())
+    }
+
+    /// Inner load method to load content from `&str` based on `Codex`
+    /// 
+    /// This method uses recursive algorithm, use `content_offset=0` and `paragraph_modifier_index=0` to start.
+    fn inner_load_from_str(content: &str, content_offset: usize, codex: &Codex, paragraph_modifier_index: usize, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Vec<Block>, LoadError> {
 
         if let Some((modifier_identifier, paragraph_modifier)) = codex.paragraph_modifiers().get_index(paragraph_modifier_index) {
 
@@ -149,7 +159,7 @@ impl Loader {
 
             // load unmatched slices
             for (offset, unmatched_slice) in unmatched_slices {
-                let mut blocks = Self::load_from_str(unmatched_slice, offset, codex, paragraph_modifier_index + 1, configuration, configuration_overlay.clone())?;
+                let mut blocks = Self::inner_load_from_str(unmatched_slice, offset, codex, paragraph_modifier_index + 1, configuration, configuration_overlay.clone())?;
             
                 unmatched_slices_blocks.append(&mut blocks);
             }
@@ -167,11 +177,42 @@ impl Loader {
 
             let mut last_position = 0;
 
+            let fallback_loading_rule: Option<&Box<dyn ParagraphLoadingRule>>;
+
+            if let Some(fb_id) = codex.fallback_paragraph_modifier() {
+                fallback_loading_rule = codex.paragraph_loading_rules().get(fb_id);
+            
+            } else {
+                fallback_loading_rule = None;
+
+                log::warn!("there isn't fallback paragraph loading rule")
+            }
+
+            let mut add_fb_block = |s: &str, start: usize, end: usize| -> Result<(), LoadError> {
+                if let Some(rule) = fallback_loading_rule {
+                        
+                    log::debug!("fallback rule {:?} will be used to load:\n{}", fallback_loading_rule, s);
+
+                    let paragraph = rule.load(s, codex, configuration, configuration_overlay.clone())?;
+
+                    blocks.push(Block::new(
+                        start, 
+                        end,
+                        BlockContent::Paragraph(paragraph)
+                    ));
+                }
+
+                Ok(())
+            };
+
             // assign fallback paragraph
-            for heading_block in &mut headings_blocks {
+            for heading_block in headings_blocks.iter_mut() {
 
                 if heading_block.start() > last_position {
-                    // TODO: assign fallback
+
+                    let s = &content[last_position..heading_block.start()];
+
+                    add_fb_block(s, content_offset + last_position, content_offset + heading_block.start())?;
                 }
 
                 last_position = heading_block.end();
@@ -182,7 +223,9 @@ impl Loader {
 
             if content.len() > last_position {
 
-                // TODO: assign fallback
+                let s = &content[last_position..];
+
+                add_fb_block(s, content_offset + last_position, content_offset + content.len())?;
             }
 
             blocks.append(&mut headings_blocks);
@@ -191,38 +234,15 @@ impl Loader {
         }
     }
 
-    /*pub fn load_document_from_str(document_name: &str, content: &str, codex: &Codex, configuration: &LoaderConfiguration, mut configuration_overlay: LoaderConfigurationOverLay) -> Result<Document, LoadError> {
-
-        log::info!("loading document '{}' from its content...", document_name);
-
-        // TODO: is needed?
-        // let content = &text_utility::normalize_newlines(content);
-
-        configuration_overlay.set_document_name(Some(document_name.to_string()));
-
-        let mut paragraphs = Self::load_paragraphs_from_str_with_workaround(content, codex, configuration, configuration_overlay.clone())?;
-
-        let mut incompatible_ranges: Vec<(usize, usize)> = paragraphs.par_iter().map(|p| (p.start(), p.end())).collect();
-
-        incompatible_ranges.par_sort_by(|a, b| a.0.cmp(&b.0));
-
-        let mut headings_and_chapter_tags = Self::load_headings_and_chapter_tags_from_str(content, codex, incompatible_ranges, configuration)?;
-
-        let mut blocks: Vec<Block> = Vec::new();
-    
-        blocks.append(&mut paragraphs);
-        blocks.append(&mut headings_and_chapter_tags);
-
-        let document = Self::create_document_by_blocks(document_name, blocks)?;
-
-        log::info!("document '{}' loaded (preamble: {}, chapters: {})", document_name, document.preamble().is_empty(), document.chapters().len());
-
-        Ok(document)      
-    }*/
-
     fn create_document_by_blocks(document_name: &str, mut blocks: Vec<Block>) -> Result<Document, LoadError> {
 
-        if !blocks.windows(2).all(|w| w[0].start() <= w[1].start()) {
+        if !blocks.windows(2).all(|w| {
+
+            assert!(w[0].start() <= w[0].end());
+            assert!(w[1].start() <= w[1].end());
+
+            w[0].start() <= w[1].start()
+        }) {
             
             blocks.par_sort_by(|a, b| a.start().cmp(&b.start()));
         }
@@ -299,99 +319,6 @@ impl Loader {
             Err(err) => return Err(LoadError::ElaborationError(err.to_string()))
         }
     }
-
-    /// Load paragraphs from `&str` using `Codex`.
-    /// 
-    /// Paragraphs are returned not in order, you should use `start` and `end` to sort if you want.
-    pub fn load_paragraphs_from_str(content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Vec<Block>, LoadError> {
-        
-        if content.trim().is_empty() {
-            log::debug!("skip paragraphs loading: empty content");
-            return Ok(Vec::new());
-        }
-
-        log::debug!("loading paragraph from string:\n{}", content);
-
-        let mut paragraphs: Vec<Block> = Vec::new();
-
-        for (codex_identifier, paragraph_modifier) in codex.paragraph_modifiers() {
-
-            let search_pattern = paragraph_modifier.modifier_pattern();
-
-            log::debug!("searching paragraph '{}': {:?}", codex_identifier, search_pattern);
-
-            for m in paragraph_modifier.modifier_pattern_regex().find_iter(content) {
-
-                assert!(!m.is_empty());
-
-                let m_start = m.start();
-                let m_end = m.end() - 1;        // -1 because will use less/greater *or equal*
-                
-                log::debug!("found paragraph using '{}': {:?} between {} and {}:\n{}", codex_identifier, search_pattern, m_start, m_end, m.as_str());
-
-                let overlap_paragraph = paragraphs.par_iter().find_any(|p| {
-
-                    let p_start = p.start();
-                    let p_end = p.end();
-
-                    (p_start >= m_start && p_end <= m_end) ||     // current paragraph contains p
-                    (p_start <= m_start && p_end >= m_end) ||     // p contains current paragraph
-                    (p_start <= m_start && p_end >= m_start && p_end <= m_end) ||     // left overlap
-                    (p_start >= m_start && p_start <= m_end && p_end >= m_end)          // right overlap
-                });
-
-                if let Some(p) = overlap_paragraph {     // => overlap
-                    log::debug!("paragraph discarded because there is an overlap between {} and {} using pattern {:?}:\n{:#?}\n", m_start, m_end, search_pattern, p);
-                    continue;
-                }
-
-                if let Some(loading_rule) = codex.paragraph_loading_rules().get(codex_identifier) {
-
-                    let paragraph = loading_rule.load(m.as_str(), codex, configuration, configuration_overlay.clone())?;
-
-                    if !paragraph.is_empty() {
-                        log::debug!("added paragraph to paragraphs list:\n{:#?}", paragraph);
-                        
-                        paragraphs.push(Block::new(m_start, m_end, block::BlockContent::Paragraph(paragraph)));
-                    }
-
-                } else {
-
-                    return Err(LoadError::ElaborationError(format!("paragraph content loading rule not found for {}", codex_identifier)))
-                }
-
-            };
-        }
-
-        // paragraphs.par_sort_by(|a, b| a.start().cmp(&b.start()));
-
-        Ok(paragraphs)
-    }
-
-    /// Load paragraphs from `&str` using `Codex` with new lines work-around for common paragraphs.
-    pub fn load_paragraphs_from_str_with_workaround(content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Vec<Block>, LoadError> {
-
-        let has_new_lines_at_end = |c: &str| c.ends_with("\n\n") || c.ends_with("\n\r\n");
-
-        if has_new_lines_at_end(content) {
-
-            return Self::load_paragraphs_from_str(content, codex, configuration, configuration_overlay.clone());
-
-        } else {
-
-            // work-around common-paragraph
-            let mut content = String::from(content);
-    
-            while !has_new_lines_at_end(&content) {
-                content.push_str("\n");
-            }
-    
-            let content: &str = &content;
-
-            return Self::load_paragraphs_from_str(content, codex, configuration, configuration_overlay.clone());
-        }
-    }
-
 
     /// Load chapter tags (e.g. `author`) from string. This method returns empty `Vec` if there are no tags.
     fn load_chapter_tags_from_str(content: &str, _codex: &Codex, _configuration: &LoaderConfiguration) -> Vec<Block> {

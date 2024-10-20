@@ -270,6 +270,7 @@ mod test {
                     Box::new(TableParagraphLoadingRule::new()) as Box<dyn ParagraphLoadingRule>
                 )
             ]),
+            Some(StandardParagraphModifier::CommonParagraph.identifier())
         )
     }
 

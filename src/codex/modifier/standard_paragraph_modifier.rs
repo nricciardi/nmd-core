@@ -65,14 +65,14 @@ impl StandardParagraphModifier {
             Self::MultilineTodo,
             Self::Todo,
             Self::PageBreak,
-             Self::LineBreakDash,
+            Self::LineBreakDash,
             Self::LineBreakStar,
             Self::LineBreakPlus,
             Self::MultiImage,
             Self::AbridgedImage,
             Self::Image,
             Self::CommentBlock,
-            Self::CommonParagraph,
+            // Self::CommonParagraph, => fallback
         ]
     }
 

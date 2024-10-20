@@ -58,6 +58,9 @@ pub struct Codex {
     #[getset(get = "pub", set = "pub")]
     paragraph_modifiers: CodexModifiersOrderedMap,
 
+    #[getset(get = "pub", set = "pub")]
+    fallback_paragraph_modifier: Option<CodexIdentifier>,
+
     // #[getset(get = "pub", set = "pub")]
     // chapter_modifiers: CodexModifiersMap,
 
@@ -82,7 +85,7 @@ impl Codex {
 
     /// Create a new `Codex`
     pub fn new(text_modifiers: CodexModifiersOrderedMap, paragraph_modifiers: CodexModifiersOrderedMap,
-                text_compilation_rules: CodexCompilationRulesMap, paragraph_loading_rules: CodexLoadingRulesMap,) -> Self {
+                text_compilation_rules: CodexCompilationRulesMap, paragraph_loading_rules: CodexLoadingRulesMap, fallback_paragraph_modifier: Option<CodexIdentifier>,) -> Self {
 
         // TODO: check if there are all necessary rules based on theirs type
 
@@ -91,6 +94,7 @@ impl Codex {
             paragraph_modifiers,
             text_compilation_rules,
             paragraph_loading_rules,
+            fallback_paragraph_modifier
         }
     }
 
@@ -798,6 +802,7 @@ impl Codex {
             paragraph_modifiers,
             text_rules,
             paragraph_rules,
+            Some(StandardParagraphModifier::CommonParagraph.identifier())
         )
     }
 }
@@ -839,6 +844,7 @@ mod test {
             IndexMap::new(),
             HashMap::new(),
             HashMap::new(),
+            None
         );
 
 

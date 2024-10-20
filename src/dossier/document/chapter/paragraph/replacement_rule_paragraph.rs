@@ -242,6 +242,7 @@ mod test {
                 )
             ]),
             CodexLoadingRulesMap::new(),
+            Some(StandardParagraphModifier::CommonParagraph.identifier())
         );
 
         paragraph.compile(
