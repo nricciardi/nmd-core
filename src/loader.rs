@@ -3,14 +3,14 @@
 
 pub mod loader_configuration;
 pub mod paragraph_loading_rule;
-pub mod block;
+pub mod load_block;
 
 
 use std::collections::HashSet;
 use std::io;
 use std::path::PathBuf;
 use std::str::FromStr;
-use block::{Block, BlockContent};
+use load_block::{LoadBlock, LoadBlockContent};
 use getset::{Getters, Setters};
 use loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay};
 use once_cell::sync::Lazy;
@@ -22,7 +22,7 @@ use thiserror::Error;
 use crate::codex::modifier::base_modifier::BaseModifier;
 use crate::codex::modifier::standard_heading_modifier::StandardHeading;
 use crate::codex::modifier::Modifier;
-use crate::dossier::document::chapter::paragraph::Paragraph;
+use crate::compiler::content_bundle::ContentBundle;
 use crate::resource::disk_resource::DiskResource;
 use crate::resource::resource_reference::ResourceReferenceError;
 use crate::resource::{Resource, ResourceError};
@@ -31,7 +31,7 @@ use super::codex::Codex;
 use super::dossier::document::chapter::chapter_tag::ChapterTag;
 use super::dossier::dossier_configuration::DossierConfiguration;
 use super::dossier::Dossier;
-use super::dossier::{document::{chapter::heading::{Heading, HeadingLevel}, Chapter}, Document};
+use super::dossier::{document::chapter::heading::{Heading, HeadingLevel}, Document};
 
 
 static CHAPTER_STYLE_PATTERN_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(CHAPTER_STYLE_PATTERN).unwrap());
@@ -77,13 +77,13 @@ impl Loader {
 
         configuration_overlay.set_document_name(Some(document_name.to_string()));
         
-        let mut blocks: Vec<Block> = Self::load_from_str(content, codex, configuration, configuration_overlay.clone())?;
+        let mut blocks: Vec<LoadBlock> = Self::load_from_str(content, codex, configuration, configuration_overlay.clone())?;
 
         blocks.par_sort_by(|a, b| a.start().cmp(&b.start()));
 
         let document = Self::create_document_by_blocks(document_name, blocks)?;
 
-        log::info!("document '{}' loaded (preamble: {}, chapters: {})", document_name, document.preamble().is_empty(), document.chapters().len());
+        log::info!("document '{}' loaded (preamble: {}, chapters: {})", document_name, document.content().preamble().is_empty(), document.content().chapters().len());
 
         Ok(document)      
     }
@@ -95,14 +95,14 @@ impl Loader {
     /// ```rust
     /// blocks.par_sort_by(|a, b| a.start().cmp(&b.start()));
     /// ```
-    fn load_from_str(content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Vec<Block>, LoadError> {
+    fn load_from_str(content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Vec<LoadBlock>, LoadError> {
         Self::inner_load_from_str(content, 0, codex, 0, configuration, configuration_overlay.clone())
     }
 
     /// Inner load method to load content from `&str` based on `Codex`
     /// 
     /// This method uses recursive algorithm, use `content_offset=0` and `paragraph_modifier_index=0` to start.
-    fn inner_load_from_str(content: &str, content_offset: usize, codex: &Codex, paragraph_modifier_index: usize, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Vec<Block>, LoadError> {
+    fn inner_load_from_str(content: &str, content_offset: usize, codex: &Codex, paragraph_modifier_index: usize, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Vec<LoadBlock>, LoadError> {
 
         if let Some((modifier_identifier, paragraph_modifier)) = codex.paragraph_modifiers().get_index(paragraph_modifier_index) {
 
@@ -119,7 +119,7 @@ impl Loader {
 
             let paragraph_loading_rule = paragraph_loading_rule.unwrap();
 
-            let mut current_paragraph_blocks: Vec<Block> = Vec::new();
+            let mut current_paragraph_blocks: Vec<LoadBlock> = Vec::new();
 
             let mut unmatched_slices: Vec<(usize, &str)> = Vec::new();
             let mut last_position: usize = 0;
@@ -142,7 +142,7 @@ impl Loader {
                 let paragraph = paragraph_loading_rule.load(m.as_str(), codex, configuration, configuration_overlay.clone())?;
 
                 if !paragraph.is_empty() {
-                    let block = Block::new(m_start, m_end, block::BlockContent::Paragraph(paragraph));
+                    let block = LoadBlock::new(m_start, m_end, load_block::LoadBlockContent::Paragraph(paragraph));
 
                     log::debug!("added block:\n{:#?}", block);
 
@@ -155,7 +155,7 @@ impl Loader {
                 unmatched_slices.push((last_position, &content[last_position..]));
             }
 
-            let mut unmatched_slices_blocks: Vec<Block> = Vec::new();
+            let mut unmatched_slices_blocks: Vec<LoadBlock> = Vec::new();
 
             // load unmatched slices
             for (offset, unmatched_slice) in unmatched_slices {
@@ -173,7 +173,7 @@ impl Loader {
             // load headings
             let mut headings_blocks = Self::load_headings_and_chapter_tags_from_str(content, codex, configuration)?;
 
-            let mut blocks: Vec<Block> = Vec::new();
+            let mut blocks: Vec<LoadBlock> = Vec::new();
 
             let mut last_position = 0;
 
@@ -195,10 +195,10 @@ impl Loader {
 
                     let paragraph = rule.load(s, codex, configuration, configuration_overlay.clone())?;
 
-                    blocks.push(Block::new(
+                    blocks.push(LoadBlock::new(
                         start, 
                         end,
-                        BlockContent::Paragraph(paragraph)
+                        LoadBlockContent::Paragraph(paragraph)
                     ));
                 }
 
@@ -234,68 +234,17 @@ impl Loader {
         }
     }
 
-    fn create_document_by_blocks(document_name: &str, mut blocks: Vec<Block>) -> Result<Document, LoadError> {
-
-        if !blocks.windows(2).all(|w| {
-
-            assert!(w[0].start() <= w[0].end());
-            assert!(w[1].start() <= w[1].end());
-
-            w[0].start() <= w[1].start()
-        }) {
-            
-            blocks.par_sort_by(|a, b| a.start().cmp(&b.start()));
-        }
+    fn create_document_by_blocks(document_name: &str, blocks: Vec<LoadBlock>) -> Result<Document, LoadError> {
 
         log::debug!("create document '{}' using blocks: {:#?}", document_name, blocks);
 
-        let mut preamble: Vec<Box<dyn Paragraph>> = Vec::new();
-        let mut current_chapter: Option<Chapter> = None;
-        let mut chapters: Vec<Chapter> = Vec::new(); 
+        let content = ContentBundle::from(blocks);
 
-        for block in blocks {
+        let document = Document::new(document_name.to_string(), content);
 
-            match Into::<BlockContent>::into(block) {
-                BlockContent::Paragraph(paragraph) => {
+        log::debug!("document '{}' has {} chapters and preamble {}", document.name(), document.content().chapters().len(), !document.content().preamble().is_empty());
 
-                    if let Some(ref mut cc) = current_chapter {
-
-                        cc.paragraphs_mut().push(paragraph);
-
-                    } else {
-
-                        preamble.push(paragraph);
-                    }
-
-                },
-                BlockContent::Heading(heading) => {
-
-                    if let Some(cc) = current_chapter.take() {
-                        chapters.push(cc);
-                    }
-
-                    assert!(current_chapter.is_none());
-
-                    current_chapter = Some(Chapter::new(heading, Vec::new(), Vec::new()));
-                },
-                BlockContent::ChapterTag(chapter_tag) => {
-
-                    assert!(current_chapter.is_some());
-
-                    current_chapter.as_mut().unwrap().tags_mut().push(chapter_tag);
-
-                },
-            }
-        }
-
-        if let Some(cc) = current_chapter.take() {
-            chapters.push(cc);
-        }
-
-        log::debug!("document '{}' has {} chapters and preamble {}", document_name, chapters.len(), !preamble.is_empty());
-
-        
-        Ok(Document::new(document_name.to_string(), preamble, chapters))
+        Ok(document)
     }
 
 
@@ -321,9 +270,9 @@ impl Loader {
     }
 
     /// Load chapter tags (e.g. `author`) from string. This method returns empty `Vec` if there are no tags.
-    fn load_chapter_tags_from_str(content: &str, _codex: &Codex, _configuration: &LoaderConfiguration) -> Vec<Block> {
+    fn load_chapter_tags_from_str(content: &str, _codex: &Codex, _configuration: &LoaderConfiguration) -> Vec<LoadBlock> {
         
-        let mut tags: Vec<Block> = Vec::new();
+        let mut tags: Vec<LoadBlock> = Vec::new();
         
         let mut pos: usize = 0;
         for line in content.lines() {
@@ -332,10 +281,10 @@ impl Loader {
 
             if let Ok(t) = tag {
 
-                tags.push(Block::new(
+                tags.push(LoadBlock::new(
                     pos, 
                     pos + line.len(),
-                    block::BlockContent::ChapterTag(t)
+                    load_block::LoadBlockContent::ChapterTag(t)
                 ));
 
             }
@@ -362,10 +311,10 @@ impl Loader {
     }
 
     /// Load headings and chapter tags from `&str`
-    fn load_headings_and_chapter_tags_from_str(content: &str, codex: &Codex, configuration: &LoaderConfiguration) -> Result<Vec<Block>, LoadError> {
+    fn load_headings_and_chapter_tags_from_str(content: &str, codex: &Codex, configuration: &LoaderConfiguration) -> Result<Vec<LoadBlock>, LoadError> {
        
         let mut last_heading_level = 0;
-        let mut headings_and_chapter_tags: Vec<Block> = Vec::new();
+        let mut headings_and_chapter_tags: Vec<LoadBlock> = Vec::new();
 
         for heading in StandardHeading::ordered() {     // TODO: include `StandardHeading::ordered()` in `Codex`
 
@@ -403,7 +352,7 @@ impl Loader {
     }
 
     /// Load the chapter heading and metadata from `&str`. This method returns a tuple with optional heading and a chapter tags vector.
-    fn parse_chapter_heading_and_tags_from_str(content: &str, last_heading_level: &mut HeadingLevel, codex: &Codex, configuration: &LoaderConfiguration) -> Result<Option<(Block, Vec<Block>)>, LoadError> {
+    fn parse_chapter_heading_and_tags_from_str(content: &str, last_heading_level: &mut HeadingLevel, codex: &Codex, configuration: &LoaderConfiguration) -> Result<Option<(LoadBlock, Vec<LoadBlock>)>, LoadError> {
 
         log::debug!("parse headings and chapter tags from (last heading level: {}):\n{}", last_heading_level, content);
 
@@ -434,10 +383,10 @@ impl Loader {
     
                         let title = capture.get(1).unwrap();
     
-                        let heading = Block::new(
+                        let heading = LoadBlock::new(
                             title.start(),
                             title.end(),
-                            block::BlockContent::Heading(Heading::new(level, title.as_str().to_string()))
+                            load_block::LoadBlockContent::Heading(Heading::new(level, title.as_str().to_string()))
                         );
     
     
@@ -457,10 +406,10 @@ impl Loader {
     
                         let title = capture.get(1).unwrap();
     
-                        let heading = Block::new(
+                        let heading = LoadBlock::new(
                             title.start(),
                             title.end(),
-                            block::BlockContent::Heading(Heading::new(level, title.as_str().to_string()))
+                            load_block::LoadBlockContent::Heading(Heading::new(level, title.as_str().to_string()))
                         );
     
     
@@ -483,10 +432,10 @@ impl Loader {
                         
                         let title = capture.get(1).unwrap();
     
-                        let heading = Block::new(
+                        let heading = LoadBlock::new(
                             title.start(),
                             title.end(),
-                            block::BlockContent::Heading(Heading::new(level, title.as_str().to_string()))
+                            load_block::LoadBlockContent::Heading(Heading::new(level, title.as_str().to_string()))
                         );
     
     
@@ -500,10 +449,10 @@ impl Loader {
     
                         let title = capture.get(1).unwrap();
     
-                        let heading = Block::new(
+                        let heading = LoadBlock::new(
                             title.start(),
                             title.end(),
-                            block::BlockContent::Heading(Heading::new(level, title.as_str().to_string()))
+                            load_block::LoadBlockContent::Heading(Heading::new(level, title.as_str().to_string()))
                         );
     
     
@@ -518,10 +467,10 @@ impl Loader {
                         let level: HeadingLevel = matched.get(1).unwrap().as_str().parse().unwrap();
                         let title = capture.get(2).unwrap();
     
-                        let heading = Block::new(
+                        let heading = LoadBlock::new(
                             title.start(),
                             title.end(),
-                            block::BlockContent::Heading(Heading::new(level, title.as_str().to_string()))
+                            load_block::LoadBlockContent::Heading(Heading::new(level, title.as_str().to_string()))
                         );
     
     
@@ -648,9 +597,9 @@ paragraph 1b
 
         let document = Loader::load_document_from_str("test", &content, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
 
-        assert_eq!(document.preamble().len(), 1);
+        assert_eq!(document.content().preamble().len(), 1);
 
-        assert_eq!(document.chapters().len(), 3);
+        assert_eq!(document.content().chapters().len(), 3);
 
     }
 

@@ -1,11 +1,11 @@
 pub mod chapter;
 
 
-use chapter::paragraph::Paragraph;
 pub use chapter::Chapter;
 use getset::{Getters, MutGetters, Setters};
 use serde::Serialize;
 use thiserror::Error;
+use crate::compiler::content_bundle::ContentBundle;
 use crate::compiler::compilation_error::CompilationError;
 use crate::resource::ResourceError;
 use self::chapter::paragraph::ParagraphError;
@@ -30,22 +30,17 @@ pub struct Document {
     name: String,
 
     #[getset(get = "pub", get_mut = "pub", set = "pub")]
-    #[serde(skip)]      // TODO
-    preamble: Vec<Box<dyn Paragraph>>,
-
-    #[getset(get = "pub", get_mut = "pub", set = "pub")]
-    chapters: Vec<Chapter>
+    content: ContentBundle
 }
 
 
 impl Document {
 
-    pub fn new(name: String, preamble: Vec<Box<dyn Paragraph>>, chapters: Vec<Chapter>) -> Self {
+    pub fn new(name: String, content: ContentBundle) -> Self {
         
         Self {
             name,
-            preamble,
-            chapters
+            content,
         }
     }
 }

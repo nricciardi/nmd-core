@@ -8,13 +8,12 @@ use getset::{Getters, Setters};
 use crate::compilable_text::compilable_text_part::CompilableTextPart;
 use crate::compilable_text::compilable_text_part::CompilableTextPartType;
 use crate::compilable_text::CompilableText;
-use crate::loader::block::Block;
+use crate::compiler::content_bundle::ContentBundle;
 use crate::resource::table::TableCellAlignment;
 use crate::{codex::Codex, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, resource::{resource_reference::ResourceReference, table::{Table, TableCell}}, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
-pub type TableParagraphContentRow = Vec<Block>;
-pub type TableParagraphContent = Table<TableParagraphContentRow, TableParagraphContentRow, TableParagraphContentRow>;
+pub type TableParagraphContent = Table<ContentBundle, ContentBundle, ContentBundle>;
 
 
 #[derive(Debug, Getters, Setters)]
@@ -123,13 +122,13 @@ impl TableParagraph {
 
         let mut html_table = build_html::Table::new().with_attributes(html_table_attrs);
 
-        let compile_cells_fn = |cells: &mut Vec<TableCell<Vec<Box<dyn Paragraph>>>>| -> Result<Vec<TableCell<String>>, CompilationError> {
+        let compile_cells_fn = |cells: &mut Vec<TableCell<ContentBundle>>| -> Result<Vec<TableCell<String>>, CompilationError> {
             let mut result: Vec<TableCell<String>> = Vec::new();
 
             for cell in cells.iter_mut() {
                 match cell {
                     TableCell::None => result.push(TableCell::None),
-                    TableCell::ContentCell { content: paragraphs, alignment } => {
+                    TableCell::ContentCell { content, alignment } => {
 
                         let mut compiled_content = String::new();
 

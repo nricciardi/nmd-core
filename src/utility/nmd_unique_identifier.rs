@@ -31,11 +31,11 @@ pub fn assign_nuid_to_document_paragraphs(document: &mut Document) {
         nuid
     };
     
-    document.preamble_mut().iter_mut().for_each(|p| {
+    document.content_mut().preamble_mut().iter_mut().for_each(|p| {
         p.set_nuid(Some(calc_nuid(p.raw_content())));
     });
 
-    document.chapters_mut().iter_mut().for_each(|chapter| {
+    document.content_mut().chapters_mut().iter_mut().for_each(|chapter| {
         chapter.paragraphs_mut().iter_mut().for_each(|p| {
             p.set_nuid(Some(calc_nuid(p.raw_content())));
         });

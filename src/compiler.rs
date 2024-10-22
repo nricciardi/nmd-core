@@ -7,6 +7,7 @@ pub mod compilation_error;
 pub mod compilation_configuration;
 pub mod compiled_text_accessor;
 pub mod self_compile;
+pub mod content_bundle;
 
 
 use std::time::Instant;
@@ -118,7 +119,7 @@ impl Compiler {
             let mut headings: Vec<Heading> = Vec::new();
 
             for document in dossier.documents() {
-                for chapter in document.chapters() {
+                for chapter in document.content().chapters() {
                     headings.push(chapter.heading().clone());
                 }
             }
@@ -155,13 +156,13 @@ impl Compiler {
 
         let parallelization = compilation_configuration.parallelization();
 
-        log::info!("compile {} chapters of document: '{}'", document.chapters().len(), document.name());
+        log::info!("compile {} chapters of document: '{}'", document.content().chapters().len(), document.name());
 
         compilation_configuration_overlay.set_document_name(Some(document.name().clone()));
 
         if parallelization {
 
-            let maybe_one_failed: Option<Result<(), CompilationError>> = document.preamble_mut().par_iter_mut()
+            let maybe_one_failed: Option<Result<(), CompilationError>> = document.content_mut().preamble_mut().par_iter_mut()
                 .map(|paragraph| {
 
                     paragraph.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())
@@ -172,7 +173,7 @@ impl Compiler {
                 return result;
             }
 
-            let maybe_one_failed: Option<Result<(), CompilationError>> = document.chapters_mut().par_iter_mut()
+            let maybe_one_failed: Option<Result<(), CompilationError>> = document.content_mut().chapters_mut().par_iter_mut()
                 .map(|chapter| {
 
                     Self::compile_chapter(chapter, format, codex, compilation_configuration, compilation_configuration_overlay.clone())
@@ -185,7 +186,7 @@ impl Compiler {
         
         } else {
 
-            let maybe_one_failed: Option<Result<(), CompilationError>> = document.preamble_mut().iter_mut()
+            let maybe_one_failed: Option<Result<(), CompilationError>> = document.content_mut().preamble_mut().iter_mut()
                 .map(|paragraph| {
 
                     paragraph.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())
@@ -196,7 +197,7 @@ impl Compiler {
                 return result;
             }
             
-            let maybe_one_failed: Option<Result<(), CompilationError>> = document.chapters_mut().iter_mut()
+            let maybe_one_failed: Option<Result<(), CompilationError>> = document.content_mut().chapters_mut().iter_mut()
                 .map(|chapter| {
 
                     Self::compile_chapter(chapter, format, codex, compilation_configuration, compilation_configuration_overlay.clone())

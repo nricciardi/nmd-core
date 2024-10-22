@@ -38,7 +38,7 @@ pub trait Assembler {
 
         let mut result = String::new();
 
-        for paragraph in document.preamble() {
+        for paragraph in document.content().preamble() {
 
             if let Some(r) = paragraph.compiled_text().as_ref() {
 
@@ -50,7 +50,7 @@ pub trait Assembler {
             }
         }
 
-        for chapter in document.chapters() {
+        for chapter in document.content().chapters() {
 
             if let Some(r) = chapter.heading().compiled_text().as_ref() {
 

@@ -5,7 +5,7 @@ use crate::dossier::document::chapter::{chapter_tag::ChapterTag, heading::Headin
 
 
 #[derive(Debug, Getters, CopyGetters, MutGetters, Setters)]
-pub struct Block {
+pub struct LoadBlock {
 
     #[getset(get_copy = "pub", set = "pub")]
     start: usize,
@@ -14,11 +14,11 @@ pub struct Block {
     end: usize,
 
     #[getset(get = "pub", get_mut = "pub", set = "pub")]
-    content: BlockContent
+    content: LoadBlockContent
 }
 
-impl Block {
-    pub fn new(start: usize, end: usize, content: BlockContent) -> Self {
+impl LoadBlock {
+    pub fn new(start: usize, end: usize, content: LoadBlockContent) -> Self {
         Self {
             start,
             end,
@@ -27,17 +27,17 @@ impl Block {
     }
 }
 
-impl Into<BlockContent> for Block {
-    fn into(self) -> BlockContent {
+impl Into<LoadBlockContent> for LoadBlock {
+    fn into(self) -> LoadBlockContent {
         self.content
     }
 }
 
-impl TryInto<Box<dyn Paragraph>> for Block {
+impl TryInto<Box<dyn Paragraph>> for LoadBlock {
     type Error = String;
 
     fn try_into(self) -> Result<Box<dyn Paragraph>, Self::Error> {
-        if let BlockContent::Paragraph(p) = self.content {
+        if let LoadBlockContent::Paragraph(p) = self.content {
             return Ok(p)
         }
 
@@ -45,11 +45,11 @@ impl TryInto<Box<dyn Paragraph>> for Block {
     }
 }
 
-impl TryInto<Heading> for Block {
+impl TryInto<Heading> for LoadBlock {
     type Error = String;
 
     fn try_into(self) -> Result<Heading, Self::Error> {
-        if let BlockContent::Heading(h) = self.content {
+        if let LoadBlockContent::Heading(h) = self.content {
             return Ok(h)
         }
 
@@ -57,11 +57,11 @@ impl TryInto<Heading> for Block {
     }
 }
 
-impl TryInto<ChapterTag> for Block {
+impl TryInto<ChapterTag> for LoadBlock {
     type Error = String;
 
     fn try_into(self) -> Result<ChapterTag, Self::Error> {
-        if let BlockContent::ChapterTag(t) = self.content {
+        if let LoadBlockContent::ChapterTag(t) = self.content {
             return Ok(t)
         }
 
@@ -71,7 +71,7 @@ impl TryInto<ChapterTag> for Block {
 
 
 #[derive(Debug)]
-pub enum BlockContent {
+pub enum LoadBlockContent {
     Paragraph(Box<dyn Paragraph>),
     Heading(Heading),
     ChapterTag(ChapterTag)

@@ -273,7 +273,7 @@ impl Assembler for HtmlAssembler {
     fn assemble_document(document: &Document, _configuration: &Self::Configuration) -> Result<Artifact, AssemblerError> {
         let mut result = String::new();
 
-        for paragraph in document.preamble() {
+        for paragraph in document.content().preamble() {
 
             if let Some(compiled_content) = paragraph.compiled_text().as_ref() {
 
@@ -284,7 +284,7 @@ impl Assembler for HtmlAssembler {
             }
         }
 
-        for chapter in document.chapters() {
+        for chapter in document.content().chapters() {
 
             let mut div_chapter = Container::new(build_html::ContainerType::Div);
             let mut style = String::new();

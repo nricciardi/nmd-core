@@ -1,9 +1,8 @@
 use once_cell::sync::Lazy;
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use regex::Regex;
 
 use super::ParagraphLoadingRule;
-use crate::{codex::{modifier::constants::{IDENTIFIER_PATTERN, STYLE_PATTERN}, Codex}, dossier::document::chapter::paragraph::{table_paragraph::{TableParagraph, TableParagraphContent, TableParagraphContentRow}, Paragraph}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError, Loader}, resource::table::{Table, TableCell, TableCellAlignment}, utility::text_utility};
+use crate::{codex::{modifier::constants::{IDENTIFIER_PATTERN, STYLE_PATTERN}, Codex}, compiler::content_bundle::ContentBundle, dossier::document::chapter::paragraph::{table_paragraph::{TableParagraph, TableParagraphContent}, Paragraph}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError, Loader}, resource::table::{Table, TableCell, TableCellAlignment}, utility::text_utility};
 
 
 /// (caption, id, styles, classes)
@@ -85,9 +84,9 @@ impl TableParagraphLoadingRule {
         Some(alignments)
     }
 
-    fn build_row(row: &Vec<String>, alignments: &Vec<TableCellAlignment>, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Vec<TableCell<TableParagraphContentRow>>, LoadError> {
+    fn build_row(row: &Vec<String>, alignments: &Vec<TableCellAlignment>, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Vec<TableCell<ContentBundle>>, LoadError> {
 
-        let mut cells: Vec<TableCell<TableParagraphContentRow>> = Vec::new();
+        let mut cells: Vec<TableCell<ContentBundle>> = Vec::new();
 
         for (index, cell) in row.iter().enumerate() {
 
@@ -122,7 +121,7 @@ impl TableParagraphLoadingRule {
 
                 let inner_blocks = Loader::load_from_str(&cell, codex, configuration, configuration_overlay.clone())?;
 
-                cells.push(TableCell::ContentCell { content: paragraphs, alignment: align});
+                cells.push(TableCell::ContentCell { content: ContentBundle::from(inner_blocks), alignment: align});
             }
         }
 
@@ -248,7 +247,7 @@ mod test {
 
     use indexmap::IndexMap;
 
-    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, Modifier}, Codex}, loader::{block::BlockContent, loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_loading_rule::ParagraphLoadingRule, Loader}};
+    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, Modifier}, Codex}, loader::{load_block::LoadBlockContent, loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_loading_rule::ParagraphLoadingRule, Loader}};
 
     use super::TableParagraphLoadingRule;
 
@@ -286,11 +285,11 @@ mod test {
 
         let codex = codex();
         
-        let paragraphs = Loader::load_paragraphs_from_str_with_workaround(&nmd_text, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
+        let paragraphs = Loader::load_from_str(&nmd_text, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
 
         assert_eq!(paragraphs.len(), 1);
 
-        if let BlockContent::Paragraph(p) = &paragraphs[0].content() {
+        if let LoadBlockContent::Paragraph(p) = &paragraphs[0].content() {
 
             assert_eq!(p.raw_content(), nmd_text);
 
@@ -312,11 +311,11 @@ mod test {
 
         let codex = codex();
         
-        let paragraphs = Loader::load_paragraphs_from_str_with_workaround(&nmd_text, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
+        let paragraphs = Loader::load_from_str(&nmd_text, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
 
         assert_eq!(paragraphs.len(), 1);
 
-        if let BlockContent::Paragraph(p) = &paragraphs[0].content() {
+        if let LoadBlockContent::Paragraph(p) = &paragraphs[0].content() {
 
             assert_eq!(p.raw_content(), nmd_text);
 
