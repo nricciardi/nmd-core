@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use bibliography_record::BibliographyRecord;
 use getset::{Getters, Setters};
 use serde::Serialize;
-use crate::{compilable_text::CompilableText, compiler::compiled_text_accessor::CompiledTextAccessor, dossier::dossier_configuration::dossier_configuration_bibliography::DossierConfigurationBibliography, resource::resource_reference::{ResourceReference, ResourceReferenceError}};
+use crate::{codex::Codex, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile}, dossier::dossier_configuration::dossier_configuration_bibliography::DossierConfigurationBibliography, output_format::OutputFormat, resource::resource_reference::{ResourceReference, ResourceReferenceError}};
 
 
 pub const BIBLIOGRAPHY_FICTITIOUS_DOCUMENT: &str = "bibliography";
@@ -64,5 +64,65 @@ impl From<&DossierConfigurationBibliography> for Bibliography {
 impl CompiledTextAccessor for Bibliography {
     fn compiled_text(&self) -> Option<&CompilableText> {
         self.compilation_result.as_ref()
+    }
+}
+
+impl SelfCompile for Bibliography {
+    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
+        log::info!("compiling bibliography...");
+
+        match format {
+            OutputFormat::Html => {
+                let mut compilation_result = CompilableText::new_empty();
+
+                let mut compiled_title = CompilableText::from(self.title.clone());
+
+                compiled_title.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
+
+                compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"<section class="bibliography"><div class="bibliography-title">"#)));
+                compilation_result.parts_mut().append(compiled_title.parts_mut());
+                compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</div><ul class="bibliography-body">"#)));
+        
+                for (bib_key, bib_record) in self.content().iter() {
+                    compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(
+                        r#"<div class="bibliography-item" id="{}"><div class="bibliography-item-title">{}</div>"#,
+                        ResourceReference::of_internal_from_without_sharp(bib_key,
+                            Some(&BIBLIOGRAPHY_FICTITIOUS_DOCUMENT))?.build_without_internal_sharp(),
+                            bib_record.title()
+                        )));
+                
+                    if let Some(authors) = bib_record.authors() {
+        
+                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<div class="bibliography-item-authors">{}</div>"#, authors.join(", "))));
+                    }
+        
+                    if let Some(year) = bib_record.year() {
+
+                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<div class="bibliography-item-year">{}</div>"#, year)));
+                    }
+        
+                    if let Some(url) = bib_record.url() {
+        
+                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<div class="bibliography-item-url">{}</div>"#, url)));
+                    }
+        
+                    if let Some(description) = bib_record.description() {
+
+                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<div class="bibliography-item-description">{}</div>"#, description)));
+        
+                    }
+        
+                    compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</div>"#)));
+                }
+        
+                compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</ul></section>"#)));
+        
+                self.set_compilation_result(Some(compilation_result));
+        
+                log::info!("bibliography compiled");
+        
+                Ok(())
+            },
+        }
     }
 }

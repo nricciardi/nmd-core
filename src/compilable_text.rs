@@ -5,7 +5,7 @@ use compilable_text_part::{CompilableTextPart, CompilableTextPartType};
 use getset::{Getters, MutGetters, Setters};
 use serde::Serialize;
 use thiserror::Error;
-use crate::utility::nmd_unique_identifier::NmdUniqueIdentifier;
+use crate::{codex::{modifier::ModifiersBucket, Codex, CodexIdentifier}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_rule::CompilationRule, self_compile::SelfCompile}, output_format::OutputFormat, resource::bucket::Bucket, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 #[derive(Debug, Clone)]
@@ -39,6 +39,50 @@ pub struct CompilableText {
 
     #[getset(get = "pub", get_mut = "pub", set = "pub")]
     nuid: Option<NmdUniqueIdentifier>,
+}
+
+
+
+impl From<CompilableTextPart> for CompilableText {
+    fn from(value: CompilableTextPart) -> Self {
+        Self::new(vec![value])
+    }
+}
+
+impl From<Vec<CompilableTextPart>> for CompilableText {
+    fn from(value: Vec<CompilableTextPart>) -> Self {
+        Self::new(value)
+    }
+}
+
+impl Into<Vec<CompilableTextPart>> for CompilableText {
+    fn into(self) -> Vec<CompilableTextPart> {
+        self.parts  
+    }
+}
+
+impl Into<String> for CompilableText {
+    fn into(self) -> String {
+        self.content()
+    }
+}
+
+impl From<String> for CompilableText {
+    fn from(value: String) -> Self {
+        Self::from(CompilableTextPart::new_compilable(
+            value,
+            ModifiersBucket::None
+        ))
+    }
+}
+
+impl From<&str> for CompilableText {
+    fn from(value: &str) -> Self {
+        Self::from(CompilableTextPart::new_compilable(
+            value.to_string(),
+            ModifiersBucket::None
+        ))
+    }
 }
 
 impl CompilableText {
@@ -260,34 +304,280 @@ impl CompilableText {
     }
 }
 
-impl From<CompilableTextPart> for CompilableText {
-    fn from(value: CompilableTextPart) -> Self {
-        Self::new(vec![value])
+impl CompilableText {
+
+    /// Compile parts and return the new compiled parts or `None` if there are not matches using
+    /// provided rule
+    pub fn compile_with_compilation_rule(&mut self, (rule_identifier, rule): (&CodexIdentifier, &Box<dyn CompilationRule>), format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
+    
+        let parts = self.parts();
+
+        let mut compilable_content = String::new();
+        let mut compilable_content_end_parts_positions: Vec<usize> = Vec::new();
+
+        parts.iter()
+                .filter(|part| {
+                    match &part.part_type() {
+                        CompilableTextPartType::Fixed => false,
+                        CompilableTextPartType::Compilable{ incompatible_modifiers } => {
+                            if incompatible_modifiers.contains(&rule_identifier) {
+                                return false
+                            } else {
+                                return true
+                            }
+                        },
+                    }
+                })
+                .for_each(|part| {
+
+                    compilable_content.push_str(part.content());
+
+                    let last_pos = *compilable_content_end_parts_positions.last().unwrap_or(&0);
+
+                    compilable_content_end_parts_positions.push(last_pos + part.content().len());
+                });
+
+        let matches = rule.find_iter(&compilable_content);
+
+        if matches.len() == 0 {
+            log::debug!("'{}' => no matches with {:?} -> {:?}", compilable_content, rule_identifier, rule.search_pattern());
+            
+            return Ok(());
+        }
+
+        log::debug!("'{}' => there is a match with {:?} -> {:?}", compilable_content, rule_identifier, rule.search_pattern());
+
+        let mut compiled_parts: Vec<CompilableTextPart> = Vec::new();     // final output
+
+        let mut parts_index: usize = 0;
+        let mut compilable_parts_index: usize = 0;
+
+        // only for compilable parts
+        let mut part_start_position_in_compilable_content: usize = 0;
+        let mut part_end_position_in_compilable_content: usize;
+
+        let mut match_index: usize = 0;
+
+        while parts_index < parts.len() {      // there are other parts
+
+            let match_start_end: Option<(usize, usize)>;        // start and end
+
+            if match_index < matches.len() {
+
+                let current_evaluated_match = matches[match_index];
+
+                match_index += 1;    
+            
+                match_start_end = Some((
+                    current_evaluated_match.start(),
+                    current_evaluated_match.end()
+                ));
+
+            } else {
+
+                match_start_end = None;
+            }
+
+            let mut match_found = false;
+
+            let mut matched_parts: Vec<CompilableTextPart> = Vec::new();
+            
+            'parts_loop: while parts_index < parts.len() {
+
+                let part = &parts[parts_index];
+
+                parts_index += 1;   // for next iteration
+
+                match part.part_type() {
+                    CompilableTextPartType::Fixed => {
+
+                        if let Some((_start, _end)) = match_start_end {
+
+                            if match_found {        // matching end cannot be in a fixed part
+
+                                matched_parts.push(part.clone());
+        
+                                continue 'parts_loop;
+                            
+                            } else {
+                                
+                                compiled_parts.push(part.clone());      // direct in compiled_parts
+    
+                                continue 'parts_loop;
+                            }
+                        
+                        } else {
+                            compiled_parts.push(part.clone());      // direct in compiled_parts
+
+                            continue 'parts_loop;
+                        }
+                    },
+                    CompilableTextPartType::Compilable{ incompatible_modifiers } => {
+
+                        if incompatible_modifiers.contains(rule_identifier) {
+                            compiled_parts.push(part.clone());      // direct in compiled_parts
+
+                            continue 'parts_loop;
+                        }
+
+                        part_end_position_in_compilable_content = compilable_content_end_parts_positions[compilable_parts_index];
+                        
+                        compilable_parts_index += 1;
+
+                        if let Some((match_start, match_end)) = match_start_end {
+
+                            if !match_found && part_end_position_in_compilable_content <= match_start {      // there is no match in this part
+                            
+                                let sub_part = &compilable_content[part_start_position_in_compilable_content..part_end_position_in_compilable_content];
+
+                                compiled_parts.push(CompilableTextPart::new(
+                                    sub_part.to_string(),
+                                    CompilableTextPartType::Compilable{ incompatible_modifiers: incompatible_modifiers.clone() }
+                                ));
+    
+                            } else {
+                                // ...part has a match
+    
+                                if !match_found     // first part in which current match is found
+                                    && part_start_position_in_compilable_content <= match_start
+                                    && match_start < part_end_position_in_compilable_content {
+
+                                    // === pre-matched part ==
+                                    let pre_matched_part = &compilable_content[part_start_position_in_compilable_content..match_start];
+                                                                            
+                                    if !pre_matched_part.is_empty() {
+                                        compiled_parts.push(CompilableTextPart::new(
+                                            pre_matched_part.to_string(),
+                                            CompilableTextPartType::Compilable{ incompatible_modifiers: incompatible_modifiers.clone() }
+                                        ));
+                                    }
+
+                                    part_start_position_in_compilable_content = match_start;
+
+                                    // === matched part ===
+                                    let matched_part = &compilable_content[part_start_position_in_compilable_content..part_end_position_in_compilable_content.min(match_end)];
+
+                                    matched_parts.push(CompilableTextPart::new(
+                                        matched_part.to_string(),
+                                        CompilableTextPartType::Compilable{ incompatible_modifiers: incompatible_modifiers.clone() }
+                                    ));
+                                }
+                                
+                                if match_end <= part_end_position_in_compilable_content {       // matching end is in this part
+
+                                    if match_found {   // the matching end is in another part respect of matching start
+
+                                        let matched_part = &compilable_content[part_start_position_in_compilable_content..match_end];
+
+                                        matched_parts.push(CompilableTextPart::new(
+                                            matched_part.to_string(),
+                                            CompilableTextPartType::Compilable{ incompatible_modifiers: incompatible_modifiers.clone() }
+                                        ));
+                                    }
+
+                                    // compile and append found matched parts
+                                    compiled_parts.append(
+                                        &mut rule.compile(
+                                            &CompilableText::from(matched_parts),
+                                            format,
+                                            compilation_configuration,
+                                            compilation_configuration_overlay.clone()
+                                        )?.parts_mut() 
+                                    );
+
+                                    // re-start next parts loop from this part
+                                    parts_index -= 1;       
+                                    compilable_parts_index -= 1;
+
+                                    part_start_position_in_compilable_content = match_end;
+
+                                    break 'parts_loop;
+
+                                } else {
+
+                                    if match_found {        // this part is a compilable part in the middle of matched parts
+
+                                        let matched_part = &compilable_content[part_start_position_in_compilable_content..part_end_position_in_compilable_content];
+
+                                        matched_parts.push(CompilableTextPart::new(
+                                            matched_part.to_string(),
+                                            CompilableTextPartType::Compilable{ incompatible_modifiers: incompatible_modifiers.clone() }
+                                        ));
+                                    }
+                                }
+
+                                match_found = true;     // update to check if match is found in next iterations
+                            }
+
+                        } else {
+                            
+                            let part = &compilable_content[part_start_position_in_compilable_content..part_end_position_in_compilable_content];
+                                                                            
+                            if !part.is_empty() {
+                                compiled_parts.push(CompilableTextPart::new(
+                                    part.to_string(),
+                                    CompilableTextPartType::Compilable{ incompatible_modifiers: incompatible_modifiers.clone() }
+                                ));
+                            }
+                        }
+        
+                        // update start position
+                        part_start_position_in_compilable_content = part_end_position_in_compilable_content;
+                    }
+
+                }
+            }
+        }
+
+        self.set_parts(compiled_parts);
+        
+        Ok(())
     }
 }
 
-impl From<Vec<CompilableTextPart>> for CompilableText {
-    fn from(value: Vec<CompilableTextPart>) -> Self {
-        Self::new(value)
-    }
-}
+impl SelfCompile for CompilableText {
 
-impl Into<Vec<CompilableTextPart>> for CompilableText {
-    fn into(self) -> Vec<CompilableTextPart> {
-        self.parts  
-    }
-}
+    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
+        
+        let excluded_modifiers = compilation_configuration_overlay.excluded_modifiers().clone();
 
-impl Into<String> for CompilableText {
-    fn into(self) -> String {
-        self.content()
+        log::debug!("start to compile content:\n{:?}\nexcluding: {:?}", self, excluded_modifiers);
+
+        if excluded_modifiers == Bucket::All {
+            log::debug!("compilation of content:\n{:?} is skipped because are excluded all modifiers", self);
+            
+            return Ok(())
+        }
+
+        for (codex_identifier, text_modifier) in codex.text_modifiers() {
+
+            if excluded_modifiers.contains(codex_identifier) {
+
+                log::debug!("{:?} is skipped", text_modifier);
+                continue;
+            }
+
+            if let Some(text_rule) = codex.text_compilation_rules().get(codex_identifier) {
+
+                self.compile_with_compilation_rule((codex_identifier, text_rule), format, compilation_configuration, compilation_configuration_overlay.clone())?;
+
+            } else {
+
+                log::warn!("text rule for {:#?} not found", text_modifier);
+                continue;
+            }
+        }
+
+        Ok(())
     }
 }
 
 
 #[cfg(test)]
 mod test {
-    use crate::{codex::modifier::ModifiersBucket, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, PartsSliceElaborationPolicy}};
+    use std::collections::HashSet;
+
+    use crate::{codex::{modifier::{standard_text_modifier::StandardTextModifier, ModifiersBucket}, Codex}, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, PartsSliceElaborationPolicy}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, self_compile::SelfCompile}, output_format::OutputFormat};
 
     use super::CompilableText;
 
@@ -417,6 +707,38 @@ mod test {
         assert_eq!(parts_slice.len(), 1);
         assert_eq!(parts_slice[0].content(), &String::from("c2"));
     }
+
+    #[test]
+    fn compile_nested_modifiers() {
+
+        let mut codex = Codex::of_html();
+
+        codex.retain(HashSet::from([
+            StandardTextModifier::BoldStarVersion.identifier(),
+            StandardTextModifier::BoldUnderscoreVersion.identifier(),
+            StandardTextModifier::ItalicStarVersion.identifier(),
+            StandardTextModifier::ItalicUnderscoreVersion.identifier(),
+            StandardTextModifier::InlineCode.identifier(),
+        ]));
+
+        let compilation_configuration = CompilationConfiguration::default();
+
+        let content = "A piece of **bold text**, *italic text*, `a **(fake) bold text** which must be not parsed` and *nested **bold text***";
+
+        let mut outcome = CompilableText::from(content);
+        
+        outcome.compile(&OutputFormat::Html, &codex, &compilation_configuration, CompilationConfigurationOverLay::default()).unwrap();       
+
+        assert_eq!(outcome.content(), concat!(
+            "A piece of ",
+            r#"<strong class="bold">bold text</strong>, "#,
+            r#"<em class="italic">italic text</em>, "#,
+            r#"<code class="language-markup inline-code">a **(fake) bold text** which must be not parsed</code>"#,
+            r#" and "#,
+            r#"<em class="italic">nested <strong class="bold">bold text</strong></em>"#,
+        ));
+    }
+
 }
 
 

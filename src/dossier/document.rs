@@ -3,10 +3,16 @@ pub mod chapter;
 
 pub use chapter::Chapter;
 use getset::{Getters, MutGetters, Setters};
+use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use serde::Serialize;
 use thiserror::Error;
+use crate::codex::Codex;
+use crate::compiler::compilation_configuration::compilation_configuration_overlay::CompilationConfigurationOverLay;
+use crate::compiler::compilation_configuration::CompilationConfiguration;
 use crate::compiler::content_bundle::ContentBundle;
 use crate::compiler::compilation_error::CompilationError;
+use crate::compiler::self_compile::SelfCompile;
+use crate::output_format::OutputFormat;
 use crate::resource::ResourceError;
 use self::chapter::paragraph::ParagraphError;
 
@@ -42,5 +48,68 @@ impl Document {
             name,
             content,
         }
+    }
+}
+
+
+impl SelfCompile for Document {
+    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, mut compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
+        let parallelization = compilation_configuration.parallelization();
+
+        log::info!("compile {} chapters of document: '{}'", self.content().chapters().len(), self.name());
+
+        compilation_configuration_overlay.set_document_name(Some(self.name().clone()));
+
+        if parallelization {
+
+            let maybe_one_failed: Option<Result<(), CompilationError>> = self.content_mut().preamble_mut().par_iter_mut()
+                .map(|paragraph| {
+
+                    paragraph.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())
+                
+                }).find_any(|result| result.is_err());
+
+            if let Some(result) = maybe_one_failed {
+                return result;
+            }
+
+            let maybe_one_failed: Option<Result<(), CompilationError>> = self.content_mut().chapters_mut().par_iter_mut()
+                .map(|chapter| {
+
+                    chapter.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())
+                
+                }).find_any(|result| result.is_err());
+
+            if let Some(result) = maybe_one_failed {
+                return result;
+            }
+        
+        } else {
+
+            let maybe_one_failed: Option<Result<(), CompilationError>> = self.content_mut().preamble_mut().iter_mut()
+                .map(|paragraph| {
+
+                    paragraph.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())
+
+                }).find(|result| result.is_err());
+
+            if let Some(result) = maybe_one_failed {
+                return result;
+            }
+            
+            let maybe_one_failed: Option<Result<(), CompilationError>> = self.content_mut().chapters_mut().iter_mut()
+                .map(|chapter| {
+
+                    chapter.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())
+                                    
+                }).find(|result| result.is_err());
+
+            if let Some(result) = maybe_one_failed {
+                return result;
+            }
+        }
+
+        Ok(())
+
     }
 }

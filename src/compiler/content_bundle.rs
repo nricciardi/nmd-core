@@ -116,7 +116,7 @@ impl SelfCompile for ContentBundle {
             let maybe_one_failed: Option<Result<(), CompilationError>> = self.chapters.par_iter_mut()
                 .map(|chapter| {
 
-                    Self::compile_chapter(chapter, format, codex, compilation_configuration, compilation_configuration_overlay.clone())
+                    chapter.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())
                 
                 }).find_any(|result| result.is_err());
 
@@ -140,7 +140,7 @@ impl SelfCompile for ContentBundle {
             let maybe_one_failed: Option<Result<(), CompilationError>> = self.chapters.iter_mut()
                 .map(|chapter| {
 
-                    Self::compile_chapter(chapter, format, codex, compilation_configuration, compilation_configuration_overlay.clone())
+                    chapter.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())
                 
                 }).find(|result| result.is_err());
 
@@ -153,3 +153,86 @@ impl SelfCompile for ContentBundle {
     }
 }
 
+
+#[cfg(test)]
+mod test {
+    use std::sync::Arc;
+
+    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, standard_text_modifier::StandardTextModifier, Modifier, ModifiersBucket}, Codex, CodexCompilationRulesMap, CodexLoadingRulesMap, CodexModifiersOrderedMap}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}, self_compile::SelfCompile}, output_format::OutputFormat};
+
+
+    #[test]
+    fn compile_fake_paragraph_with_bold_text() {
+
+        let mut compilable_text = CompilableText::new(
+            vec![
+                CompilableTextPart::new_fixed(String::from("<p>")),
+                CompilableTextPart::new_compilable(
+                    String::from("This is a **bold text**!"),
+                    ModifiersBucket::None
+                ),
+                CompilableTextPart::new_fixed(String::from(" &euro; ")),
+                CompilableTextPart::new_compilable(
+                    String::from("**again"),
+                    ModifiersBucket::None
+                ),
+                CompilableTextPart::new_fixed(String::from(" &euro;")),
+                CompilableTextPart::new_compilable(
+                    String::from("**"),
+                    ModifiersBucket::None
+                ),
+                CompilableTextPart::new_fixed(String::from("</p>")),
+            ],
+        );
+
+        let codex = Codex::new(
+            CodexModifiersOrderedMap::from([
+                (
+                    StandardTextModifier::BoldStarVersion.identifier(),
+                    Box::new(
+                        Into::<BaseModifier>::into(StandardTextModifier::BoldStarVersion)
+                    ) as Box<dyn Modifier>
+                )
+            ]),
+            CodexModifiersOrderedMap::new(),
+            CodexCompilationRulesMap::from([
+                (
+                    StandardTextModifier::BoldStarVersion.identifier(),
+                    Box::new(
+                        ReplacementRule::new(
+                            StandardTextModifier::BoldStarVersion.modifier_pattern(),
+                            vec![
+                                Arc::new(FixedReplacementRuleReplacerPart::new(String::from("<strong>"))),
+                                Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
+                
+                                    let capture1 = captures.get(1).unwrap();
+                                    
+                                    let slice = compilable.parts_slice(capture1.start(), capture1.end())?;
+                    
+                                    Ok(CompilableText::new(slice))
+                                }))),
+                                Arc::new(FixedReplacementRuleReplacerPart::new(String::from("</strong>"))),
+                            ]
+                        )
+                    ) as Box<dyn CompilationRule>
+                )
+            ]),
+            CodexLoadingRulesMap::new(),
+            Some(StandardParagraphModifier::CommonParagraph.identifier())
+        );
+
+        compilable_text.compile(
+            &OutputFormat::Html,
+            &codex,
+            &CompilationConfiguration::default(),
+            CompilationConfigurationOverLay::default()
+        ).unwrap();
+        
+        assert_eq!(
+            compilable_text.content(),
+            "<p>This is a <strong>bold text</strong>! &euro; <strong>again &euro;</strong></p>"
+        )
+    }
+
+
+}

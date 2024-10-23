@@ -1,6 +1,6 @@
 use getset::{CopyGetters, Getters, Setters};
 use serde::Serialize;
-use crate::{compilable_text::CompilableText, compiler::compiled_text_accessor::CompiledTextAccessor, resource::resource_reference::ResourceReference, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use crate::{codex::modifier::ModifiersBucket, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, compiler::{compilation_error::CompilationError, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile}, output_format::OutputFormat, resource::resource_reference::ResourceReference, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 pub type HeadingLevel = u32;
@@ -23,8 +23,6 @@ pub struct Heading {
 
     #[getset(get = "pub", set = "pub")]
     nuid: Option<NmdUniqueIdentifier>,
-
-    // compilable_content: CompilableContent,
 }
 
 impl Heading {
@@ -32,16 +30,10 @@ impl Heading {
 
         Self {
             level,
-            title: title.clone(),
+            title,
             compilation_result: None,
             resource_reference: None,
             nuid: None,
-            // compilable_content: CompilationResultParts::from([
-            //     CompilationResultPart::new(
-            //         title,
-            //         CompilationResultPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
-            //     )
-            // ])
         }
     }
 }
@@ -52,12 +44,57 @@ impl CompiledTextAccessor for Heading {
     }
 }
 
-// impl Compilable for Heading {
-//     fn compilable_content(&self) -> &CompilableContent {
-//         &self.compilable_content
-//     }
+impl SelfCompile for Heading {
+    fn standard_compile(&mut self, format: &crate::output_format::OutputFormat, codex: &crate::codex::Codex, compilation_configuration: &crate::compiler::compilation_configuration::CompilationConfiguration, compilation_configuration_overlay: crate::compiler::compilation_configuration::compilation_configuration_overlay::CompilationConfigurationOverLay) -> Result<(), crate::compiler::compilation_error::CompilationError> {
+        
+        let document_name = compilation_configuration_overlay.document_name().as_ref();
 
-//     fn nuid(&self) -> Option<&NmdUniqueIdentifier> {
-//         self.nuid.as_ref()
-//     }
-// }
+        if document_name.is_none() {
+            return Err(CompilationError::DocumentNameNotFound)
+        }
+
+        let document_name = document_name.unwrap();
+
+        let id: ResourceReference = ResourceReference::of_internal_from_without_sharp(&self.title, Some(&document_name))?;
+
+        let mut compiled_title = CompilableText::from(self.title.clone());
+        
+        compiled_title.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
+
+        let res = match format {
+            OutputFormat::Html => {
+
+                let nuid_attr: String;
+
+                if let Some(nuid) = &self.nuid {
+                    nuid_attr = format!(r#"data-nuid="{}""#, nuid);
+                } else {
+                    nuid_attr = String::new();
+                }
+
+                let outcome = CompilableText::new(vec![
+
+                    CompilableTextPart::new(
+                        format!(r#"<h{} class="heading-{}" id="{}" {}>"#, self.level, self.level, id.build_without_internal_sharp(), nuid_attr),
+                        CompilableTextPartType::Fixed
+                    ),
+                    CompilableTextPart::new(
+                        compiled_title.content(),
+                        CompilableTextPartType::Compilable{ incompatible_modifiers: ModifiersBucket::None }
+                    ),
+                    CompilableTextPart::new(
+                        format!(r#"</h{}>"#, self.level),
+                        CompilableTextPartType::Fixed
+                    ),
+                ]);
+
+                outcome
+            },
+        };
+
+        self.set_compilation_result(Some(res));
+        self.set_resource_reference(Some(id));
+
+        Ok(())
+    }
+}
