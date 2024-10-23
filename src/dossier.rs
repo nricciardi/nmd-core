@@ -1,10 +1,10 @@
 pub mod document;
 pub mod dossier_configuration;
 
-use std::time::Instant;
 
+use std::time::Instant;
 use document::chapter::heading::Heading;
-pub use document::{Document, DocumentError};
+use document::Document;
 use getset::{Getters, MutGetters, Setters};
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use thiserror::Error;

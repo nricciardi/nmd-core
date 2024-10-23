@@ -23,6 +23,7 @@ use crate::codex::modifier::base_modifier::BaseModifier;
 use crate::codex::modifier::standard_heading_modifier::StandardHeading;
 use crate::codex::modifier::Modifier;
 use crate::content_bundle::ContentBundle;
+use crate::dossier::document::Document;
 use crate::resource::disk_resource::DiskResource;
 use crate::resource::resource_reference::ResourceReferenceError;
 use crate::resource::{Resource, ResourceError};
@@ -31,7 +32,7 @@ use super::codex::Codex;
 use super::dossier::document::chapter::chapter_tag::ChapterTag;
 use super::dossier::dossier_configuration::DossierConfiguration;
 use super::dossier::Dossier;
-use super::dossier::{document::chapter::heading::{Heading, HeadingLevel}, Document};
+use super::dossier::document::chapter::heading::{Heading, HeadingLevel};
 
 
 static CHAPTER_STYLE_PATTERN_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(CHAPTER_STYLE_PATTERN).unwrap());

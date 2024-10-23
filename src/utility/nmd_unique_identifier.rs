@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use ahash::RandomState;
-use crate::dossier::Document;
+use crate::dossier::document::Document;
 use super::file_utility;
 
 

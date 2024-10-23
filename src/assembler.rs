@@ -4,8 +4,8 @@ pub mod html_assembler;
 
 
 use thiserror::Error;
-use crate::{compilation::{compiled_text_accessor::CompiledTextAccessor, compilation_error::CompilationError}, resource::ResourceError};
-use super::{artifact::{Artifact, ArtifactError}, bibliography::Bibliography, dossier::{Document, Dossier}, table_of_contents::TableOfContents};
+use crate::{compilation::{compilation_error::CompilationError, compiled_text_accessor::CompiledTextAccessor}, dossier::document::Document, resource::ResourceError};
+use super::{artifact::{Artifact, ArtifactError}, bibliography::Bibliography, dossier::Dossier, table_of_contents::TableOfContents};
 
 
 #[derive(Error, Debug)]

@@ -6,7 +6,7 @@ use build_html::{HtmlPage, HtmlContainer, Html, Container};
 use getset::{Getters, Setters};
 use html_assembler_configuration::HtmlAssemblerConfiguration;
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
-use crate::{artifact::Artifact, bibliography::Bibliography, compilation::compiled_text_accessor::CompiledTextAccessor, dossier::{document::chapter::chapter_tag::ChapterTagKey, Document, Dossier}, resource::{disk_resource::DiskResource, Resource}, table_of_contents::TableOfContents, theme::Theme};
+use crate::{artifact::Artifact, bibliography::Bibliography, compilation::compiled_text_accessor::CompiledTextAccessor, dossier::{document::{chapter::chapter_tag::ChapterTagKey, Document}, Dossier}, resource::{disk_resource::DiskResource, Resource}, table_of_contents::TableOfContents, theme::Theme};
 
 use super::{Assembler, AssemblerError};
 
