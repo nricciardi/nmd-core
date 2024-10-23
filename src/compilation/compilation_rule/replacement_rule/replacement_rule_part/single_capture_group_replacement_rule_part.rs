@@ -1,7 +1,7 @@
 use getset::{Getters, Setters};
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use regex::{Captures, Regex};
-use crate::{codex::modifier::ModifiersBucket, compilable_text::{compilable_text_part::CompilableTextPartType, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError}, output_format::OutputFormat, utility::text_utility};
+use crate::{codex::modifier::ModifiersBucket, compilable_text::{compilable_text_part::CompilableTextPartType, CompilableText}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError}, output_format::OutputFormat, utility::text_utility};
 use super::ReplacementRuleReplacerPart;
 
 

@@ -5,7 +5,7 @@ use compilable_text_part::{CompilableTextPart, CompilableTextPartType};
 use getset::{Getters, MutGetters, Setters};
 use serde::Serialize;
 use thiserror::Error;
-use crate::{codex::{modifier::ModifiersBucket, Codex, CodexIdentifier}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_rule::CompilationRule, self_compile::SelfCompile}, output_format::OutputFormat, resource::bucket::Bucket, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use crate::{codex::{modifier::ModifiersBucket, Codex, CodexIdentifier}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_rule::CompilationRule, self_compile::SelfCompile}, output_format::OutputFormat, resource::bucket::Bucket, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 #[derive(Debug, Clone)]
@@ -577,7 +577,7 @@ impl SelfCompile for CompilableText {
 mod test {
     use std::collections::HashSet;
 
-    use crate::{codex::{modifier::{standard_text_modifier::StandardTextModifier, ModifiersBucket}, Codex}, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, PartsSliceElaborationPolicy}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, self_compile::SelfCompile}, output_format::OutputFormat};
+    use crate::{codex::{modifier::{standard_text_modifier::StandardTextModifier, ModifiersBucket}, Codex}, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, PartsSliceElaborationPolicy}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, self_compile::SelfCompile}, output_format::OutputFormat};
 
     use super::CompilableText;
 

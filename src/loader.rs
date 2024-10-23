@@ -22,7 +22,7 @@ use thiserror::Error;
 use crate::codex::modifier::base_modifier::BaseModifier;
 use crate::codex::modifier::standard_heading_modifier::StandardHeading;
 use crate::codex::modifier::Modifier;
-use crate::compiler::content_bundle::ContentBundle;
+use crate::content_bundle::ContentBundle;
 use crate::resource::disk_resource::DiskResource;
 use crate::resource::resource_reference::ResourceReferenceError;
 use crate::resource::{Resource, ResourceError};

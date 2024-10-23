@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use bibliography_record::BibliographyRecord;
 use getset::{Getters, Setters};
 use serde::Serialize;
-use crate::{codex::Codex, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile}, dossier::dossier_configuration::dossier_configuration_bibliography::DossierConfigurationBibliography, output_format::OutputFormat, resource::resource_reference::{ResourceReference, ResourceReferenceError}};
+use crate::{codex::Codex, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile}, dossier::dossier_configuration::dossier_configuration_bibliography::DossierConfigurationBibliography, output_format::OutputFormat, resource::resource_reference::{ResourceReference, ResourceReferenceError}};
 
 
 pub const BIBLIOGRAPHY_FICTITIOUS_DOCUMENT: &str = "bibliography";

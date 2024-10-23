@@ -2,7 +2,7 @@ use getset::{Getters, MutGetters, Setters};
 use rayon::{iter::{IntoParallelRefMutIterator, ParallelIterator}, slice::ParallelSliceMut};
 use serde::Serialize;
 
-use crate::{codex::Codex, compiler::compilation_error::CompilationError, dossier::document::{chapter::paragraph::Paragraph, Chapter}, loader::load_block::{LoadBlock, LoadBlockContent}, output_format::OutputFormat};
+use crate::{codex::Codex, compilation::compilation_error::CompilationError, dossier::document::{chapter::paragraph::Paragraph, Chapter}, loader::load_block::{LoadBlock, LoadBlockContent}, output_format::OutputFormat};
 
 use super::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, self_compile::SelfCompile};
 
@@ -158,7 +158,7 @@ impl SelfCompile for ContentBundle {
 mod test {
     use std::sync::Arc;
 
-    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, standard_text_modifier::StandardTextModifier, Modifier, ModifiersBucket}, Codex, CodexCompilationRulesMap, CodexLoadingRulesMap, CodexModifiersOrderedMap}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}, self_compile::SelfCompile}, output_format::OutputFormat};
+    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, standard_text_modifier::StandardTextModifier, Modifier, ModifiersBucket}, Codex, CodexCompilationRulesMap, CodexLoadingRulesMap, CodexModifiersOrderedMap}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}, self_compile::SelfCompile}, output_format::OutputFormat};
 
 
     #[test]

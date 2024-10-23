@@ -4,7 +4,7 @@ pub mod html_assembler;
 
 
 use thiserror::Error;
-use crate::{compiler::{compiled_text_accessor::CompiledTextAccessor, compilation_error::CompilationError}, resource::ResourceError};
+use crate::{compilation::{compiled_text_accessor::CompiledTextAccessor, compilation_error::CompilationError}, resource::ResourceError};
 use super::{artifact::{Artifact, ArtifactError}, bibliography::Bibliography, dossier::{Document, Dossier}, table_of_contents::TableOfContents};
 
 

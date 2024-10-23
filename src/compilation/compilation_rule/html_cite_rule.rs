@@ -1,8 +1,8 @@
 use std::fmt::Debug;
 use regex::Regex;
-use crate::{codex::modifier::standard_text_modifier::StandardTextModifier, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, compiler::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, output_format::OutputFormat};
+use crate::{codex::modifier::standard_text_modifier::StandardTextModifier, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, output_format::OutputFormat};
 use super::CompilationRule;
-use crate::compiler::compilation_error::CompilationError;
+use crate::compilation::compilation_error::CompilationError;
 
 
 pub struct HtmlCiteRule {

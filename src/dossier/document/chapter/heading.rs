@@ -1,6 +1,6 @@
 use getset::{CopyGetters, Getters, Setters};
 use serde::Serialize;
-use crate::{codex::modifier::ModifiersBucket, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, compiler::{compilation_error::CompilationError, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile}, output_format::OutputFormat, resource::resource_reference::ResourceReference, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use crate::{codex::modifier::ModifiersBucket, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, compilation::{compilation_error::CompilationError, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile}, output_format::OutputFormat, resource::resource_reference::ResourceReference, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 pub type HeadingLevel = u32;
@@ -45,7 +45,7 @@ impl CompiledTextAccessor for Heading {
 }
 
 impl SelfCompile for Heading {
-    fn standard_compile(&mut self, format: &crate::output_format::OutputFormat, codex: &crate::codex::Codex, compilation_configuration: &crate::compiler::compilation_configuration::CompilationConfiguration, compilation_configuration_overlay: crate::compiler::compilation_configuration::compilation_configuration_overlay::CompilationConfigurationOverLay) -> Result<(), crate::compiler::compilation_error::CompilationError> {
+    fn standard_compile(&mut self, format: &crate::output_format::OutputFormat, codex: &crate::codex::Codex, compilation_configuration: &crate::compilation::compilation_configuration::CompilationConfiguration, compilation_configuration_overlay: crate::compilation::compilation_configuration::compilation_configuration_overlay::CompilationConfigurationOverLay) -> Result<(), crate::compilation::compilation_error::CompilationError> {
         
         let document_name = compilation_configuration_overlay.document_name().as_ref();
 

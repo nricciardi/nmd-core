@@ -8,7 +8,7 @@ pub use document::{Document, DocumentError};
 use getset::{Getters, MutGetters, Setters};
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use thiserror::Error;
-use crate::{codex::Codex, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, self_compile::SelfCompile}, output_format::OutputFormat, resource::ResourceError};
+use crate::{codex::Codex, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, self_compile::SelfCompile}, output_format::OutputFormat, resource::ResourceError};
 use self::dossier_configuration::DossierConfiguration;
 use super::{bibliography::Bibliography, table_of_contents::TableOfContents};
 use serde::Serialize;

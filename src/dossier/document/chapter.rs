@@ -8,7 +8,7 @@ use getset::{Getters, MutGetters, Setters};
 use paragraph::Paragraph;
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use serde::Serialize;
-use crate::{codex::Codex, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, self_compile::SelfCompile}, output_format::OutputFormat};
+use crate::{codex::Codex, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, self_compile::SelfCompile}, output_format::OutputFormat};
 
 use self::heading::Heading;
 

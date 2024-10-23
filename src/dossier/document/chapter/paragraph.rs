@@ -9,7 +9,7 @@ pub mod metadata_wrapper_paragraph;
 
 use std::fmt::Display;
 use thiserror::Error;
-use crate::{compiler::{compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile}, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use crate::{compilation::{compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile}, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 #[derive(Error, Debug)]

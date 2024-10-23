@@ -8,11 +8,11 @@ use log;
 use regex::Regex;
 use replacement_rule_part::ReplacementRuleReplacerPart;
 use crate::compilable_text::CompilableText;
-use crate::compiler::compilation_configuration::compilation_configuration_overlay::CompilationConfigurationOverLay;
-use crate::compiler::compilation_configuration::CompilationConfiguration;
+use crate::compilation::compilation_configuration::compilation_configuration_overlay::CompilationConfigurationOverLay;
+use crate::compilation::compilation_configuration::CompilationConfiguration;
 use crate::output_format::OutputFormat;
 use super::CompilationRule;
-use crate::compiler::compilation_error::CompilationError;
+use crate::compilation::compilation_error::CompilationError;
 
 
 pub type ReplacementRuleParts = Vec<Arc<dyn ReplacementRuleReplacerPart>>;
@@ -88,7 +88,7 @@ mod test {
 
     use std::sync::Arc;
 
-    use crate::{codex::modifier::{standard_text_modifier::StandardTextModifier, ModifiersBucket}, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{constants::ESCAPE_HTML, replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart, single_capture_group_replacement_rule_part::SingleCaptureGroupReplacementRuleReplacerPart, ReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}}, output_format::OutputFormat};
+    use crate::{codex::modifier::{standard_text_modifier::StandardTextModifier, ModifiersBucket}, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{constants::ESCAPE_HTML, replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart, single_capture_group_replacement_rule_part::SingleCaptureGroupReplacementRuleReplacerPart, ReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}}, output_format::OutputFormat};
 
 
     #[test]

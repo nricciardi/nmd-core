@@ -8,9 +8,9 @@ use getset::{Getters, Setters};
 use crate::compilable_text::compilable_text_part::CompilableTextPart;
 use crate::compilable_text::compilable_text_part::CompilableTextPartType;
 use crate::compilable_text::CompilableText;
-use crate::compiler::content_bundle::ContentBundle;
+use crate::compilation::content_bundle::ContentBundle;
 use crate::resource::table::TableCellAlignment;
-use crate::{codex::Codex, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, resource::{resource_reference::ResourceReference, table::{Table, TableCell}}, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use crate::{codex::Codex, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile, Compiler}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, resource::{resource_reference::ResourceReference, table::{Table, TableCell}}, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 pub type TableParagraphContent = Table<ContentBundle, ContentBundle, ContentBundle>;
@@ -280,7 +280,7 @@ impl Paragraph for TableParagraph {
 #[cfg(test)]
 mod test {
 
-    use crate::{codex::Codex, compiler::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, dossier::document::chapter::paragraph::Paragraph, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_loading_rule::{table_paragraph_loading_rule::TableParagraphLoadingRule, ParagraphLoadingRule}}, output_format::OutputFormat};
+    use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, dossier::document::chapter::paragraph::Paragraph, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_loading_rule::{table_paragraph_loading_rule::TableParagraphLoadingRule, ParagraphLoadingRule}}, output_format::OutputFormat};
 
     fn load_table(nmd_text: &str, codex: &Codex) -> Box<dyn Paragraph> {
 

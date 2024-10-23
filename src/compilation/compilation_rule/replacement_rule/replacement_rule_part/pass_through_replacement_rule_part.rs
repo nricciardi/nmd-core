@@ -1,6 +1,6 @@
 use getset::{Getters, Setters};
 use regex::Captures;
-use crate::{compilable_text::CompilableText, compiler::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError}, output_format::OutputFormat};
+use crate::{compilable_text::CompilableText, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError}, output_format::OutputFormat};
 use super::ReplacementRuleReplacerPart;
 
 
