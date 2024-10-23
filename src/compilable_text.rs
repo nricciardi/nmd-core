@@ -549,6 +549,7 @@ impl SelfCompile for CompilableText {
             return Ok(())
         }
 
+        // TODO: text_modifiers is used only for order... this will be replace by tuple (id, modifier, rule)
         for (codex_identifier, text_modifier) in codex.text_modifiers() {
 
             if excluded_modifiers.contains(codex_identifier) {
