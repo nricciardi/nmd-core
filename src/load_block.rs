@@ -1,7 +1,6 @@
 use getset::{CopyGetters, Getters, MutGetters, Setters};
-use crate::{codex::Codex, dossier::document::chapter::{chapter_header::ChapterHeader, chapter_tag::ChapterTag, heading::Heading, paragraph::Paragraph}};
+use crate::{codex::Codex, dossier::document::chapter::{chapter_header::ChapterHeader, chapter_tag::ChapterTag, heading::Heading, paragraph::Paragraph}, load::{LoadConfiguration, LoadConfigurationOverLay, LoadError}};
 
-use super::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_loading_rule::ParagraphLoadingRule, LoadError};
 
 
 
@@ -38,29 +37,16 @@ impl LoadBlock {
     /// ```rust
     /// blocks.par_sort_by(|a, b| a.start().cmp(&b.start()));
     /// ```
-    fn load_from_str(content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Vec<LoadBlock>, LoadError> {
+    pub fn load_from_str(content: &str, codex: &Codex, configuration: &LoadConfiguration, configuration_overlay: LoadConfigurationOverLay) -> Result<Vec<LoadBlock>, LoadError> {
         Self::inner_load_from_str(content, 0, codex, 0, configuration, configuration_overlay.clone())
     }
 
     /// Inner load method to load content from `&str` based on `Codex`
     /// 
     /// This method uses recursive algorithm, use `content_offset=0` and `paragraph_modifier_index=0` to start.
-    fn inner_load_from_str(content: &str, content_offset: usize, codex: &Codex, paragraph_modifier_index: usize, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Vec<LoadBlock>, LoadError> {
+    fn inner_load_from_str(content: &str, content_offset: usize, codex: &Codex, paragraph_modifier_index: usize, configuration: &LoadConfiguration, configuration_overlay: LoadConfigurationOverLay) -> Result<Vec<LoadBlock>, LoadError> {
 
-        if let Some((modifier_identifier, paragraph_modifier)) = codex.paragraph_modifiers().get_index(paragraph_modifier_index) {
-
-            let paragraph_loading_rule = codex.paragraph_loading_rules().get(modifier_identifier);
-
-            if paragraph_loading_rule.is_none() {
-
-                if configuration.strict_paragraphs_loading_rules_check() {
-                    return Err(LoadError::ElaborationError(format!("paragraph loading rule not found for {}", modifier_identifier)));
-                }
-
-                log::warn!("{}", format!("paragraph loading rule not found for {}", modifier_identifier));
-            }
-
-            let paragraph_loading_rule = paragraph_loading_rule.unwrap();
+        if let Some((modifier_identifier, (paragraph_modifier, paragraph_loading_rule))) = codex.paragraph_modifiers().get_index(paragraph_modifier_index) {
 
             let mut current_paragraph_blocks: Vec<LoadBlock> = Vec::new();
 
@@ -120,29 +106,24 @@ impl LoadBlock {
 
             let mut last_position = 0;
 
-            let fallback_loading_rule: Option<&Box<dyn ParagraphLoadingRule>>;
-
-            if let Some(fb_id) = codex.fallback_paragraph_modifier() {
-                fallback_loading_rule = codex.paragraph_loading_rules().get(fb_id);
-            
-            } else {
-                fallback_loading_rule = None;
+            if codex.fallback_paragraph_modifier().is_none()  {
 
                 log::warn!("there isn't fallback paragraph loading rule")
             }
 
             let mut add_fb_block = |s: &str, start: usize, end: usize| -> Result<(), LoadError> {
-                if let Some(rule) = fallback_loading_rule {
-                        
+
+                if let Some((fb_id, fallback_loading_rule)) = codex.fallback_paragraph_modifier() {
+
                     log::debug!("fallback rule {:?} will be used to load:\n{}", fallback_loading_rule, s);
 
-                    let paragraph = rule.load(s, codex, configuration, configuration_overlay.clone())?;
+                    let paragraph = fallback_loading_rule.load(s, codex, configuration, configuration_overlay.clone())?;
 
                     blocks.push(LoadBlock::new(
                         start, 
                         end,
                         LoadBlockContent::Paragraph(paragraph)
-                    ));
+                    ));                
                 }
 
                 Ok(())
@@ -249,7 +230,7 @@ mod test {
 
         let codex = Codex::of_html();
 
-        let paragraphs = LoadBlock::load_from_str(content, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
+        let paragraphs = LoadBlock::load_from_str(content, &codex, &LoadConfiguration::default(), LoadConfigurationOverLay::default()).unwrap();
 
         assert_eq!(paragraphs.len(), 3)
     }

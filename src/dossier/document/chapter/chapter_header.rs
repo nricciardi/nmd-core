@@ -1,7 +1,7 @@
 use getset::{Getters, MutGetters, Setters};
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use serde::Serialize;
-use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_heading_modifier::StandardHeading, Modifier}, Codex}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, self_compile::SelfCompile}, load::{load_block::{LoadBlock, LoadBlockContent}, loader_configuration::LoaderConfiguration, LoadError}, output_format::OutputFormat};
+use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_heading_modifier::StandardHeading, Modifier}, Codex}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, self_compile::SelfCompile}, load::{LoadConfiguration, LoadError}, load_block::{LoadBlock, LoadBlockContent}, output_format::OutputFormat};
 use super::{chapter_tag::ChapterTag, heading::{Heading, HeadingLevel}};
 
 
@@ -29,7 +29,7 @@ impl ChapterHeader {
     }
 
     /// Load headings and chapter tags from `&str`
-    pub fn load_headings_and_chapter_tags_from_str(content: &str, codex: &Codex, configuration: &LoaderConfiguration) -> Result<Vec<LoadBlock>, LoadError> {
+    pub fn load_headings_and_chapter_tags_from_str(content: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<Vec<LoadBlock>, LoadError> {
        
         let mut last_heading_level = 0;
         let mut headings_and_chapter_tags: Vec<LoadBlock> = Vec::new();
@@ -70,7 +70,7 @@ impl ChapterHeader {
     }
 
     /// Load the chapter heading and metadata from `&str`. This method returns a tuple with optional heading and a chapter tags vector.
-    fn parse_chapter_heading_and_tags_from_str(content: &str, last_heading_level: &mut HeadingLevel, codex: &Codex, configuration: &LoaderConfiguration) -> Result<Option<(LoadBlock, Vec<LoadBlock>)>, LoadError> {
+    fn parse_chapter_heading_and_tags_from_str(content: &str, last_heading_level: &mut HeadingLevel, codex: &Codex, configuration: &LoadConfiguration) -> Result<Option<(LoadBlock, Vec<LoadBlock>)>, LoadError> {
 
         log::debug!("parse headings and chapter tags from (last heading level: {}):\n{}", last_heading_level, content);
 

@@ -8,6 +8,8 @@ use document::Document;
 use getset::{Getters, MutGetters, Setters};
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, IntoParallelRefMutIterator, ParallelIterator};
 use thiserror::Error;
+use crate::{codex::Codex, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, self_compile::SelfCompile}, load::{LoadConfiguration, LoadConfigurationOverLay, LoadError}, output_format::OutputFormat, resource::ResourceError};
+
 use self::dossier_configuration::DossierConfiguration;
 use super::{bibliography::Bibliography, table_of_contents::TableOfContents};
 use serde::Serialize;
@@ -69,14 +71,14 @@ impl Dossier {
     }
 
     /// Load dossier from its filesystem path
-    pub fn load_dossier_from_path_buf(path_buf: &PathBuf, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Dossier, LoadError> {
+    pub fn load_dossier_from_path_buf(path_buf: &PathBuf, codex: &Codex, configuration: &LoadConfiguration, configuration_overlay: LoadConfigurationOverLay) -> Result<Dossier, LoadError> {
         let dossier_configuration = DossierConfiguration::try_from(path_buf)?;
 
         Self::load_dossier_from_dossier_configuration(&dossier_configuration, codex, configuration, configuration_overlay.clone())
     }
 
     /// Load dossier from its filesystem path considering only a subset of documents
-    pub fn load_dossier_from_path_buf_only_documents(path_buf: &PathBuf, only_documents: &HashSet<String>, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Dossier, LoadError> {
+    pub fn load_dossier_from_path_buf_only_documents(path_buf: &PathBuf, only_documents: &HashSet<String>, codex: &Codex, configuration: &LoadConfiguration, configuration_overlay: LoadConfigurationOverLay) -> Result<Dossier, LoadError> {
         let mut dossier_configuration = DossierConfiguration::try_from(path_buf)?;
 
         let d: Vec<String> = dossier_configuration.raw_documents_paths().iter()
@@ -99,7 +101,7 @@ impl Dossier {
     }
 
     /// Load dossier from its dossier configuration
-    pub fn load_dossier_from_dossier_configuration(dossier_configuration: &DossierConfiguration, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Dossier, LoadError> {
+    pub fn load_dossier_from_dossier_configuration(dossier_configuration: &DossierConfiguration, codex: &Codex, configuration: &LoadConfiguration, configuration_overlay: LoadConfigurationOverLay) -> Result<Dossier, LoadError> {
 
         // TODO: are really mandatory?
         if dossier_configuration.documents_paths().is_empty() {
@@ -281,6 +283,8 @@ mod test {
     use std::path::PathBuf;
 
 
+    use crate::{codex::Codex, load::{LoadConfiguration, LoadConfigurationOverLay}};
+
     use super::Dossier;
 
 
@@ -292,8 +296,8 @@ mod test {
 
         let codex = Codex::of_html();
 
-        let loader_configuration = LoaderConfiguration::default();
+        let loader_configuration = LoadConfiguration::default();
 
-        let _dossier = Dossier::load_dossier_from_path_buf(&dossier_path, &codex, &loader_configuration, LoaderConfigurationOverLay::default()).unwrap();
+        let _dossier = Dossier::load_dossier_from_path_buf(&dossier_path, &codex, &loader_configuration, LoadConfigurationOverLay::default()).unwrap();
     }
 }

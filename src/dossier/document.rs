@@ -6,6 +6,7 @@ use std::path::PathBuf;
 pub use chapter::Chapter;
 use getset::{Getters, MutGetters, Setters};
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
+use rayon::slice::ParallelSliceMut;
 use serde::Serialize;
 use thiserror::Error;
 use crate::codex::Codex;
@@ -14,9 +15,8 @@ use crate::compilation::compilation_configuration::CompilationConfiguration;
 use crate::compilation::compilation_error::CompilationError;
 use crate::compilation::self_compile::SelfCompile;
 use crate::content_bundle::ContentBundle;
-use crate::load::load_block::LoadBlock;
-use crate::load::loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay};
-use crate::load::LoadError;
+use crate::load::{LoadConfiguration, LoadConfigurationOverLay, LoadError};
+use crate::load_block::LoadBlock;
 use crate::output_format::OutputFormat;
 use crate::resource::disk_resource::DiskResource;
 use crate::resource::{Resource, ResourceError};
@@ -56,13 +56,13 @@ impl Document {
         }
     }
 
-    pub fn load_document_from_str(document_name: &str, content: &str, codex: &Codex, configuration: &LoaderConfiguration, mut configuration_overlay: LoaderConfigurationOverLay) -> Result<Document, LoadError> {
+    pub fn load_document_from_str(document_name: &str, content: &str, codex: &Codex, configuration: &LoadConfiguration, mut configuration_overlay: LoadConfigurationOverLay) -> Result<Document, LoadError> {
 
         log::info!("loading document '{}' from its content...", document_name);
 
         configuration_overlay.set_document_name(Some(document_name.to_string()));
         
-        let mut blocks: Vec<LoadBlock> = Self::load_from_str(content, codex, configuration, configuration_overlay.clone())?;
+        let mut blocks: Vec<LoadBlock> = LoadBlock::load_from_str(content, codex, configuration, configuration_overlay.clone())?;
 
         blocks.par_sort_by(|a, b| a.start().cmp(&b.start()));
 
@@ -74,7 +74,7 @@ impl Document {
     }
 
     /// Load a document from its path (`PathBuf`). The document have to exist.
-    pub fn load_document_from_path(path_buf: &PathBuf, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Document, LoadError> {
+    pub fn load_document_from_path(path_buf: &PathBuf, codex: &Codex, configuration: &LoadConfiguration, configuration_overlay: LoadConfigurationOverLay) -> Result<Document, LoadError> {
 
         if !path_buf.exists() {
             return Err(LoadError::ResourceError(ResourceError::InvalidResourceVerbose(format!("{} not exists", path_buf.to_string_lossy())))) 
@@ -175,7 +175,7 @@ impl SelfCompile for Document {
 
 #[cfg(test)]
 mod test {
-    use crate::{codex::Codex, dossier::document::Document, load::loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}};
+    use crate::{codex::Codex, dossier::document::Document, load::{LoadConfiguration, LoadConfigurationOverLay}};
 
     #[test]
     fn chapters_from_str() {
@@ -199,7 +199,7 @@ paragraph 2a
 paragraph 1b
 "#.trim().to_string();
 
-        let document = Document::load_document_from_str("test", &content, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
+        let document = Document::load_document_from_str("test", &content, &codex, &LoadConfiguration::default(), LoadConfigurationOverLay::default()).unwrap();
 
         assert_eq!(document.content().preamble().len(), 1);
 

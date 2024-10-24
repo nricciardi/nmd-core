@@ -3,7 +3,7 @@ use getset::{Getters, Setters};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use crate::{codex::{modifier::constants::CHAPTER_STYLE_PATTERN, Codex}, load::{load_block::{LoadBlock, LoadBlockContent}, loader_configuration::LoaderConfiguration}};
+use crate::{codex::{modifier::constants::CHAPTER_STYLE_PATTERN, Codex}, load::LoadConfiguration, load_block::{LoadBlock, LoadBlockContent}};
 
 
 static FROM_STR_PATTERN_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"@(\w+) (.*)").unwrap());
@@ -23,7 +23,7 @@ pub struct ChapterTag {
 impl ChapterTag {
 
     /// Load chapter tags (e.g. `author`) from string. This method returns empty `Vec` if there are no tags.
-    pub fn load_chapter_tags_from_str(content: &str, _codex: &Codex, _configuration: &LoaderConfiguration) -> Vec<LoadBlock> {
+    pub fn load_chapter_tags_from_str(content: &str, _codex: &Codex, _configuration: &LoadConfiguration) -> Vec<LoadBlock> {
         
         let mut tags: Vec<LoadBlock> = Vec::new();
         
@@ -50,7 +50,7 @@ impl ChapterTag {
 
     #[allow(dead_code)]
     /// Load the chapter style from string
-    fn load_chapter_style_from_str(content: &str, _codex: &Codex, _configuration: &LoaderConfiguration) -> Option<String> {
+    fn load_chapter_style_from_str(content: &str, _codex: &Codex, _configuration: &LoadConfiguration) -> Option<String> {
         
         let mut style: Option<String> = None;
 

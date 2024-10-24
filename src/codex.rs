@@ -10,7 +10,7 @@ use std::sync::Arc;
 use getset::{Getters, Setters};
 use indexmap::IndexMap;
 use modifier::base_modifier::BaseModifier;
-use modifier::Modifier;
+use modifier::{Modifier, ModifierIdentifier};
 use self::modifier::standard_paragraph_modifier::StandardParagraphModifier;
 use self::modifier::standard_text_modifier::StandardTextModifier;
 use crate::compilable_text::compilable_text_part::CompilableTextPart;
@@ -19,6 +19,7 @@ use crate::compilation::compilation_rule::replacement_rule::replacement_rule_par
 use crate::compilation::compilation_rule::replacement_rule::replacement_rule_part::fixed_replacement_rule_part::FixedReplacementRuleReplacerPart;
 use crate::compilation::compilation_rule::replacement_rule::replacement_rule_part::single_capture_group_replacement_rule_part::SingleCaptureGroupReplacementRuleReplacerPart;
 use crate::compilation::compilation_rule::replacement_rule::ReplacementRule;
+use crate::dossier::document::chapter::paragraph::paragraph_loading_rule::ParagraphLoadingRule;
 use crate::output_format::OutputFormat;
 use crate::resource::resource_reference::ResourceReference;
 use crate::utility::text_utility;
@@ -29,10 +30,9 @@ use super::compilation::compilation_rule::reference_rule::ReferenceRule;
 use super::compilation::compilation_rule::CompilationRule;
 
 
-pub type CodexIdentifier = String;
-pub type CodexModifiersOrderedMap = IndexMap<CodexIdentifier, Box<dyn Modifier>>;
-pub type CodexCompilationRulesMap = HashMap<CodexIdentifier, Box<dyn CompilationRule>>;
-pub type CodexLoadingRulesMap = HashMap<CodexIdentifier, Box<dyn ParagraphLoadingRule>>;
+pub type TextModifierOrderedMap = IndexMap<ModifierIdentifier, (Box<dyn Modifier>, Box<dyn CompilationRule>)>;
+pub type ParagraphModifierOrderedMap = IndexMap<ModifierIdentifier, (Box<dyn Modifier>, Box<dyn ParagraphLoadingRule>)>;
+pub type FallbackParagraphModifier = (ModifierIdentifier, Box<dyn ParagraphLoadingRule>);
 
 
 /// Ordered collection of rules
@@ -40,30 +40,14 @@ pub type CodexLoadingRulesMap = HashMap<CodexIdentifier, Box<dyn ParagraphLoadin
 #[derive(Debug, Getters, Setters)]
 pub struct Codex {
 
-    // #[getset(get = "pub", set = "pub")]
-    // configuration: CodexConfiguration,
-
+    #[getset(get = "pub", set = "pub")]
+    text_modifiers: TextModifierOrderedMap,
 
     #[getset(get = "pub", set = "pub")]
-    text_modifiers: CodexModifiersOrderedMap,
+    paragraph_modifiers: ParagraphModifierOrderedMap,
 
     #[getset(get = "pub", set = "pub")]
-    paragraph_modifiers: CodexModifiersOrderedMap,
-
-    #[getset(get = "pub", set = "pub")]
-    fallback_paragraph_modifier: Option<CodexIdentifier>,
-
-    // #[getset(get = "pub", set = "pub")]
-    // chapter_modifiers: CodexModifiersMap,
-
-    #[getset(get = "pub", set = "pub")]
-    text_compilation_rules: CodexCompilationRulesMap,
-
-    #[getset(get = "pub", set = "pub")]
-    paragraph_loading_rules: CodexLoadingRulesMap,
-
-    // #[getset(get = "pub", set = "pub")]
-    // document_rules: HashMap<ModifierIdentifier, Box<dyn CompilationRule>>,
+    fallback_paragraph_modifier: Option<FallbackParagraphModifier>,
     
 }
 
@@ -76,34 +60,27 @@ impl Codex {
     }
 
     /// Create a new `Codex`
-    pub fn new(text_modifiers: CodexModifiersOrderedMap, paragraph_modifiers: CodexModifiersOrderedMap,
-                text_compilation_rules: CodexCompilationRulesMap, paragraph_loading_rules: CodexLoadingRulesMap, fallback_paragraph_modifier: Option<CodexIdentifier>,) -> Self {
-
-        // TODO: check if there are all necessary rules based on theirs type
+    pub fn new(text_modifiers: TextModifierOrderedMap, paragraph_modifiers: ParagraphModifierOrderedMap,
+                fallback_paragraph_modifier: Option<FallbackParagraphModifier>,) -> Self {
 
         Self {
             text_modifiers,
             paragraph_modifiers,
-            text_compilation_rules,
-            paragraph_loading_rules,
             fallback_paragraph_modifier
         }
     }
 
     /// Remove all modifiers and rules except those passed 
-    pub fn retain(&mut self, identifiers: HashSet<CodexIdentifier>) {
+    pub fn retain(&mut self, identifiers: HashSet<ModifierIdentifier>) {
 
         self.text_modifiers.retain(|id, _| identifiers.contains(id));
         self.paragraph_modifiers.retain(|id, _| identifiers.contains(id));
-
-        self.text_compilation_rules.retain(|id, _| identifiers.contains(id));
-        self.paragraph_loading_rules.retain(|id, _| identifiers.contains(id));
     }
 
 
     /// Remove modifiers and rules 
-    pub fn remove(&mut self, identifiers: HashSet<CodexIdentifier>) {
-        identifiers.iter().for_each(|id: &CodexIdentifier| {
+    pub fn remove(&mut self, identifiers: HashSet<ModifierIdentifier>) {
+        identifiers.iter().for_each(|id: &ModifierIdentifier| {
 
             self.text_modifiers.shift_remove(id);
             self.paragraph_modifiers.shift_remove(id);
@@ -834,8 +811,6 @@ mod test {
                 ),
             ]),
             IndexMap::new(),
-            HashMap::new(),
-            HashMap::new(),
             None
         );
 

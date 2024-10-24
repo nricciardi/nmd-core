@@ -5,7 +5,7 @@ use compilable_text_part::{CompilableTextPart, CompilableTextPartType};
 use getset::{Getters, MutGetters, Setters};
 use serde::Serialize;
 use thiserror::Error;
-use crate::{codex::{modifier::ModifiersBucket, Codex, CodexIdentifier}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_rule::CompilationRule, self_compile::SelfCompile}, output_format::OutputFormat, resource::bucket::Bucket, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use crate::{codex::{modifier::{ModifierIdentifier, ModifiersBucket}, Codex}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_rule::CompilationRule, self_compile::SelfCompile}, output_format::OutputFormat, resource::bucket::Bucket, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 #[derive(Debug, Clone)]
@@ -308,7 +308,7 @@ impl CompilableText {
 
     /// Compile parts and return the new compiled parts or `None` if there are not matches using
     /// provided rule
-    pub fn compile_with_compilation_rule(&mut self, (rule_identifier, rule): (&CodexIdentifier, &Box<dyn CompilationRule>), format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
+    pub fn compile_with_compilation_rule(&mut self, (rule_identifier, rule): (&ModifierIdentifier, &Box<dyn CompilationRule>), format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
     
         let parts = self.parts();
 
@@ -549,8 +549,7 @@ impl SelfCompile for CompilableText {
             return Ok(())
         }
 
-        // TODO: text_modifiers is used only for order... this will be replace by tuple (id, modifier, rule)
-        for (codex_identifier, text_modifier) in codex.text_modifiers() {
+        for (codex_identifier, (text_modifier, text_rule)) in codex.text_modifiers() {
 
             if excluded_modifiers.contains(codex_identifier) {
 
@@ -558,15 +557,7 @@ impl SelfCompile for CompilableText {
                 continue;
             }
 
-            if let Some(text_rule) = codex.text_compilation_rules().get(codex_identifier) {
-
-                self.compile_with_compilation_rule((codex_identifier, text_rule), format, compilation_configuration, compilation_configuration_overlay.clone())?;
-
-            } else {
-
-                log::warn!("text rule for {:#?} not found", text_modifier);
-                continue;
-            }
+            self.compile_with_compilation_rule((codex_identifier, text_rule), format, compilation_configuration, compilation_configuration_overlay.clone())?;
         }
 
         Ok(())

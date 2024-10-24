@@ -8,11 +8,10 @@ pub mod constants;
 use regex::Regex;
 use crate::resource::bucket::Bucket;
 use self::base_modifier::BaseModifier;
-use super::CodexIdentifier;
 
 
-pub type ModifiersBucket = Bucket<CodexIdentifier>;
 pub type ModifierIdentifier = String;
+pub type ModifiersBucket = Bucket<ModifierIdentifier>;
 pub type ModifierPattern = String;
 
 
