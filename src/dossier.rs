@@ -8,7 +8,6 @@ use document::Document;
 use getset::{Getters, MutGetters, Setters};
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, IntoParallelRefMutIterator, ParallelIterator};
 use thiserror::Error;
-use crate::{codex::Codex, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, self_compile::SelfCompile}, load::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError}, output_format::OutputFormat, resource::ResourceError};
 use self::dossier_configuration::DossierConfiguration;
 use super::{bibliography::Bibliography, table_of_contents::TableOfContents};
 use serde::Serialize;
@@ -281,7 +280,6 @@ impl SelfCompile for Dossier {
 mod test {
     use std::path::PathBuf;
 
-    use crate::{codex::Codex, load::loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}};
 
     use super::Dossier;
 
