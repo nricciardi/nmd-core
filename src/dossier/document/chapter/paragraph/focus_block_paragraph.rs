@@ -96,7 +96,7 @@ impl Paragraph for FocusBlockParagraph {
 #[cfg(test)]
 mod test {
 
-    use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, dossier::document::chapter::paragraph::Paragraph, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, Loader}, output_format::OutputFormat};
+    use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, dossier::document::chapter::paragraph::Paragraph, load::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, Loader}, output_format::OutputFormat};
 
     fn load_and_compile_html(content: &str, expected_n: usize) -> String {
         

@@ -14,9 +14,9 @@ use crate::compilation::compilation_configuration::CompilationConfiguration;
 use crate::compilation::compilation_error::CompilationError;
 use crate::compilation::self_compile::SelfCompile;
 use crate::content_bundle::ContentBundle;
-use crate::loader::load_block::LoadBlock;
-use crate::loader::loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay};
-use crate::loader::LoadError;
+use crate::load::load_block::LoadBlock;
+use crate::load::loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay};
+use crate::load::LoadError;
 use crate::output_format::OutputFormat;
 use crate::resource::disk_resource::DiskResource;
 use crate::resource::{Resource, ResourceError};
@@ -175,7 +175,7 @@ impl SelfCompile for Document {
 
 #[cfg(test)]
 mod test {
-    use crate::{codex::Codex, dossier::document::Document, loader::loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}};
+    use crate::{codex::Codex, dossier::document::Document, load::loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}};
 
     #[test]
     fn chapters_from_str() {

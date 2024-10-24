@@ -280,7 +280,7 @@ impl Paragraph for TableParagraph {
 #[cfg(test)]
 mod test {
 
-    use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, dossier::document::chapter::paragraph::Paragraph, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_loading_rule::{table_paragraph_loading_rule::TableParagraphLoadingRule, ParagraphLoadingRule}}, output_format::OutputFormat};
+    use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, dossier::document::chapter::paragraph::Paragraph, load::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_loading_rule::{table_paragraph_loading_rule::TableParagraphLoadingRule, ParagraphLoadingRule}}, output_format::OutputFormat};
 
     fn load_table(nmd_text: &str, codex: &Codex) -> Box<dyn Paragraph> {
 

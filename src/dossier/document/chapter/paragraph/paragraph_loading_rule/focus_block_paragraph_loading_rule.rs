@@ -2,7 +2,7 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use regex::Regex;
 use getset::{Getters, Setters};
 use super::ParagraphLoadingRule;
-use crate::{codex::Codex, dossier::document::chapter::paragraph::{focus_block_paragraph::FocusBlockParagraph, Paragraph}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError, Loader}};
+use crate::{codex::Codex, dossier::document::chapter::paragraph::{focus_block_paragraph::FocusBlockParagraph, Paragraph}, load::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError, Loader}};
 
 
 const DEFAULT_TYPE: &str = "quote";
@@ -75,7 +75,7 @@ impl ParagraphLoadingRule for FocusBlockParagraphLoadingRule {
 #[cfg(test)]
 mod test {
 
-    use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, loader::loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}};
+    use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, load::loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}};
     use super::FocusBlockParagraphLoadingRule;
 
 

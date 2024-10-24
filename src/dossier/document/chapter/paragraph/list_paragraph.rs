@@ -176,7 +176,7 @@ impl Paragraph for ListParagraph {
 #[cfg(test)]
 mod test {
 
-    use crate::loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_loading_rule::{list_paragraph_loading_rule::ListParagraphLoadingRule, ParagraphLoadingRule}};
+    use crate::load::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_loading_rule::{list_paragraph_loading_rule::ListParagraphLoadingRule, ParagraphLoadingRule}};
 
     use super::*;
 

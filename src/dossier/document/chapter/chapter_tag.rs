@@ -3,7 +3,7 @@ use getset::{Getters, Setters};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use crate::{codex::{modifier::constants::CHAPTER_STYLE_PATTERN, Codex}, loader::{load_block::{LoadBlock, LoadBlockContent}, loader_configuration::LoaderConfiguration}};
+use crate::{codex::{modifier::constants::CHAPTER_STYLE_PATTERN, Codex}, load::{load_block::{LoadBlock, LoadBlockContent}, loader_configuration::LoaderConfiguration}};
 
 
 static FROM_STR_PATTERN_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"@(\w+) (.*)").unwrap());

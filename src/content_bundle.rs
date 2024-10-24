@@ -1,7 +1,7 @@
 use getset::{Getters, MutGetters, Setters};
 use rayon::{iter::{IntoParallelRefMutIterator, ParallelIterator}, slice::ParallelSliceMut};
 use serde::Serialize;
-use crate::{codex::Codex, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, self_compile::SelfCompile}, dossier::document::{chapter::{chapter_header::ChapterHeader, paragraph::Paragraph}, Chapter}, loader::load_block::{LoadBlock, LoadBlockContent}, output_format::OutputFormat};
+use crate::{codex::Codex, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, self_compile::SelfCompile}, dossier::document::{chapter::{chapter_header::ChapterHeader, paragraph::Paragraph}, Chapter}, load::load_block::{LoadBlock, LoadBlockContent}, output_format::OutputFormat};
 
 
 #[derive(Debug, Getters, MutGetters, Setters, Serialize)]
