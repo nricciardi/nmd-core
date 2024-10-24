@@ -289,7 +289,7 @@ impl Assembler for HtmlAssembler {
             let mut div_chapter = Container::new(build_html::ContainerType::Div);
             let mut style = String::new();
 
-            for tag in chapter.tags() {
+            for tag in chapter.header().tags() {
 
                 match tag.key() {
                     ChapterTagKey::Id => {
@@ -311,7 +311,7 @@ impl Assembler for HtmlAssembler {
             div_chapter = div_chapter.with_attributes(vec![("style", style.as_str())]);
             let mut div_chapter_content = String::new();
 
-            if let Some(compiled_content) = chapter.heading().compiled_text().as_ref() {
+            if let Some(compiled_content) = chapter.header().heading().compiled_text().as_ref() {
 
                 div_chapter_content.push_str(&compiled_content.content());
 

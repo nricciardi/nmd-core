@@ -40,8 +40,8 @@ pub fn assign_nuid_to_document_paragraphs(document: &mut Document) {
             p.set_nuid(Some(calc_nuid(p.raw_content())));
         });
 
-        let title = chapter.heading().title().clone();
-        chapter.heading_mut().set_nuid(Some(calc_nuid(&title)));
+        let title = chapter.header().heading().title().clone();
+        chapter.header_mut().heading_mut().set_nuid(Some(calc_nuid(&title)));
     });
 }
 

@@ -52,7 +52,7 @@ pub trait Assembler {
 
         for chapter in document.content().chapters() {
 
-            if let Some(r) = chapter.heading().compiled_text().as_ref() {
+            if let Some(r) = chapter.header().heading().compiled_text().as_ref() {
 
                 result.push_str(&r.content());
 

@@ -2,13 +2,13 @@ pub mod document;
 pub mod dossier_configuration;
 
 
-use std::time::Instant;
+use std::{collections::HashSet, path::PathBuf, time::Instant};
 use document::chapter::heading::Heading;
 use document::Document;
 use getset::{Getters, MutGetters, Setters};
-use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
+use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, IntoParallelRefMutIterator, ParallelIterator};
 use thiserror::Error;
-use crate::{codex::Codex, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, self_compile::SelfCompile}, output_format::OutputFormat, resource::ResourceError};
+use crate::{codex::Codex, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, self_compile::SelfCompile}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError}, output_format::OutputFormat, resource::ResourceError};
 use self::dossier_configuration::DossierConfiguration;
 use super::{bibliography::Bibliography, table_of_contents::TableOfContents};
 use serde::Serialize;
@@ -66,6 +66,85 @@ impl Dossier {
 
         if let Some(index) = index {
             self.documents[index] = new_document;
+        }
+    }
+
+    /// Load dossier from its filesystem path
+    pub fn load_dossier_from_path_buf(path_buf: &PathBuf, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Dossier, LoadError> {
+        let dossier_configuration = DossierConfiguration::try_from(path_buf)?;
+
+        Self::load_dossier_from_dossier_configuration(&dossier_configuration, codex, configuration, configuration_overlay.clone())
+    }
+
+    /// Load dossier from its filesystem path considering only a subset of documents
+    pub fn load_dossier_from_path_buf_only_documents(path_buf: &PathBuf, only_documents: &HashSet<String>, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Dossier, LoadError> {
+        let mut dossier_configuration = DossierConfiguration::try_from(path_buf)?;
+
+        let d: Vec<String> = dossier_configuration.raw_documents_paths().iter()
+                                                    .filter(|item| {
+
+                                                        let file_name = PathBuf::from(*item).file_name().unwrap().to_string_lossy().to_string();
+
+                                                        only_documents.contains(file_name.as_str())
+                                                    })
+                                                    .map(|item| item.clone())
+                                                    .collect();
+
+        dossier_configuration.set_raw_documents_paths(d);
+
+        let mut configuration_overlay = configuration_overlay.clone();
+
+        configuration_overlay.set_dossier_name(Some(dossier_configuration.name().clone()));
+
+        Self::load_dossier_from_dossier_configuration(&dossier_configuration, codex, configuration, configuration_overlay)
+    }
+
+    /// Load dossier from its dossier configuration
+    pub fn load_dossier_from_dossier_configuration(dossier_configuration: &DossierConfiguration, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Dossier, LoadError> {
+
+        // TODO: are really mandatory?
+        if dossier_configuration.documents_paths().is_empty() {
+            return Err(LoadError::ResourceError(ResourceError::InvalidResourceVerbose("there are no documents".to_string())))
+        }
+
+        // TODO: is really mandatory?
+        if dossier_configuration.name().is_empty() {
+            return Err(LoadError::ResourceError(ResourceError::InvalidResourceVerbose("there is no name".to_string())))
+        }
+
+        if dossier_configuration.compilation().parallelization() {
+
+            let mut documents_res: Vec<Result<Document, LoadError>> = Vec::new();
+
+            dossier_configuration.documents_paths().par_iter()
+            .map(|document_path| {
+                Document::load_document_from_path(&PathBuf::from(document_path), codex, configuration, configuration_overlay.clone())
+            }).collect_into_vec(&mut documents_res);
+            
+            let error = documents_res.par_iter().find_any(|result| result.is_err());
+
+            // handle errors
+            if let Some(Err(err)) = error.as_ref() {
+                return Err(err.clone())
+            }
+
+            let documents = documents_res.into_iter().map(|d| d.unwrap()).collect();
+
+            return Ok(Dossier::new(dossier_configuration.clone(), documents))
+
+
+        } else {
+
+            let mut documents: Vec<Document> = Vec::new();
+
+            for document_path in dossier_configuration.documents_paths() {
+    
+                let document = Document::load_document_from_path(&PathBuf::from(document_path), codex, configuration, configuration_overlay.clone())?;
+    
+                documents.push(document)
+            }
+
+            return Ok(Dossier::new(dossier_configuration.clone(), documents))
         }
     }
 }
@@ -165,7 +244,7 @@ impl SelfCompile for Dossier {
 
             for document in self.documents() {
                 for chapter in document.content().chapters() {
-                    headings.push(chapter.heading().clone());
+                    headings.push(chapter.header().heading().clone());
                 }
             }
 
@@ -198,3 +277,25 @@ impl SelfCompile for Dossier {
 } 
 
 
+#[cfg(test)]
+mod test {
+    use std::path::PathBuf;
+
+    use crate::{codex::Codex, loader::loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}};
+
+    use super::Dossier;
+
+
+
+    #[test]
+    fn load_dossier() {
+
+        let dossier_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("test-resources").join("nmd-test-dossier-1");
+
+        let codex = Codex::of_html();
+
+        let loader_configuration = LoaderConfiguration::default();
+
+        let _dossier = Dossier::load_dossier_from_path_buf(&dossier_path, &codex, &loader_configuration, LoaderConfigurationOverLay::default()).unwrap();
+    }
+}

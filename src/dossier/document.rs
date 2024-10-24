@@ -1,6 +1,8 @@
 pub mod chapter;
 
 
+use std::path::PathBuf;
+
 pub use chapter::Chapter;
 use getset::{Getters, MutGetters, Setters};
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
@@ -12,8 +14,12 @@ use crate::compilation::compilation_configuration::CompilationConfiguration;
 use crate::compilation::compilation_error::CompilationError;
 use crate::compilation::self_compile::SelfCompile;
 use crate::content_bundle::ContentBundle;
+use crate::loader::load_block::LoadBlock;
+use crate::loader::loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay};
+use crate::loader::LoadError;
 use crate::output_format::OutputFormat;
-use crate::resource::ResourceError;
+use crate::resource::disk_resource::DiskResource;
+use crate::resource::{Resource, ResourceError};
 use self::chapter::paragraph::ParagraphError;
 
 
@@ -48,6 +54,57 @@ impl Document {
             name,
             content,
         }
+    }
+
+    pub fn load_document_from_str(document_name: &str, content: &str, codex: &Codex, configuration: &LoaderConfiguration, mut configuration_overlay: LoaderConfigurationOverLay) -> Result<Document, LoadError> {
+
+        log::info!("loading document '{}' from its content...", document_name);
+
+        configuration_overlay.set_document_name(Some(document_name.to_string()));
+        
+        let mut blocks: Vec<LoadBlock> = Self::load_from_str(content, codex, configuration, configuration_overlay.clone())?;
+
+        blocks.par_sort_by(|a, b| a.start().cmp(&b.start()));
+
+        let document = Self::create_document_by_blocks(document_name, blocks)?;
+
+        log::info!("document '{}' loaded (preamble: {}, chapters: {})", document_name, document.content().preamble().is_empty(), document.content().chapters().len());
+
+        Ok(document)      
+    }
+
+    /// Load a document from its path (`PathBuf`). The document have to exist.
+    pub fn load_document_from_path(path_buf: &PathBuf, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Document, LoadError> {
+
+        if !path_buf.exists() {
+            return Err(LoadError::ResourceError(ResourceError::InvalidResourceVerbose(format!("{} not exists", path_buf.to_string_lossy())))) 
+        }
+
+        let resource = DiskResource::try_from(path_buf.clone())?;
+
+        let content = resource.content()?;
+
+        let document_name = resource.name();
+
+        match Self::load_document_from_str(document_name, &content, codex, configuration, configuration_overlay.clone()) {
+            Ok(document) => {
+                return Ok(document)
+            },
+            Err(err) => return Err(LoadError::ElaborationError(err.to_string()))
+        }
+    }
+
+    fn create_document_by_blocks(document_name: &str, blocks: Vec<LoadBlock>) -> Result<Document, LoadError> {
+
+        log::debug!("create document '{}' using blocks: {:#?}", document_name, blocks);
+
+        let content = ContentBundle::from(blocks);
+
+        let document = Document::new(document_name.to_string(), content);
+
+        log::debug!("document '{}' has {} chapters and preamble {}", document.name(), document.content().chapters().len(), !document.content().preamble().is_empty());
+
+        Ok(document)
     }
 }
 
@@ -110,6 +167,43 @@ impl SelfCompile for Document {
         }
 
         Ok(())
+
+    }
+}
+
+
+
+#[cfg(test)]
+mod test {
+    use crate::{codex::Codex, dossier::document::Document, loader::loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}};
+
+    #[test]
+    fn chapters_from_str() {
+
+        let codex = Codex::of_html();
+
+        let content: String = 
+r#"
+preamble
+
+# title 1a
+
+paragraph 1a
+
+## title 2a
+
+paragraph 2a
+
+# title 1b
+
+paragraph 1b
+"#.trim().to_string();
+
+        let document = Document::load_document_from_str("test", &content, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
+
+        assert_eq!(document.content().preamble().len(), 1);
+
+        assert_eq!(document.content().chapters().len(), 3);
 
     }
 }
