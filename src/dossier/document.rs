@@ -13,7 +13,7 @@ use crate::codex::Codex;
 use crate::compilation::compilation_configuration::compilation_configuration_overlay::CompilationConfigurationOverLay;
 use crate::compilation::compilation_configuration::CompilationConfiguration;
 use crate::compilation::compilation_error::CompilationError;
-use crate::compilation::self_compile::SelfCompile;
+use crate::compilation::compilable::Compilable;
 use crate::content_bundle::ContentBundle;
 use crate::load::{LoadConfiguration, LoadConfigurationOverLay, LoadError};
 use crate::load_block::LoadBlock;
@@ -109,7 +109,7 @@ impl Document {
 }
 
 
-impl SelfCompile for Document {
+impl Compilable for Document {
     fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, mut compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
         let parallelization = compilation_configuration.parallelization();
 

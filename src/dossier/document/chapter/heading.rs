@@ -1,6 +1,6 @@
 use getset::{CopyGetters, Getters, Setters};
 use serde::Serialize;
-use crate::{codex::{modifier::ModifiersBucket, Codex}, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile}, output_format::OutputFormat, resource::resource_reference::ResourceReference, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use crate::{codex::{modifier::ModifiersBucket, Codex}, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, output_format::OutputFormat, resource::resource_reference::ResourceReference, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 pub type HeadingLevel = u32;
@@ -15,9 +15,6 @@ pub struct Heading {
     #[getset(get = "pub", set = "pub")]
     title: String,
 
-    #[getset(set = "pub")]
-    compilation_result: Option<CompilableText>,
-
     #[getset(get = "pub", set = "pub")]
     resource_reference: Option<ResourceReference>,
 
@@ -31,21 +28,14 @@ impl Heading {
         Self {
             level,
             title,
-            compilation_result: None,
             resource_reference: None,
             nuid: None,
         }
     }
 }
 
-impl CompiledTextAccessor for Heading {
-    fn compiled_text(&self) -> Option<&CompilableText> {
-        self.compilation_result.as_ref()
-    }
-}
-
-impl SelfCompile for Heading {
-    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
+impl Compilable for Heading {
+    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationOutcome, CompilationError> {
         
         let document_name = compilation_configuration_overlay.document_name().as_ref();
 
@@ -92,9 +82,8 @@ impl SelfCompile for Heading {
             },
         };
 
-        self.set_compilation_result(Some(res));
-        self.set_resource_reference(Some(id));
+        self.set_resource_reference(Some(id));      // TODO: is pointless?
 
-        Ok(())
+        Ok(CompilationOutcome::from(&res))
     }
 }

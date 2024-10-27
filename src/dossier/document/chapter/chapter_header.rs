@@ -1,7 +1,7 @@
 use getset::{Getters, MutGetters, Setters};
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use serde::Serialize;
-use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_heading_modifier::StandardHeading, Modifier}, Codex}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, self_compile::SelfCompile}, load::{LoadConfiguration, LoadError}, load_block::{LoadBlock, LoadBlockContent}, output_format::OutputFormat};
+use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_heading_modifier::StandardHeading, Modifier}, Codex}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilable::Compilable}, load::{LoadConfiguration, LoadError}, load_block::{LoadBlock, LoadBlockContent}, output_format::OutputFormat};
 use super::{chapter_tag::ChapterTag, heading::{Heading, HeadingLevel}};
 
 
@@ -206,7 +206,7 @@ impl ChapterHeader {
 
 }
 
-impl SelfCompile for ChapterHeader {
+impl Compilable for ChapterHeader {
     fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
     
         self.heading.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())

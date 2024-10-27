@@ -5,7 +5,7 @@ use compilable_text_part::{CompilableTextPart, CompilableTextPartType};
 use getset::{Getters, MutGetters, Setters};
 use serde::Serialize;
 use thiserror::Error;
-use crate::{codex::{modifier::{ModifierIdentifier, ModifiersBucket}, Codex}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_rule::CompilationRule, self_compile::SelfCompile}, output_format::OutputFormat, resource::bucket::Bucket, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use crate::{codex::{modifier::{ModifierIdentifier, ModifiersBucket}, Codex}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_rule::CompilationRule, compilable::Compilable}, output_format::OutputFormat, resource::bucket::Bucket, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 #[derive(Debug, Clone)]
@@ -535,7 +535,7 @@ impl CompilableText {
     }
 }
 
-impl SelfCompile for CompilableText {
+impl Compilable for CompilableText {
 
     fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
         
@@ -569,7 +569,7 @@ impl SelfCompile for CompilableText {
 mod test {
     use std::collections::HashSet;
 
-    use crate::{codex::{modifier::{standard_text_modifier::StandardTextModifier, ModifiersBucket}, Codex}, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, PartsSliceElaborationPolicy}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, self_compile::SelfCompile}, output_format::OutputFormat};
+    use crate::{codex::{modifier::{standard_text_modifier::StandardTextModifier, ModifiersBucket}, Codex}, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, PartsSliceElaborationPolicy}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilable::Compilable}, output_format::OutputFormat};
 
     use super::CompilableText;
 

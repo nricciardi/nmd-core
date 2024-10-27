@@ -2,7 +2,7 @@ pub mod content_tree;
 
 use getset::{CopyGetters, Getters, Setters};
 use serde::Serialize;
-use crate::{codex::Codex, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile}, output_format::OutputFormat};
+use crate::{codex::Codex, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, output_format::OutputFormat};
 use super::dossier::document::chapter::heading::Heading;
 
 
@@ -27,9 +27,6 @@ pub struct TableOfContents {
 
     #[getset(get = "pub", set = "pub")]
     headings: Vec<Heading>,
-
-    #[getset(set = "pub")]
-    compilation_result: Option<CompilableText>,
 }
 
 impl TableOfContents {
@@ -40,7 +37,6 @@ impl TableOfContents {
             plain,
             maximum_heading_level,
             headings,
-            compilation_result: None
         }
     }
 
@@ -62,19 +58,13 @@ impl TableOfContents {
     }
 }
 
-impl CompiledTextAccessor for TableOfContents {
-    fn compiled_text(&self) -> Option<&CompilableText> {
-        self.compilation_result.as_ref()
-    }
-}
+impl Compilable for TableOfContents {
 
-impl SelfCompile for TableOfContents {
-
-    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
+    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationOutcome, CompilationError> {
         
         if self.headings().is_empty() {
             
-            return Ok(());
+            return Ok(CompilationOutcome::empty());
         }
 
         if self.page_numbers() {
@@ -152,11 +142,9 @@ impl SelfCompile for TableOfContents {
 
                 outcome.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</ul></section>"#)));
 
-                self.set_compilation_result(Some(outcome));
-
                 log::info!("compiled table of contents ({} lines, {} skipped)", total_li, self.headings().len() - total_li);
 
-                Ok(())
+                Ok(CompilationOutcome::from(&outcome))
             },
         }
     }

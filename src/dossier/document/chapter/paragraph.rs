@@ -10,7 +10,7 @@ pub mod paragraph_loading_rule;
 
 use std::fmt::Display;
 use thiserror::Error;
-use crate::{compilation::{compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile}, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use crate::{compilation::{compiled_text_accessor::CompiledTextAccessor, compilable::Compilable}, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 #[derive(Error, Debug)]
@@ -33,7 +33,7 @@ pub type ParagraphType = String;
 /// a `compiled_content` (which is the corresponding compilation result) of the paragraph.
 /// 
 /// In addiction, each `Paragraph` has an optional `nuid`.    
-pub trait Paragraph: std::fmt::Debug + SelfCompile + CompiledTextAccessor + Sync + Send {
+pub trait Paragraph: std::fmt::Debug + Compilable + CompiledTextAccessor + Sync + Send {
     
     fn raw_content(&self) -> &String;
 

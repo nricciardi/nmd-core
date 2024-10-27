@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use bibliography_record::BibliographyRecord;
 use getset::{Getters, Setters};
 use serde::Serialize;
-use crate::{codex::Codex, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compiled_text_accessor::CompiledTextAccessor, self_compile::SelfCompile}, dossier::dossier_configuration::dossier_configuration_bibliography::DossierConfigurationBibliography, output_format::OutputFormat, resource::resource_reference::{ResourceReference, ResourceReferenceError}};
+use crate::{codex::Codex, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, dossier::dossier_configuration::dossier_configuration_bibliography::DossierConfigurationBibliography, output_format::OutputFormat, resource::resource_reference::{ResourceReference, ResourceReferenceError}};
 
 
 pub const BIBLIOGRAPHY_FICTITIOUS_DOCUMENT: &str = "bibliography";
@@ -19,8 +19,6 @@ pub struct Bibliography {
     #[getset(get = "pub", set = "pub")]
     content: BTreeMap<String, BibliographyRecord>,
 
-    #[getset(set = "pub")]
-    compilation_result: Option<CompilableText>,
 }
 
 impl Bibliography {
@@ -28,7 +26,6 @@ impl Bibliography {
         Self {
             title,
             content,
-            compilation_result: None,
         }
     }
 
@@ -56,19 +53,12 @@ impl From<&DossierConfigurationBibliography> for Bibliography {
         Self {
             title: dcb.title().clone(),
             content: dcb.records().clone(),
-            compilation_result: None
         }
     }
 }
 
-impl CompiledTextAccessor for Bibliography {
-    fn compiled_text(&self) -> Option<&CompilableText> {
-        self.compilation_result.as_ref()
-    }
-}
-
-impl SelfCompile for Bibliography {
-    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
+impl Compilable for Bibliography {
+    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationOutcome, CompilationError> {
         log::info!("compiling bibliography...");
 
         match format {
@@ -117,11 +107,9 @@ impl SelfCompile for Bibliography {
         
                 compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</ul></section>"#)));
         
-                self.set_compilation_result(Some(compilation_result));
-        
                 log::info!("bibliography compiled");
         
-                Ok(())
+                Ok(CompilationOutcome::from(&compilation_result))
             },
         }
     }

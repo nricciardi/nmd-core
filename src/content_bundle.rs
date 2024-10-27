@@ -1,7 +1,7 @@
 use getset::{Getters, MutGetters, Setters};
 use rayon::{iter::{IntoParallelRefMutIterator, ParallelIterator}, slice::ParallelSliceMut};
 use serde::Serialize;
-use crate::{codex::Codex, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, self_compile::SelfCompile}, dossier::document::{chapter::{chapter_header::ChapterHeader, paragraph::Paragraph}, Chapter}, load_block::{LoadBlock, LoadBlockContent}, output_format::OutputFormat};
+use crate::{codex::Codex, compilable_text::CompilableText, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compiled_text_accessor::CompiledTextAccessor, compilable::Compilable}, dossier::document::{chapter::{chapter_header::ChapterHeader, paragraph::Paragraph}, Chapter}, load_block::{LoadBlock, LoadBlockContent}, output_format::OutputFormat};
 
 
 #[derive(Debug, Getters, MutGetters, Setters, Serialize)]
@@ -11,7 +11,9 @@ pub struct ContentBundle {
     preamble: Vec<Box<dyn Paragraph>>,
 
     #[getset(get = "pub", get_mut = "pub", set = "pub")]
-    chapters: Vec<Chapter>
+    chapters: Vec<Chapter>,
+
+    compiled_content: Option<CompilableText>,
 }
 
 
@@ -20,7 +22,8 @@ impl ContentBundle {
     pub fn new(preamble: Vec<Box<dyn Paragraph>>, chapters: Vec<Chapter>,) -> Self {
         Self {
             preamble,
-            chapters
+            chapters,
+            compiled_content: None
         }
     }
 
@@ -87,7 +90,7 @@ impl From<Vec<LoadBlock>> for ContentBundle {
 }
 
 
-impl SelfCompile for ContentBundle {
+impl Compilable for ContentBundle {
     fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
         
         if compilation_configuration_overlay.document_name().is_none() {
@@ -145,16 +148,28 @@ impl SelfCompile for ContentBundle {
             }
         }
 
+        let mut compiled_content = CompilableText::new_empty();
+
+
+        self.preamble.iter().for_each(|paragraph| {
+            compiled_content.parts_mut().append(
+                &mut paragraph.compiled_text().unwrap().parts().clone()
+            )
+        });
+
+        compiled_content.parts_mut()
+
         Ok(())
     }
 }
+
 
 
 #[cfg(test)]
 mod test {
     use std::sync::Arc;
 
-    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, standard_text_modifier::StandardTextModifier, Modifier, ModifiersBucket}, Codex}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}, self_compile::SelfCompile}, output_format::OutputFormat};
+    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_text_modifier::StandardTextModifier, Modifier, ModifiersBucket}, Codex, ParagraphModifierOrderedMap, TextModifierOrderedMap}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}, compilable::Compilable}, output_format::OutputFormat};
 
 
     #[test]
@@ -182,39 +197,33 @@ mod test {
         );
 
         let codex = Codex::new(
-            CodexModifiersOrderedMap::from([
+            TextModifierOrderedMap::from([
                 (
                     StandardTextModifier::BoldStarVersion.identifier(),
-                    Box::new(
-                        Into::<BaseModifier>::into(StandardTextModifier::BoldStarVersion)
-                    ) as Box<dyn Modifier>
-                )
-            ]),
-            CodexModifiersOrderedMap::new(),
-            CodexCompilationRulesMap::from([
-                (
-                    StandardTextModifier::BoldStarVersion.identifier(),
-                    Box::new(
-                        ReplacementRule::new(
-                            StandardTextModifier::BoldStarVersion.modifier_pattern(),
-                            vec![
-                                Arc::new(FixedReplacementRuleReplacerPart::new(String::from("<strong>"))),
-                                Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
-                
-                                    let capture1 = captures.get(1).unwrap();
-                                    
-                                    let slice = compilable.parts_slice(capture1.start(), capture1.end())?;
+                    (
+                        Box::new(Into::<BaseModifier>::into(StandardTextModifier::BoldStarVersion)) as Box<dyn Modifier>,
+                        Box::new(
+                            ReplacementRule::new(
+                                StandardTextModifier::BoldStarVersion.modifier_pattern(),
+                                vec![
+                                    Arc::new(FixedReplacementRuleReplacerPart::new(String::from("<strong>"))),
+                                    Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
                     
-                                    Ok(CompilableText::new(slice))
-                                }))),
-                                Arc::new(FixedReplacementRuleReplacerPart::new(String::from("</strong>"))),
-                            ]
-                        )
-                    ) as Box<dyn CompilationRule>
+                                        let capture1 = captures.get(1).unwrap();
+                                        
+                                        let slice = compilable.parts_slice(capture1.start(), capture1.end())?;
+                        
+                                        Ok(CompilableText::new(slice))
+                                    }))),
+                                    Arc::new(FixedReplacementRuleReplacerPart::new(String::from("</strong>"))),
+                                ]
+                            )
+                        ) as Box<dyn CompilationRule>
+                    ) as (Box<dyn Modifier>, Box<dyn CompilationRule>)
                 )
             ]),
-            CodexLoadingRulesMap::new(),
-            Some(StandardParagraphModifier::CommonParagraph.identifier())
+            ParagraphModifierOrderedMap::new(),
+            None
         );
 
         compilable_text.compile(
