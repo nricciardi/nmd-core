@@ -1,7 +1,7 @@
 use getset::{Getters, MutGetters, Setters};
 use rayon::{iter::{IntoParallelRefMutIterator, ParallelIterator}, slice::ParallelSliceMut};
 use serde::Serialize;
-use crate::{codex::Codex, compilable_text::CompilableText, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome, compiled_text_accessor::CompiledTextAccessor}, dossier::document::{chapter::{chapter_header::ChapterHeader, paragraph::Paragraph}, Chapter}, load_block::{LoadBlock, LoadBlockContent}, output_format::OutputFormat};
+use crate::{codex::Codex, compilable_text::CompilableText, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, dossier::document::{chapter::{chapter_header::ChapterHeader, paragraph::Paragraph}, Chapter}, load_block::{LoadBlock, LoadBlockContent}, output_format::OutputFormat};
 
 
 #[derive(Debug, Getters, MutGetters, Setters, Serialize)]
@@ -99,6 +99,9 @@ impl Compilable for ContentBundle {
         
         let parallelization = compilation_configuration.parallelization();
 
+        let mut preamble_outcomes: Vec<CompilationOutcome> = Vec::new();
+        let mut chapter_outcomes: Vec<CompilationOutcome> = Vec::new();
+
         if parallelization {
 
             let preamble_results: Vec<Result<CompilationOutcome, CompilationError>> = self.preamble.par_iter_mut()
@@ -109,7 +112,6 @@ impl Compilable for ContentBundle {
                 }).collect();
 
             let mut preamble_errors: Vec<CompilationError> = Vec::new();
-            let mut preamble_outcomes: Vec<CompilationOutcome> = Vec::new();
 
             preamble_results.into_iter().for_each(|result| {
 
@@ -131,7 +133,6 @@ impl Compilable for ContentBundle {
                 }).collect();
 
             let mut chapter_errors: Vec<CompilationError> = Vec::new();
-            let mut chapter_outcomes: Vec<CompilationOutcome> = Vec::new();
 
             chapter_results.into_iter().for_each(|result| {
 
@@ -147,22 +148,18 @@ impl Compilable for ContentBundle {
         
         } else {
 
-            let preamble_outcomes: Vec<CompilationOutcome> = Vec::new();
             for paragraph in self.preamble.iter_mut() {
 
                 preamble_outcomes.push(paragraph.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())?);
             }
             
-            let chapter_outcomes: Vec<CompilationOutcome> = Vec::new();
             for chapter in self.chapters.iter_mut() {
                 
                 chapter_outcomes.push(chapter.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())?);
             }
         }
 
-        // TODO
-
-        Ok(())
+        Ok(CompilationOutcome::from(codex.assembler().assemble_bundle(&preamble_outcomes, &chapter_outcomes)?))
     }
 }
 
@@ -172,7 +169,7 @@ impl Compilable for ContentBundle {
 mod test {
     use std::sync::Arc;
 
-    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_text_modifier::StandardTextModifier, Modifier, ModifiersBucket}, Codex, ParagraphModifierOrderedMap, TextModifierOrderedMap}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}, compilable::Compilable}, output_format::OutputFormat};
+    use crate::{assembler::html_assembler::HtmlAssembler, codex::{modifier::{base_modifier::BaseModifier, standard_text_modifier::StandardTextModifier, Modifier, ModifiersBucket}, Codex, ParagraphModifierOrderedMap, TextModifierOrderedMap}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}}, output_format::OutputFormat};
 
 
     #[test]
@@ -226,7 +223,8 @@ mod test {
                 )
             ]),
             ParagraphModifierOrderedMap::new(),
-            None
+            None,
+            Box::new(HtmlAssembler::new())
         );
 
         compilable_text.compile(

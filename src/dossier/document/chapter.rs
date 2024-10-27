@@ -9,7 +9,7 @@ use getset::{Getters, MutGetters, Setters};
 use paragraph::Paragraph;
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use serde::Serialize;
-use crate::{codex::Codex, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilable::Compilable}, output_format::OutputFormat};
+use crate::{codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, output_format::OutputFormat};
 
 
 #[derive(Debug, Getters, MutGetters, Setters, Serialize)]
@@ -36,47 +36,45 @@ impl Chapter {
 
 
 impl Compilable for Chapter {
-    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
+    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationOutcome, CompilationError> {
         
         log::debug!("compile chapter: {:?}", self.header);
 
-        self.header.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
+        let compiled_heading = self.header.heading_mut().compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
         
-        // TODO: use chapters style
+        let mut paragraph_outcomes: Vec<CompilationOutcome> = Vec::new();
 
         if compilation_configuration.parallelization() {
 
-            let maybe_failed = self.paragraphs_mut().par_iter_mut()
+            let paragraph_results: Vec<Result<CompilationOutcome, CompilationError>> = self.paragraphs.par_iter_mut()
                 .map(|paragraph| {
-                    
-                    paragraph.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())
 
-                })
-                .find_any(|result| result.is_err());
-    
-            if let Some(result) = maybe_failed {
-                return result
+                    paragraph.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())
+                
+                }).collect();
+
+            let mut paragraph_errors: Vec<CompilationError> = Vec::new();
+
+            paragraph_results.into_iter().for_each(|result| {
+
+                match result {
+                    Ok(outcome) => paragraph_outcomes.push(outcome),
+                    Err(err) => paragraph_errors.push(err),
+                }
+            });
+
+            if !paragraph_errors.is_empty() {
+                return Err(CompilationError::BucketOfErrors(paragraph_errors))
             }
 
         } else {
 
-            let compilation_configuration_overlay = compilation_configuration_overlay.clone();
-            
-            let maybe_failed = self.paragraphs_mut().iter_mut()
-                .map({
-                    let compilation_configuration_overlay = compilation_configuration_overlay.clone();
+            for paragraph in self.paragraphs.iter_mut() {
 
-                    move |paragraph| {
-                        paragraph.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())
-                    }
-                })
-                .find(|result| result.is_err());
-    
-            if let Some(result) = maybe_failed {
-                return result
+                paragraph_outcomes.push(paragraph.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())?);
             }
         }
 
-        Ok(())  
+        Ok(CompilationOutcome::from(codex.assembler().assemble_chapter(self.header().tags(), &compiled_heading, &paragraph_outcomes)?))  
     }
 }

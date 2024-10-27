@@ -1,5 +1,5 @@
 use thiserror::Error;
-use crate::{compilable_text::CompilableError, resource::{resource_reference::ResourceReferenceError, ResourceError}};
+use crate::{assembler::AssemblerError, compilable_text::CompilableError, resource::{resource_reference::ResourceReferenceError, ResourceError}};
 
 
 #[derive(Error, Debug)]
@@ -7,6 +7,9 @@ pub enum CompilationError {
 
     #[error("bucket of errors: '{0:#?}'")]
     BucketOfErrors(Vec<CompilationError>),
+
+    #[error(transparent)]
+    AssemblerError(#[from] AssemblerError),
 
     #[error("pattern provided '{0}' is invalid")]
     InvalidPattern(String),

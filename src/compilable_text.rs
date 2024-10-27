@@ -5,7 +5,7 @@ use compilable_text_part::{CompilableTextPart, CompilableTextPartType};
 use getset::{Getters, MutGetters, Setters};
 use serde::Serialize;
 use thiserror::Error;
-use crate::{codex::{modifier::{ModifierIdentifier, ModifiersBucket}, Codex}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_rule::CompilationRule, compilable::Compilable}, output_format::OutputFormat, resource::bucket::Bucket, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use crate::{codex::{modifier::{ModifierIdentifier, ModifiersBucket}, Codex}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome, compilation_rule::CompilationRule}, output_format::OutputFormat, resource::bucket::Bucket, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 #[derive(Debug, Clone)]
@@ -537,7 +537,7 @@ impl CompilableText {
 
 impl Compilable for CompilableText {
 
-    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
+    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationOutcome, CompilationError> {
         
         let excluded_modifiers = compilation_configuration_overlay.excluded_modifiers().clone();
 
@@ -546,7 +546,7 @@ impl Compilable for CompilableText {
         if excluded_modifiers == Bucket::All {
             log::debug!("compilation of content:\n{:?} is skipped because are excluded all modifiers", self);
             
-            return Ok(())
+            return Ok(CompilationOutcome::from(self.content()))
         }
 
         for (codex_identifier, (text_modifier, text_rule)) in codex.text_modifiers() {
@@ -560,7 +560,7 @@ impl Compilable for CompilableText {
             self.compile_with_compilation_rule((codex_identifier, text_rule), format, compilation_configuration, compilation_configuration_overlay.clone())?;
         }
 
-        Ok(())
+        Ok(CompilationOutcome::from(self.content()))
     }
 }
 

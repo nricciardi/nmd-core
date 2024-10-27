@@ -6,7 +6,7 @@ use build_html::{HtmlPage, HtmlContainer, Html, Container};
 use getset::{Getters, Setters};
 use html_assembler_configuration::HtmlAssemblerConfiguration;
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
-use crate::{artifact::Artifact, bibliography::Bibliography, compilation::compiled_text_accessor::CompiledTextAccessor, dossier::{document::{chapter::chapter_tag::ChapterTagKey, Document}, Dossier}, resource::{disk_resource::DiskResource, Resource}, table_of_contents::TableOfContents, theme::Theme};
+use crate::{artifact::Artifact, bibliography::Bibliography, compilation::{compilation_outcome::CompilationOutcome, compiled_text_accessor::CompiledTextAccessor}, dossier::{document::{chapter::chapter_tag::{ChapterTag, ChapterTagKey}, Document}, Dossier}, resource::{disk_resource::DiskResource, Resource}, table_of_contents::TableOfContents, theme::Theme};
 
 use super::{Assembler, AssemblerError};
 
@@ -17,6 +17,10 @@ pub struct HtmlAssembler {
 }
 
 impl HtmlAssembler {
+
+    pub fn new() -> Self {
+        Self {}
+    }
 
     fn apply_standard_remote_addons(mut page: HtmlPage, theme: &Theme) -> HtmlPage {
 
@@ -203,9 +207,7 @@ impl HtmlAssembler {
 
 impl Assembler for HtmlAssembler {
 
-    type Configuration = HtmlAssemblerConfiguration;
-
-    fn assemble_dossier(dossier: &Dossier, configuration: &Self::Configuration) -> Result<Artifact, AssemblerError> {
+    fn assemble_dossier(dossier: &Dossier) -> Result<Artifact, AssemblerError> {
                         
         if dossier.documents().is_empty() {
             return Err(AssemblerError::TooFewElements("there are no documents".to_string()))
@@ -270,75 +272,21 @@ impl Assembler for HtmlAssembler {
         Ok(artifact)
     }
     
-    fn assemble_document(document: &Document, _configuration: &Self::Configuration) -> Result<Artifact, AssemblerError> {
+    fn assemble_bundle(&self, compiled_preamble: &Vec<CompilationOutcome>, compiled_chapters: &Vec<CompilationOutcome>) -> Result<String, AssemblerError> {
+
         let mut result = String::new();
 
-        for paragraph in document.content().preamble() {
+        for paragraph in compiled_preamble {
 
-            if let Some(compiled_content) = paragraph.compiled_text().as_ref() {
-
-                result.push_str(&compiled_content.content());
-
-            } else {
-                return Err(AssemblerError::CompiledContentNotFound)
-            }
+            result.push_str(&paragraph.content());
         }
 
-        for chapter in document.content().chapters() {
+        for chapter in compiled_chapters {
 
-            let mut div_chapter = Container::new(build_html::ContainerType::Div);
-            let mut style = String::new();
-
-            for tag in chapter.header().tags() {
-
-                match tag.key() {
-                    ChapterTagKey::Id => {
-                        div_chapter = div_chapter.with_attributes(vec![("id", tag.value().as_ref().unwrap().as_str())])
-                    }
-                    ChapterTagKey::Style => {
-                        style.push_str(format!("{};", tag.value().as_ref().unwrap().as_str()).as_str())
-                    },
-                    ChapterTagKey::StyleClass => {
-                        div_chapter = div_chapter.with_attributes(vec![("class", tag.value().as_ref().unwrap().as_str())])
-                    },
-
-                    _ => {
-                        log::warn!("chapter tag key not supported yet")
-                    }
-                }
-            }
-
-            div_chapter = div_chapter.with_attributes(vec![("style", style.as_str())]);
-            let mut div_chapter_content = String::new();
-
-            if let Some(compiled_content) = chapter.header().heading().compiled_text().as_ref() {
-
-                div_chapter_content.push_str(&compiled_content.content());
-
-            } else {
-                return Err(AssemblerError::CompiledContentNotFound)
-            }
-
-            for paragraph in chapter.paragraphs() {
-                if let Some(compiled_content) = paragraph.compiled_text().as_ref() {
-
-                    let compiled_content = compiled_content.content();
-
-                    if compiled_content.is_empty() {
-                        continue;
-                    }
-
-                    div_chapter_content.push_str(&compiled_content);
-    
-                } else {
-                    return Err(AssemblerError::CompiledContentNotFound)
-                }
-            }
-
-            result.push_str(div_chapter.with_raw(div_chapter_content).to_html_string().as_str());
+            result.push_str(&chapter.content());
         }
 
-        Ok(Artifact::new(result))
+        Ok(result)
     }
 
     fn assemble_document_standalone(document: &Document, page_title: &String, toc: Option<&TableOfContents>, bibliography: Option<&Bibliography>, configuration: &Self::Configuration) -> Result<Artifact, AssemblerError> {
@@ -368,6 +316,48 @@ impl Assembler for HtmlAssembler {
         }
 
         Ok(Artifact::new(page.to_html_string()))
+    }
+    
+    fn assemble_chapter(&self, chapter_tags: &Vec<ChapterTag>, compiled_heading: &CompilationOutcome, compiled_paragraphs: &Vec<CompilationOutcome>) -> Result<String, AssemblerError> {
+
+        let mut div_chapter = Container::new(build_html::ContainerType::Div);
+        let mut style = String::new();
+
+        for tag in chapter_tags {
+
+            match tag.key() {
+                ChapterTagKey::Id => {
+                    div_chapter = div_chapter.with_attributes(vec![("id", tag.value().as_ref().unwrap().as_str())])
+                }
+                ChapterTagKey::Style => {
+                    style.push_str(format!("{};", tag.value().as_ref().unwrap().as_str()).as_str())
+                },
+                ChapterTagKey::StyleClass => {
+                    div_chapter = div_chapter.with_attributes(vec![("class", tag.value().as_ref().unwrap().as_str())])
+                },
+
+                _ => {
+                    log::warn!("chapter tag key not supported yet")
+                }
+            }
+        }
+
+        div_chapter = div_chapter.with_attributes(vec![("style", style.as_str())]);
+        let mut div_chapter_content = String::new();
+
+        div_chapter_content.push_str(&compiled_heading.content());
+
+        for paragraph in compiled_paragraphs {
+            let compiled_content = paragraph.content();
+
+            if compiled_content.is_empty() {
+                continue;
+            }
+
+            div_chapter_content.push_str(&compiled_content);
+        }
+
+        Ok(div_chapter.with_raw(div_chapter_content).to_html_string())
     }
 }
 
