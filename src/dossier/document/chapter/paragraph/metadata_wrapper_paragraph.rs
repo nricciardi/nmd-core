@@ -1,5 +1,5 @@
 use getset::{Getters, Setters};
-use crate::{codex::Codex, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compiled_text_accessor::CompiledTextAccessor, compilable::Compilable}, output_format::OutputFormat, resource::resource_reference::ResourceReference, utility::{nmd_unique_identifier::NmdUniqueIdentifier, text_utility}};
+use crate::{codex::Codex, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, output_format::OutputFormat, resource::resource_reference::ResourceReference, utility::{nmd_unique_identifier::NmdUniqueIdentifier, text_utility}};
 use super::Paragraph;
 
 
@@ -24,8 +24,6 @@ pub struct MetadataWrapperParagraph {
 
     #[getset(get = "pub", set = "pub")]
     classes: Option<String>,
-
-    compiled_content: Option<CompilableText>,
 }
 
 impl MetadataWrapperParagraph {
@@ -38,11 +36,10 @@ impl MetadataWrapperParagraph {
             styles,
             classes,
             nuid: None,
-            compiled_content: None
         }
     }
 
-    fn html_standard_compile(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
+    fn html_standard_compile(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationOutcome, CompilationError> {
         
         let mut compilation_result = CompilableText::new_empty();
 
@@ -79,7 +76,7 @@ impl MetadataWrapperParagraph {
 }
 
 impl Compilable for MetadataWrapperParagraph {
-    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
+    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationOutcome, CompilationError> {
         
         match format {
             OutputFormat::Html => self.html_standard_compile(codex, compilation_configuration, compilation_configuration_overlay),
@@ -88,11 +85,6 @@ impl Compilable for MetadataWrapperParagraph {
 }
 
 
-impl CompiledTextAccessor for MetadataWrapperParagraph {
-    fn compiled_text(&self) -> Option<&CompilableText> {
-        self.compiled_content.as_ref()
-    }
-}
 
 impl Paragraph for MetadataWrapperParagraph {
     fn raw_content(&self) -> &String {
@@ -115,8 +107,9 @@ impl Paragraph for MetadataWrapperParagraph {
 
 #[cfg(test)]
 mod test {
+    use crate::{codex::Codex, dossier::document::chapter::paragraph::paragraph_loading_rule::block_quote_paragraph_loading_rule::BlockQuoteParagraphLoadingRule};
 
-    use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, load::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_loading_rule::{block_quote_paragraph_loading_rule::BlockQuoteParagraphLoadingRule, ParagraphLoadingRule}}, output_format::OutputFormat};
+
 
     #[test]
     fn compile() {

@@ -1,6 +1,6 @@
 use build_html::{Container, Html, HtmlContainer};
 use getset::{Getters, Setters};
-use crate::{codex::Codex, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compiled_text_accessor::CompiledTextAccessor, compilable::Compilable, Compiler}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, resource::{image_resource::ImageResource, source::Source, ResourceError}, utility::{image_utility, nmd_unique_identifier::NmdUniqueIdentifier}};
+use crate::{codex::Codex, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilable::Compilable}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, resource::{image_resource::ImageResource, source::Source, ResourceError}, utility::{image_utility, nmd_unique_identifier::NmdUniqueIdentifier}};
 
 
 const SINGLE_IMAGE_CLASSES: [&str; 1] = ["image"];

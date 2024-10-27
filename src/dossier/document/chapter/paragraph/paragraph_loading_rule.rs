@@ -7,13 +7,12 @@ pub mod focus_block_paragraph_loading_rule;
 pub mod metadata_wrapper_paragraph_loading_rule;
 
 
-use crate::{codex::Codex, dossier::document::chapter::paragraph::Paragraph};
-use super::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError};
+use crate::{codex::Codex, dossier::document::chapter::paragraph::Paragraph, load::{LoadConfiguration, LoadConfigurationOverLay, LoadError}};
 use std::fmt::Debug;
 
 
 pub trait ParagraphLoadingRule: Debug + Send + Sync {
 
-    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Box<dyn Paragraph>, LoadError>;
+    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoadConfiguration, configuration_overlay: LoadConfigurationOverLay) -> Result<Box<dyn Paragraph>, LoadError>;
 
 }

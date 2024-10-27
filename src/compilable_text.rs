@@ -308,7 +308,7 @@ impl CompilableText {
 
     /// Compile parts and return the new compiled parts or `None` if there are not matches using
     /// provided rule
-    pub fn compile_with_compilation_rule(&mut self, (rule_identifier, rule): (&ModifierIdentifier, &Box<dyn CompilationRule>), format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
+    fn compile_with_compilation_rule(&mut self, (rule_identifier, rule): (&ModifierIdentifier, &Box<dyn CompilationRule>), format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
     
         let parts = self.parts();
 

@@ -3,7 +3,7 @@ use getset::{Getters, Setters};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use regex::Regex;
 use super::ParagraphLoadingRule;
-use crate::{codex::Codex, dossier::document::chapter::paragraph::{metadata_wrapper_paragraph::MetadataWrapperParagraph, Paragraph}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError, Loader}};
+use crate::{codex::Codex, dossier::document::chapter::paragraph::{metadata_wrapper_paragraph::MetadataWrapperParagraph, Paragraph}};
 
 
 pub type StyleElaborationFn = Arc<dyn Sync + Send + Fn(&str, bool) -> (Option<String>, Option<String>)>;

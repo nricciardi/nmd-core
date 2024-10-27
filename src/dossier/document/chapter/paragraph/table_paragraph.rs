@@ -6,11 +6,11 @@ use build_html::TableCell as HtmlTableCell;
 use build_html::TableRow as HtmlTableRow;
 use getset::{Getters, Setters};
 use crate::compilable_text::compilable_text_part::CompilableTextPart;
-use crate::compilable_text::compilable_text_part::CompilableTextPartType;
 use crate::compilable_text::CompilableText;
+use crate::compilation::compilation_outcome::CompilationOutcome;
 use crate::content_bundle::ContentBundle;
 use crate::resource::table::TableCellAlignment;
-use crate::{codex::Codex, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compiled_text_accessor::CompiledTextAccessor, compilable::Compilable}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, resource::{resource_reference::ResourceReference, table::{Table, TableCell}}, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use crate::{codex::Codex, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilable::Compilable}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, resource::{resource_reference::ResourceReference, table::{Table, TableCell}}, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 pub type TableParagraphContent = Table<ContentBundle, ContentBundle, ContentBundle>;
@@ -39,9 +39,6 @@ pub struct TableParagraph {
 
     #[getset(get = "pub", set = "pub")]
     raw_caption: Option<String>,
-
-    compiled_content: Option<CompilableText>,
-
 }
 
 impl TableParagraph {
@@ -55,7 +52,6 @@ impl TableParagraph {
             styles,
             classes,
             nuid: None,
-            compiled_content: None
         }
     }
 
@@ -96,7 +92,7 @@ impl TableParagraph {
         Ok(())
     }
 
-    fn html_standard_compile(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
+    fn html_standard_compile(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationOutcome, CompilationError> {
         
         let mut classes = String::from("table");
 
@@ -130,18 +126,12 @@ impl TableParagraph {
                     TableCell::None => result.push(TableCell::None),
                     TableCell::ContentCell { content, alignment } => {
 
-                        let mut compiled_content = String::new();
-
-                        for paragraph in paragraphs {
-                            paragraph.compile(
-                                &OutputFormat::Html,
-                                codex,
-                                compilation_configuration,
-                                compilation_configuration_overlay.clone()
-                            )?;
-
-                            compiled_content.push_str(&paragraph.compiled_text().unwrap().content());
-                        }
+                        let compiled_content = String::from(content.compile(
+                            &OutputFormat::Html,
+                            codex,
+                            compilation_configuration,
+                            compilation_configuration_overlay.clone()
+                        )?.content());
 
                         let cell = TableCell::ContentCell { content: compiled_content, alignment: alignment.clone() };
 
@@ -213,8 +203,7 @@ impl TableParagraph {
         // ==== CAPTION ====
         if let Some(ref c) = self.raw_caption {
 
-            let caption = Compiler::compile_str(
-                c,
+            let caption = CompilableText::from(c as &str).compile(
                 &OutputFormat::Html,
                 codex,
                 compilation_configuration,
@@ -230,19 +219,16 @@ impl TableParagraph {
             html_table.add_caption(html_caption);
         }
 
-        self.compiled_content = Some(CompilableText::new(vec![
-            CompilableTextPart::new(
-                html_table.to_html_string(),
-                CompilableTextPartType::Fixed
-            )
-        ]));
+        let compilation_result = CompilableText::from(
+            CompilableTextPart::new_fixed(html_table.to_html_string())
+        );
 
         Ok(())
     }
 }
 
 impl Compilable for TableParagraph {
-    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
+    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationOutcome, CompilationError> {
         
         match format {
             OutputFormat::Html => self.html_standard_compile(codex, compilation_configuration, compilation_configuration_overlay.clone()),
@@ -250,12 +236,6 @@ impl Compilable for TableParagraph {
     }
 }
 
-
-impl CompiledTextAccessor for TableParagraph {
-    fn compiled_text(&self) -> Option<&CompilableText> {
-        self.compiled_content.as_ref()
-    }
-}
 
 impl Paragraph for TableParagraph {
     fn raw_content(&self) -> &String {
@@ -280,13 +260,13 @@ impl Paragraph for TableParagraph {
 #[cfg(test)]
 mod test {
 
-    use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, dossier::document::chapter::paragraph::Paragraph, load::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_loading_rule::{table_paragraph_loading_rule::TableParagraphLoadingRule, ParagraphLoadingRule}}, output_format::OutputFormat};
+    use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, dossier::document::chapter::paragraph::{paragraph_loading_rule::table_paragraph_loading_rule::TableParagraphLoadingRule, Paragraph}, load::{LoadConfiguration, LoadConfigurationOverLay}, output_format::OutputFormat};
 
     fn load_table(nmd_text: &str, codex: &Codex) -> Box<dyn Paragraph> {
 
         let rule = TableParagraphLoadingRule::new();
 
-        rule.load(nmd_text, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap()
+        rule.load(nmd_text, &codex, &LoadConfiguration::default(), LoadConfigurationOverLay::default()).unwrap()
 
     }
 

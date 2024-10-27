@@ -13,7 +13,8 @@ use modifier::base_modifier::BaseModifier;
 use modifier::{Modifier, ModifierIdentifier};
 use self::modifier::standard_paragraph_modifier::StandardParagraphModifier;
 use self::modifier::standard_text_modifier::StandardTextModifier;
-use crate::assembler::{Assembler, ChapterAssembler};
+use crate::assembler::html_assembler::HtmlAssembler;
+use crate::assembler::Assembler;
 use crate::compilable_text::compilable_text_part::CompilableTextPart;
 use crate::compilable_text::CompilableText;
 use crate::compilation::compilation_rule::replacement_rule::replacement_rule_part::closure_replacement_rule_part::ClosureReplacementRuleReplacerPart;
@@ -903,7 +904,8 @@ impl Codex {
                         ))
                     )
                 ),
-            )
+            ),
+            Box::new(HtmlAssembler::new())
         )
     }
 }
@@ -988,7 +990,8 @@ mod test {
                     ) as (Box<dyn Modifier>, Box<dyn ParagraphLoadingRule>)
                 ),
             ]),
-            None
+            None,
+            Box::new(HtmlAssembler::new())
         );
 
 

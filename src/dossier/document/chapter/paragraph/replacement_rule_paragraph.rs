@@ -1,5 +1,5 @@
 use getset::{Getters, Setters};
-use crate::{codex::Codex, compilable_text::CompilableText, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_rule::{replacement_rule::ReplacementRule, CompilationRule}, compiled_text_accessor::CompiledTextAccessor, compilable::Compilable, Compiler}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use crate::{codex::Codex, compilable_text::CompilableText, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome, compilation_rule::{replacement_rule::ReplacementRule, CompilationRule}}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 
@@ -14,9 +14,6 @@ pub struct ReplacementRuleParagraph {
     #[getset(get = "pub", set = "pub")]
     replacement_rule: ReplacementRule,
 
-    #[getset(set = "pub")]
-    compiled_content: Option<CompilableText>,
-
     compilable_text: CompilableText,
 
 }
@@ -27,7 +24,6 @@ impl ReplacementRuleParagraph {
         Self {
             raw_content,
             replacement_rule,
-            compiled_content: None,
             compilable_text
         }
     }
@@ -35,22 +31,11 @@ impl ReplacementRuleParagraph {
 }
 
 impl Compilable for ReplacementRuleParagraph {
-    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
+    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationOutcome, CompilationError> {
         
         let mut outcome = self.replacement_rule.compile(&self.compilable_text, format, compilation_configuration, compilation_configuration_overlay.clone())?;
         
-        Compiler::compile_compilable_text(&mut outcome, format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
-
-        self.compiled_content = Some(outcome);
-
-        Ok(())
-    }
-}
-
-
-impl CompiledTextAccessor for ReplacementRuleParagraph {
-    fn compiled_text(&self) -> Option<&CompilableText> {
-        self.compiled_content.as_ref()
+        outcome.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())
     }
 }
 
@@ -77,7 +62,7 @@ impl Paragraph for ReplacementRuleParagraph {
 mod test {
     use std::sync::Arc;
 
-    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, standard_text_modifier::StandardTextModifier, Modifier, ModifiersBucket}, Codex, CodexCompilationRulesMap, CodexLoadingRulesMap, CodexModifiersOrderedMap}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart, single_capture_group_replacement_rule_part::SingleCaptureGroupReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}, compiled_text_accessor::CompiledTextAccessor, compilable::Compilable}, dossier::document::chapter::paragraph::Paragraph, load::{load_block::LoadBlockContent, loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, Loader}, output_format::OutputFormat};
+    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, standard_text_modifier::StandardTextModifier, Modifier, ModifiersBucket}, Codex}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart, single_capture_group_replacement_rule_part::SingleCaptureGroupReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}, compilable::Compilable}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat};
 
     use super::ReplacementRuleParagraph;
 

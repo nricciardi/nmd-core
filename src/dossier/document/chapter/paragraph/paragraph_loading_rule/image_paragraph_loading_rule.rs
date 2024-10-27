@@ -2,7 +2,7 @@ use std::str::FromStr;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use super::ParagraphLoadingRule;
-use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, dossier::document::chapter::paragraph::{image_paragraph::{ImageParagraph, ImageParagraphContent, MultiImage}, Paragraph}, loader::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, LoadError}, resource::{image_resource::ImageResource, resource_reference::ResourceReference, source::Source, ResourceError}};
+use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, dossier::document::chapter::paragraph::{image_paragraph::{ImageParagraph, ImageParagraphContent, MultiImage}, Paragraph}, resource::{image_resource::ImageResource, resource_reference::ResourceReference, source::Source, ResourceError}};
 
 
 static FIND_SINGLE_IMAGE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&StandardParagraphModifier::Image.modifier_pattern()).unwrap());
