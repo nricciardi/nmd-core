@@ -3,8 +3,10 @@
 pub mod html_assembler;
 
 
+use std::fmt::Debug;
+
 use thiserror::Error;
-use crate::{compilation::{compilation_error::CompilationError, compiled_text_accessor::CompiledTextAccessor}, dossier::document::Document, resource::ResourceError};
+use crate::{compilation::{compilation_error::CompilationError, compiled_text_accessor::CompiledTextAccessor}, dossier::document::{Chapter, Document}, resource::ResourceError};
 use super::{artifact::{Artifact, ArtifactError}, bibliography::Bibliography, dossier::Dossier, table_of_contents::TableOfContents};
 
 
@@ -25,6 +27,12 @@ pub enum AssemblerError {
     #[error(transparent)]
     ResourceError(#[from] ResourceError),
 }
+
+pub trait ChapterAssembler: Debug {
+
+    fn assemble(&self, chapter: &Chapter) -> Result<Artifact, AssemblerError>;
+}
+
 
 pub trait Assembler {
 

@@ -1,7 +1,7 @@
 use getset::{Getters, MutGetters, Setters};
 use rayon::{iter::{IntoParallelRefMutIterator, ParallelIterator}, slice::ParallelSliceMut};
 use serde::Serialize;
-use crate::{codex::Codex, compilable_text::CompilableText, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compiled_text_accessor::CompiledTextAccessor, compilable::Compilable}, dossier::document::{chapter::{chapter_header::ChapterHeader, paragraph::Paragraph}, Chapter}, load_block::{LoadBlock, LoadBlockContent}, output_format::OutputFormat};
+use crate::{codex::Codex, compilable_text::CompilableText, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome, compiled_text_accessor::CompiledTextAccessor}, dossier::document::{chapter::{chapter_header::ChapterHeader, paragraph::Paragraph}, Chapter}, load_block::{LoadBlock, LoadBlockContent}, output_format::OutputFormat};
 
 
 #[derive(Debug, Getters, MutGetters, Setters, Serialize)]
@@ -91,7 +91,7 @@ impl From<Vec<LoadBlock>> for ContentBundle {
 
 
 impl Compilable for ContentBundle {
-    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
+    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationOutcome, CompilationError> {
         
         if compilation_configuration_overlay.document_name().is_none() {
             return Err(CompilationError::DocumentNameNotFound)
@@ -101,63 +101,66 @@ impl Compilable for ContentBundle {
 
         if parallelization {
 
-            let maybe_one_failed: Option<Result<(), CompilationError>> = self.preamble.par_iter_mut()
+            let preamble_results: Vec<Result<CompilationOutcome, CompilationError>> = self.preamble.par_iter_mut()
                 .map(|paragraph| {
 
                     paragraph.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())
                 
-                }).find_any(|result| result.is_err());
+                }).collect();
 
-            if let Some(result) = maybe_one_failed {
-                return result;
+            let mut preamble_errors: Vec<CompilationError> = Vec::new();
+            let mut preamble_outcomes: Vec<CompilationOutcome> = Vec::new();
+
+            preamble_results.into_iter().for_each(|result| {
+
+                match result {
+                    Ok(outcome) => preamble_outcomes.push(outcome),
+                    Err(err) => preamble_errors.push(err),
+                }
+            });
+
+            if !preamble_errors.is_empty() {
+                return Err(CompilationError::BucketOfErrors(preamble_errors))
             }
 
-            let maybe_one_failed: Option<Result<(), CompilationError>> = self.chapters.par_iter_mut()
+            let chapter_results: Vec<Result<CompilationOutcome, CompilationError>> = self.chapters.par_iter_mut()
                 .map(|chapter| {
 
                     chapter.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())
                 
-                }).find_any(|result| result.is_err());
+                }).collect();
 
-            if let Some(result) = maybe_one_failed {
-                return result;
+            let mut chapter_errors: Vec<CompilationError> = Vec::new();
+            let mut chapter_outcomes: Vec<CompilationOutcome> = Vec::new();
+
+            chapter_results.into_iter().for_each(|result| {
+
+                match result {
+                    Ok(outcome) => chapter_outcomes.push(outcome),
+                    Err(err) => chapter_errors.push(err),
+                }
+            });
+
+            if !chapter_errors.is_empty() {
+                return Err(CompilationError::BucketOfErrors(chapter_errors))
             }
         
         } else {
 
-            let maybe_one_failed: Option<Result<(), CompilationError>> = self.preamble.iter_mut()
-                .map(|paragraph| {
+            let preamble_outcomes: Vec<CompilationOutcome> = Vec::new();
+            for paragraph in self.preamble.iter_mut() {
 
-                    paragraph.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())
-
-                }).find(|result| result.is_err());
-
-            if let Some(result) = maybe_one_failed {
-                return result;
+                preamble_outcomes.push(paragraph.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())?);
             }
             
-            let maybe_one_failed: Option<Result<(), CompilationError>> = self.chapters.iter_mut()
-                .map(|chapter| {
-
-                    chapter.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())
+            let chapter_outcomes: Vec<CompilationOutcome> = Vec::new();
+            for chapter in self.chapters.iter_mut() {
                 
-                }).find(|result| result.is_err());
-
-            if let Some(result) = maybe_one_failed {
-                return result;
+                chapter_outcomes.push(chapter.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())?);
             }
         }
 
-        let mut compiled_content = CompilableText::new_empty();
-
-
-        self.preamble.iter().for_each(|paragraph| {
-            compiled_content.parts_mut().append(
-                &mut paragraph.compiled_text().unwrap().parts().clone()
-            )
-        });
-
-        compiled_content.parts_mut()
+        // TODO
 
         Ok(())
     }

@@ -13,6 +13,7 @@ use modifier::base_modifier::BaseModifier;
 use modifier::{Modifier, ModifierIdentifier};
 use self::modifier::standard_paragraph_modifier::StandardParagraphModifier;
 use self::modifier::standard_text_modifier::StandardTextModifier;
+use crate::assembler::ChapterAssembler;
 use crate::compilable_text::compilable_text_part::CompilableTextPart;
 use crate::compilable_text::CompilableText;
 use crate::compilation::compilation_rule::replacement_rule::replacement_rule_part::closure_replacement_rule_part::ClosureReplacementRuleReplacerPart;
@@ -56,6 +57,8 @@ pub struct Codex {
     #[getset(get = "pub", set = "pub")]
     fallback_paragraph_modifier: Option<FallbackParagraphModifier>,
     
+    #[getset(get = "pub", set = "pub")]
+    chapter_assembler: Box<dyn ChapterAssembler>
 }
 
 impl Codex {
@@ -68,12 +71,14 @@ impl Codex {
 
     /// Create a new `Codex`
     pub fn new(text_modifiers: TextModifierOrderedMap, paragraph_modifiers: ParagraphModifierOrderedMap,
-                fallback_paragraph_modifier: Option<FallbackParagraphModifier>,) -> Self {
+                fallback_paragraph_modifier: Option<FallbackParagraphModifier>,
+                chapter_assembler: Box<dyn ChapterAssembler>,) -> Self {
 
         Self {
             text_modifiers,
             paragraph_modifiers,
-            fallback_paragraph_modifier
+            fallback_paragraph_modifier,
+            chapter_assembler
         }
     }
 
