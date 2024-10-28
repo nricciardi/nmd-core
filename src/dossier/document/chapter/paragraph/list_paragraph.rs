@@ -1,7 +1,7 @@
 use getset::{Getters, Setters};
 use once_cell::sync::Lazy;
 use regex::Regex;
-use crate::{codex::{modifier::{standard_paragraph_modifier::StandardParagraphModifier, ModifiersBucket}, Codex}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, list_bullet_configuration_record::{self, ListBulletConfigurationRecord}, CompilationConfiguration}, compilation_error::CompilationError, compilation_rule::constants::{ESCAPE_HTML, SPACE_TAB_EQUIVALENCE}, compilable::Compilable}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, utility::{nmd_unique_identifier::NmdUniqueIdentifier, text_utility}};
+use crate::{codex::{modifier::{standard_paragraph_modifier::StandardParagraphModifier, ModifiersBucket}, Codex}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, list_bullet_configuration_record::{self, ListBulletConfigurationRecord}, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome, compilation_rule::constants::{ESCAPE_HTML, SPACE_TAB_EQUIVALENCE}}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, utility::{nmd_unique_identifier::NmdUniqueIdentifier, text_utility}};
 
 
 static SEARCH_LIST_ITEM_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&StandardParagraphModifier::ListItem.modifier_pattern()).unwrap());
@@ -60,10 +60,9 @@ impl ListParagraph {
         String::from(bullet)
     }
 
-    fn html_standard_compile(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
-        let mut compilation_result = CompilableText::new_empty();
-
-        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<ul class="list"{}>"#, text_utility::html_nuid_tag_or_nothing(self.nuid.as_ref()))));
+    fn html_standard_compile(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationOutcome, CompilationError> {
+        
+        let mut outcome = format!(r#"<ul class="list"{}>"#, text_utility::html_nuid_tag_or_nothing(self.nuid.as_ref()));
 
         let mut items_found = 0;
 
@@ -92,20 +91,18 @@ impl ListParagraph {
 
                         let bullet = Self::bullet_transform(bullet, indentation_level, compilation_configuration.list_bullets_configuration());
 
-                        let content = text_utility::replace(&content, &ESCAPE_HTML);
-
-                        compilation_result.parts_mut().push(
-                            CompilableTextPart::new_fixed(
-                                format!(
-                                    r#"<li class="list-item">{}<span class="list-item-bullet">{}</span><span class="list-item-content">"#,
-                                    LIST_ITEM_INDENTATION.repeat(indentation_level),
-                                    bullet
-                                )
-                            )
-                        );
+                        outcome.push_str(&format!(
+                            r#"<li class="list-item">{}<span class="list-item-bullet">{}</span><span class="list-item-content">"#,
+                            LIST_ITEM_INDENTATION.repeat(indentation_level),
+                            bullet
+                        ));
                         
-                        compilation_result.parts_mut().push(CompilableTextPart::new_compilable(content, ModifiersBucket::None));
-                        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(r#"</span></li>"#.to_string()));
+                        let content = text_utility::replace(&content, &ESCAPE_HTML);
+                        let mut compilable_text = CompilableText::from(CompilableTextPart::new_compilable(content, ModifiersBucket::None));
+
+                        outcome.push_str(&compilable_text.compile(&OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone())?.content());
+                        
+                        outcome.push_str(r#"</span></li>"#);
 
                     }
                 }
@@ -124,18 +121,14 @@ impl ListParagraph {
             }
         }
 
-        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(r#"</ul>"#.to_string()));
-
-        Compiler::compile_compilable_text(&mut compilation_result, &OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
+        outcome.push_str(r#"</ul>"#);
         
-        self.compiled_content = Some(compilation_result);
-        
-        Ok(())
+        Ok(CompilationOutcome::from(outcome))
     }
 }
 
 impl Compilable for ListParagraph {
-    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
+    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationOutcome, CompilationError> {
         
         match format {
             OutputFormat::Html => self.html_standard_compile(codex, compilation_configuration, compilation_configuration_overlay.clone()),
@@ -164,7 +157,7 @@ impl Paragraph for ListParagraph {
 #[cfg(test)]
 mod test {
 
-    use crate::load::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_loading_rule::{list_paragraph_loading_rule::ListParagraphLoadingRule, ParagraphLoadingRule}};
+    use crate::{dossier::document::chapter::paragraph::paragraph_loading_rule::{list_paragraph_loading_rule::ListParagraphLoadingRule, ParagraphLoadingRule}, load::{LoadConfiguration, LoadConfigurationOverLay}};
 
     use super::*;
 
@@ -187,11 +180,11 @@ mod test {
         
         let rule = ListParagraphLoadingRule::new();
 
-        let mut paragraph = rule.load(nmd_text, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
+        let mut paragraph = rule.load(nmd_text, &codex, &LoadConfiguration::default(), LoadConfigurationOverLay::default()).unwrap();
         
-        paragraph.compile(&OutputFormat::Html, &codex, &CompilationConfiguration::default(), CompilationConfigurationOverLay::default()).unwrap();
+        let outcome = paragraph.compile(&OutputFormat::Html, &codex, &CompilationConfiguration::default(), CompilationConfigurationOverLay::default()).unwrap();
 
-        let compiled_content = paragraph.compiled_text().as_ref().unwrap().content();
+        let compiled_content = outcome.content();
         let li_n = Regex::new("<li").unwrap().find_iter(&compiled_content).count();
 
         assert_eq!(li_n, 9);

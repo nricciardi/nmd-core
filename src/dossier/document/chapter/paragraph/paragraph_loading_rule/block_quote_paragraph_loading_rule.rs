@@ -1,8 +1,7 @@
 use once_cell::sync::Lazy;
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use regex::Regex;
 use super::ParagraphLoadingRule;
-use crate::{codex::{modifier::constants::NEW_LINE_PATTERN, Codex}, dossier::document::chapter::paragraph::{block_quote_paragraph::ExtendedBlockQuoteParagraph, Paragraph}, load::{LoadConfiguration, LoadConfigurationOverLay, LoadError}, load_block::LoadBlock};
+use crate::{codex::Codex, content_bundle::ContentBundle, dossier::document::chapter::paragraph::{block_quote_paragraph::ExtendedBlockQuoteParagraph, Paragraph}, load::{LoadConfiguration, LoadConfigurationOverLay, LoadError}, load_block::LoadBlock};
 
 
 static CHECK_EXTENDED_BLOCK_QUOTE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?m:> \[!(\w*)\])").unwrap());
@@ -52,23 +51,21 @@ impl BlockQuoteParagraphLoadingRule {
                 }
             }
 
-            let mut c = String::from(line[1..].trim_start());
+            let mut c = line[1..].trim_start();
 
             if c.is_empty() {
-                c = format!("{}{}", NEW_LINE_PATTERN, NEW_LINE_PATTERN);
+                c = "\n";
             }
 
-            block_quote_body_content.push_str(c.as_str());
+            block_quote_body_content.push_str(c);
         }
         
-        let paragraph_blocks = LoadBlock::load_from_str(&block_quote_body_content, codex, configuration, configuration_overlay.clone())?;
+        let blocks = LoadBlock::load_from_str(&block_quote_body_content, codex, configuration, configuration_overlay.clone())?;
 
-        let paragraphs: Vec<Box<dyn Paragraph>> = paragraph_blocks.into_par_iter().map(|block| TryInto::<Box<dyn Paragraph>>::try_into(block).unwrap()).collect();
-        
         Ok(ExtendedBlockQuoteParagraph::new(
             raw_content.to_string(),
             extended_block_quote_type,
-            paragraphs,
+            ContentBundle::from(blocks),
         ))
     }
 }
@@ -105,7 +102,7 @@ mod test {
     
         assert_eq!(paragraph.extended_quote_type(), DEFAULT_TYPE);
 
-        assert_eq!(paragraph.paragraphs().len(), 2);
+        assert_eq!(paragraph.content().preamble().len(), 2);
     }
 
     #[test]
@@ -126,7 +123,7 @@ mod test {
     
         assert_eq!(paragraph.extended_quote_type(), "important");
 
-        assert_eq!(paragraph.paragraphs().len(), 2);
+        assert_eq!(paragraph.content().preamble().len(), 2);
     }
 
 }

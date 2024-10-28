@@ -1,8 +1,7 @@
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use regex::Regex;
 use getset::{Getters, Setters};
 use super::ParagraphLoadingRule;
-use crate::{codex::Codex, dossier::document::chapter::paragraph::{focus_block_paragraph::FocusBlockParagraph, Paragraph}, load::{LoadConfiguration, LoadConfigurationOverLay, LoadError}, load_block::LoadBlock};
+use crate::{codex::Codex, content_bundle::ContentBundle, dossier::document::chapter::paragraph::{focus_block_paragraph::FocusBlockParagraph, Paragraph}, load::{LoadConfiguration, LoadConfigurationOverLay, LoadError}, load_block::LoadBlock};
 
 
 const DEFAULT_TYPE: &str = "quote";
@@ -40,14 +39,12 @@ impl FocusBlockParagraphLoadingRule {
 
             if let Some(body) = captures.get(2) {
 
-                let paragraph_blocks = LoadBlock::load_from_str(body.as_str(), codex, configuration, configuration_overlay.clone())?;
-        
-                let paragraphs: Vec<Box<dyn Paragraph>> = paragraph_blocks.into_par_iter().map(|block| TryInto::<Box<dyn Paragraph>>::try_into(block).unwrap()).collect();
-                
+                let blocks = LoadBlock::load_from_str(body.as_str(), codex, configuration, configuration_overlay.clone())?;
+
                 Ok(FocusBlockParagraph::new(
                     raw_content.to_string(),
                     focus_block_type,
-                    paragraphs,
+                    ContentBundle::from(blocks),
                 ))
 
             } else {
@@ -95,7 +92,7 @@ mod test {
     
         assert_eq!(paragraph.extended_quote_type(), "warning");
 
-        assert_eq!(paragraph.paragraphs().len(), 2);
+        assert_eq!(paragraph.content().preamble().len(), 2);
     }
 
 }

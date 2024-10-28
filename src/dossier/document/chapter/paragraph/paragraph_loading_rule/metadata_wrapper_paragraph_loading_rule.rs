@@ -1,9 +1,8 @@
 use std::sync::Arc;
 use getset::{Getters, Setters};
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use regex::Regex;
 use super::ParagraphLoadingRule;
-use crate::{codex::Codex, dossier::document::chapter::paragraph::{metadata_wrapper_paragraph::MetadataWrapperParagraph, Paragraph}, load::{LoadConfiguration, LoadConfigurationOverLay, LoadError}, load_block::LoadBlock};
+use crate::{codex::Codex, content_bundle::ContentBundle, dossier::document::chapter::paragraph::{metadata_wrapper_paragraph::MetadataWrapperParagraph, Paragraph}, load::{LoadConfiguration, LoadConfigurationOverLay, LoadError}, load_block::LoadBlock};
 
 
 pub type StyleElaborationFn = Arc<dyn Sync + Send + Fn(&str, bool) -> (Option<String>, Option<String>)>;
@@ -77,14 +76,11 @@ impl MetadataWrapperParagraphLoadingRule {
 
             if let Some(body) = captures.get(self.content_group) {
 
-                let paragraph_blocks = LoadBlock::load_from_str(body.as_str(), codex, configuration, configuration_overlay.clone())?;
+                let blocks = LoadBlock::load_from_str(body.as_str(), codex, configuration, configuration_overlay.clone())?;
         
-                let paragraphs: Vec<Box<dyn Paragraph>> = paragraph_blocks.into_par_iter().map(|block| TryInto::<Box<dyn Paragraph>>::try_into(block).unwrap()).collect();
-
-
                 Ok(MetadataWrapperParagraph::new(
                     raw_content.to_string(),
-                    paragraphs,
+                    ContentBundle::from(blocks),
                     raw_id,
                     styles,
                     classes,
@@ -154,7 +150,7 @@ mod test {
 
         assert_eq!(paragraph.classes().as_ref().unwrap(), "red");
 
-        assert_eq!(paragraph.paragraphs().len(), 2);
+        assert_eq!(paragraph.content().preamble().len(), 2);
     }
 
 }

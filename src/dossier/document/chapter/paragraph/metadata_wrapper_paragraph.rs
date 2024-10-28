@@ -1,5 +1,5 @@
 use getset::{Getters, Setters};
-use crate::{codex::Codex, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, output_format::OutputFormat, resource::resource_reference::ResourceReference, utility::{nmd_unique_identifier::NmdUniqueIdentifier, text_utility}};
+use crate::{codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, content_bundle::ContentBundle, output_format::OutputFormat, resource::resource_reference::ResourceReference, utility::{nmd_unique_identifier::NmdUniqueIdentifier, text_utility}};
 use super::Paragraph;
 
 
@@ -11,7 +11,7 @@ pub struct MetadataWrapperParagraph {
     raw_content: String,
 
     #[getset(get = "pub", set = "pub")]
-    paragraphs: Vec<Box<dyn Paragraph>>,
+    content: ContentBundle,
 
     #[getset(set = "pub")]
     nuid: Option<NmdUniqueIdentifier>,
@@ -28,10 +28,10 @@ pub struct MetadataWrapperParagraph {
 
 impl MetadataWrapperParagraph {
     
-    pub fn new(raw_content: String, paragraphs: Vec<Box<dyn Paragraph>>, raw_id: Option<String>, styles: Option<String>, classes: Option<String>,) -> Self {
+    pub fn new(raw_content: String, content: ContentBundle, raw_id: Option<String>, styles: Option<String>, classes: Option<String>,) -> Self {
         Self {
             raw_content,
-            paragraphs,
+            content,
             raw_id,
             styles,
             classes,
@@ -55,21 +55,13 @@ impl MetadataWrapperParagraph {
             id_attr = String::new();
         }
 
-        let content = format!(r#"<div class="{}" style="{}" {} {}>"#, self.classes.as_ref().unwrap_or(&String::new()), self.styles.as_ref().unwrap_or(&String::new()), nuid_attr, id_attr);
+        let mut outcome = format!(r#"<div class="{}" style="{}" {} {}>"#, self.classes.as_ref().unwrap_or(&String::new()), self.styles.as_ref().unwrap_or(&String::new()), nuid_attr, id_attr);
 
-        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(content));
+        outcome.push_str(&self.content.standard_compile(&OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone())?.content());
 
-        for paragraph in self.paragraphs.iter_mut() {
-            paragraph.standard_compile(&OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
+        outcome.push_str("</div>");
 
-            compilation_result.parts_mut().append(&mut paragraph.compiled_text().unwrap().clone().parts_mut());
-        }
-
-        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from("</div>")));
-
-        self.compiled_content = Some(compilation_result);
-
-        Ok(())
+        Ok(CompilationOutcome::from(outcome))
     }
 }
 
@@ -105,7 +97,7 @@ impl Paragraph for MetadataWrapperParagraph {
 
 #[cfg(test)]
 mod test {
-    use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, dossier::document::chapter::paragraph::paragraph_loading_rule::block_quote_paragraph_loading_rule::BlockQuoteParagraphLoadingRule, load::{LoadConfiguration, LoadConfigurationOverLay}, output_format::OutputFormat};
+    use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, dossier::document::chapter::paragraph::paragraph_loading_rule::{block_quote_paragraph_loading_rule::BlockQuoteParagraphLoadingRule, ParagraphLoadingRule}, load::{LoadConfiguration, LoadConfigurationOverLay}, output_format::OutputFormat};
 
 
 
