@@ -1,26 +1,20 @@
-pub mod html_assembler_configuration;
-
-
 use std::path::PathBuf;
 use build_html::{HtmlPage, HtmlContainer, Html, Container};
 use getset::{Getters, Setters};
-use html_assembler_configuration::HtmlAssemblerConfiguration;
-use crate::{artifact::Artifact, bibliography::Bibliography, compilation::compilation_outcome::CompilationOutcome, dossier::{document::{chapter::chapter_tag::{ChapterTag, ChapterTagKey}, Document}, dossier_configuration::DossierConfiguration, Dossier}, resource::{disk_resource::DiskResource, Resource}, table_of_contents::TableOfContents, theme::Theme};
+use crate::{artifact::Artifact, bibliography::Bibliography, compilation::compilation_outcome::CompilationOutcome, dossier::{document::{chapter::chapter_tag::{ChapterTag, ChapterTagKey}, Document}, dossier_configuration::DossierConfiguration}, resource::{disk_resource::DiskResource, Resource}, table_of_contents::TableOfContents, theme::Theme};
 
-use super::{Assembler, AssemblerError};
+use super::{assembler_configuration::AssemblerConfiguration, Assembler, AssemblerError};
 
 
 
 #[derive(Debug, Getters, Setters)]
 pub struct HtmlAssembler {
-    configuration: HtmlAssemblerConfiguration
 }
 
 impl HtmlAssembler {
 
-    pub fn new(configuration: HtmlAssemblerConfiguration) -> Self {
+    pub fn new() -> Self {
         Self {
-            configuration
         }
     }
 
@@ -209,7 +203,7 @@ impl HtmlAssembler {
 
 impl Assembler for HtmlAssembler {
 
-    fn assemble_dossier(&self, compiled_documents: &Vec<CompilationOutcome>, compiled_toc: Option<&CompilationOutcome>, compiled_bib: Option<&CompilationOutcome>, dossier_configuration: &DossierConfiguration) -> Result<String, AssemblerError> {
+    fn assemble_dossier(&self, compiled_documents: &Vec<CompilationOutcome>, compiled_toc: Option<&CompilationOutcome>, compiled_bib: Option<&CompilationOutcome>, dossier_configuration: &DossierConfiguration, configuration: &AssemblerConfiguration) -> Result<String, AssemblerError> {
                
         let mut styles_references: Vec<PathBuf> = dossier_configuration.style().styles_references().iter()
                                                         .map(|p| PathBuf::from(p))
@@ -217,10 +211,10 @@ impl Assembler for HtmlAssembler {
 
         log::info!("appending {} custom styles", styles_references.len());
 
-        let mut other_styles = self.configuration.external_styles_paths().clone();
+        let mut other_styles = configuration.external_styles_paths().clone();
         styles_references.append(&mut other_styles);
 
-        let mut page = Self::create_default_html_page(dossier_configuration.name(), &styles_references, self.configuration.external_styles(), self.configuration.external_scripts_paths(), self.configuration.external_scripts(), self.configuration.theme(), self.configuration.use_remote_addons())?;
+        let mut page = Self::create_default_html_page(dossier_configuration.name(), &styles_references, configuration.external_styles(), configuration.external_scripts_paths(), configuration.external_scripts(), configuration.theme(), configuration.use_remote_addons())?;
         
         if let Some(toc) = compiled_toc {
             page.add_raw(toc.content());
@@ -243,7 +237,7 @@ impl Assembler for HtmlAssembler {
         Ok(page.to_html_string())
     }
     
-    fn assemble_bundle(&self, compiled_preamble: &Vec<CompilationOutcome>, compiled_chapters: &Vec<CompilationOutcome>) -> Result<String, AssemblerError> {
+    fn assemble_bundle(&self, compiled_preamble: &Vec<CompilationOutcome>, compiled_chapters: &Vec<CompilationOutcome>, _configuration: &AssemblerConfiguration) -> Result<String, AssemblerError> {
 
         let mut result = String::new();
 
@@ -260,7 +254,7 @@ impl Assembler for HtmlAssembler {
         Ok(result)
     }
 
-    fn assemble_document_standalone(document: &Document, page_title: &String, toc: Option<&TableOfContents>, bibliography: Option<&Bibliography>, configuration: &Self::Configuration) -> Result<Artifact, AssemblerError> {
+    fn assemble_document_standalone(document: &Document, page_title: &String, toc: Option<&TableOfContents>, bibliography: Option<&Bibliography>, configuration: &AssemblerConfiguration) -> Result<Artifact, AssemblerError> {
         
         let mut page = Self::create_default_html_page(
                                     page_title,
@@ -289,7 +283,7 @@ impl Assembler for HtmlAssembler {
         Ok(Artifact::new(page.to_html_string()))
     }
     
-    fn assemble_chapter(&self, chapter_tags: &Vec<ChapterTag>, compiled_heading: &CompilationOutcome, compiled_paragraphs: &Vec<CompilationOutcome>) -> Result<String, AssemblerError> {
+    fn assemble_chapter(&self, chapter_tags: &Vec<ChapterTag>, compiled_heading: &CompilationOutcome, compiled_paragraphs: &Vec<CompilationOutcome>, configuration: &AssemblerConfiguration) -> Result<String, AssemblerError> {
 
         let mut div_chapter = Container::new(build_html::ContainerType::Div);
         let mut style = String::new();

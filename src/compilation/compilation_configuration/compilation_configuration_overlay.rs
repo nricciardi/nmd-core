@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use getset::{Getters, Setters};
-use crate::codex::modifier::ModifiersBucket;
+use crate::{assembler::assembler_configuration::AssemblerConfiguration, codex::modifier::ModifiersBucket};
 
 
 
@@ -21,4 +21,7 @@ pub struct CompilationConfigurationOverLay {
 
     #[getset(get = "pub", set = "pub")]
     excluded_modifiers: ModifiersBucket,
+
+    #[getset(get = "pub", set = "pub")]
+    assembler_configuration: AssemblerConfiguration
 }

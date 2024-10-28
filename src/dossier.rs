@@ -8,7 +8,7 @@ use document::Document;
 use getset::{Getters, MutGetters, Setters};
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, IntoParallelRefMutIterator, ParallelIterator};
 use thiserror::Error;
-use crate::{codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, load::{LoadConfiguration, LoadConfigurationOverLay, LoadError}, output_format::OutputFormat, resource::ResourceError};
+use crate::{assembler::assembler_configuration::AssemblerConfiguration, codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, load::{LoadConfiguration, LoadConfigurationOverLay, LoadError}, output_format::OutputFormat, resource::ResourceError};
 
 use self::dossier_configuration::DossierConfiguration;
 use super::{bibliography::Bibliography, table_of_contents::TableOfContents};
@@ -149,6 +149,7 @@ impl Compilable for Dossier {
         log::info!("compile dossier {} with ({} documents, parallelization: {})", self.name(), self.documents().len(), compilation_configuration.parallelization());
 
         compilation_configuration_overlay.set_dossier_name(Some(self.name().clone()));
+        compilation_configuration_overlay.set_assembler_configuration(AssemblerConfiguration::from(&self.configuration));
 
         let fast_draft = compilation_configuration.fast_draft();
 
@@ -188,7 +189,7 @@ impl Compilable for Dossier {
                 })
                 .collect();
 
-            let errors: Vec<CompilationError> = Vec::new();
+            let mut errors: Vec<CompilationError> = Vec::new();
 
             for result in documents_results {
                 match result {
@@ -272,7 +273,7 @@ impl Compilable for Dossier {
             compiled_bib = Some(bibliography.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())?);
         }
 
-        codex.assembler().assemble_dossier(&documents_outcomes, compiled_toc.as_ref(), compiled_bib.as_ref())
+        Ok(CompilationOutcome::from(codex.assembler().assemble_dossier(&documents_outcomes, compiled_toc.as_ref(), compiled_bib.as_ref(), &self.configuration, compilation_configuration_overlay.assembler_configuration())?))
     }
 } 
 

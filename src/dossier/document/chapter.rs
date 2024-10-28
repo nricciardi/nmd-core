@@ -75,6 +75,6 @@ impl Compilable for Chapter {
             }
         }
 
-        Ok(CompilationOutcome::from(codex.assembler().assemble_chapter(self.header().tags(), &compiled_heading, &paragraph_outcomes)?))  
+        Ok(CompilationOutcome::from(codex.assembler().assemble_chapter(self.header().tags(), &compiled_heading, &paragraph_outcomes, compilation_configuration_overlay.assembler_configuration())?))  
     }
 }

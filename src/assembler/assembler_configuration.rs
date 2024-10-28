@@ -3,8 +3,8 @@ use getset::{CopyGetters, Getters, MutGetters, Setters};
 use crate::{dossier::dossier_configuration::DossierConfiguration, theme::Theme};
 
 
-#[derive(Debug, Getters, CopyGetters, MutGetters, Setters)]
-pub struct HtmlAssemblerConfiguration {
+#[derive(Debug, Clone, Getters, CopyGetters, MutGetters, Setters)]
+pub struct AssemblerConfiguration {
 
     #[getset(get = "pub", set = "pub")]
     theme: Theme,
@@ -28,7 +28,7 @@ pub struct HtmlAssemblerConfiguration {
     external_scripts: Vec<String>,
 }
 
-impl HtmlAssemblerConfiguration {
+impl AssemblerConfiguration {
     
     pub fn new(theme: Theme, use_remote_addons: bool, parallelization: bool) -> Self {
         Self {
@@ -41,7 +41,7 @@ impl HtmlAssemblerConfiguration {
     }
 }
 
-impl Default for HtmlAssemblerConfiguration {
+impl Default for AssemblerConfiguration {
     fn default() -> Self {
         Self {
             theme: Theme::default(),
@@ -55,8 +55,8 @@ impl Default for HtmlAssemblerConfiguration {
     }
 }
 
-impl From<DossierConfiguration> for HtmlAssemblerConfiguration {
-    fn from(dossier_configuration: DossierConfiguration) -> Self {
+impl From<&DossierConfiguration> for AssemblerConfiguration {
+    fn from(dossier_configuration: &DossierConfiguration) -> Self {
         Self {
             theme: dossier_configuration.style().theme().clone(),
             use_remote_addons: dossier_configuration.compilation().use_remote_addons(),

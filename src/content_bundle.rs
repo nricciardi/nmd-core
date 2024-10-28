@@ -159,7 +159,7 @@ impl Compilable for ContentBundle {
             }
         }
 
-        Ok(CompilationOutcome::from(codex.assembler().assemble_bundle(&preamble_outcomes, &chapter_outcomes)?))
+        Ok(CompilationOutcome::from(codex.assembler().assemble_bundle(&preamble_outcomes, &chapter_outcomes, compilation_configuration_overlay.assembler_configuration())?))
     }
 }
 
