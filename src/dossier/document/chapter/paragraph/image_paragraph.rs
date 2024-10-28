@@ -1,6 +1,6 @@
 use build_html::{Container, Html, HtmlContainer};
 use getset::{Getters, Setters};
-use crate::{codex::Codex, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilable::Compilable}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, resource::{image_resource::ImageResource, source::Source, ResourceError}, utility::{image_utility, nmd_unique_identifier::NmdUniqueIdentifier}};
+use crate::{codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, resource::{image_resource::ImageResource, source::Source, ResourceError}, utility::{image_utility, nmd_unique_identifier::NmdUniqueIdentifier}};
 
 
 const SINGLE_IMAGE_CLASSES: [&str; 1] = ["image"];
@@ -50,7 +50,7 @@ impl ImageParagraph {
         }
     }
 
-    fn html_standard_compile_single_or_abridged_image(content: &mut ImageParagraphContent, nuid: Option<&NmdUniqueIdentifier>, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<String, CompilationError> {
+    fn html_standard_compile_single_or_abridged_image(content: &mut ImageParagraphContent, nuid: Option<&NmdUniqueIdentifier>, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationOutcome, CompilationError> {
 
         let img_classes = match &content {
             ImageParagraphContent::SingleImage(_) => SINGLE_IMAGE_CLASSES.to_vec(),
@@ -68,11 +68,7 @@ impl ImageParagraph {
                             image_utility::set_image_base64_embed_src(image, compilation_configuration.compress_embed_image())?;
                         }
 
-                        let mut compilable_text = image_utility::compile_image_resource_in_html(image, img_classes, nuid)?;
-
-                        Compiler::compile_compilable_text(&mut compilable_text, &OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
-                        
-                        return Ok(compilable_text.content())
+                        return image_utility::compile_image_resource_in_html(image, img_classes, nuid, codex, compilation_configuration, compilation_configuration_overlay.clone())
                     },
                     Source::Local { path } => {
 
@@ -90,19 +86,11 @@ impl ImageParagraph {
                             image.set_src(Source::Local { path });
                         }
 
-                        let mut compilable_text = image_utility::compile_image_resource_in_html(image, img_classes, nuid)?;
-
-                        Compiler::compile_compilable_text(&mut compilable_text, &OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
-
-                        return Ok(compilable_text.content())
+                        return image_utility::compile_image_resource_in_html(image, img_classes, nuid, codex, compilation_configuration, compilation_configuration_overlay.clone())
                     },
                     Source::Base64String { base64: _ } => {
 
-                        let mut compilable_text = image_utility::compile_image_resource_in_html(image, img_classes, nuid)?;
-
-                        Compiler::compile_compilable_text(&mut compilable_text, &OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
-
-                        return Ok(compilable_text.content())
+                        return image_utility::compile_image_resource_in_html(image, img_classes, nuid, codex, compilation_configuration, compilation_configuration_overlay.clone())
                     },
                     Source::Bytes { bytes: _ } => todo!(),
                 }
@@ -114,7 +102,7 @@ impl ImageParagraph {
         
     }
 
-    fn html_standard_compile_multi_image(multi_image: &mut MultiImage, nuid: Option<&NmdUniqueIdentifier>, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<String, CompilationError> {
+    fn html_standard_compile_multi_image(multi_image: &mut MultiImage, nuid: Option<&NmdUniqueIdentifier>, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationOutcome, CompilationError> {
 
         let images_container_style: String = format!("display: flex; justify-content: {};", multi_image.alignment);
         let mut images_container = build_html::Container::new(build_html::ContainerType::Div)
@@ -132,57 +120,54 @@ impl ImageParagraph {
                                                     ("style", format!(r"align-self: {}", alignment).as_str()),
                                                     ("class", "image-container")
                                                 ])
-                                                .with_raw( image_html_tag);
+                                                .with_raw(image_html_tag.content());
 
             images_container.add_container(image_container);
         }
 
-        Ok(images_container.to_html_string())
+        Ok(CompilationOutcome::from(images_container.to_html_string()))
     }
 
-    fn html_standard_compile(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
+    fn html_standard_compile(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationOutcome, CompilationError> {
         
-        self.compiled_content = Some(match self.content {
+        match self.content {
             ImageParagraphContent::SingleImage(_) | ImageParagraphContent::AbridgedImage(_) => {
-                CompilableText::from(CompilableTextPart::new_fixed(Self::html_standard_compile_single_or_abridged_image(&mut self.content, self.nuid.as_ref(), codex, compilation_configuration, compilation_configuration_overlay.clone())?))
+                Self::html_standard_compile_single_or_abridged_image(&mut self.content, self.nuid.as_ref(), codex, compilation_configuration, compilation_configuration_overlay.clone())
             },
             ImageParagraphContent::MultiImage(ref mut multi_image) => {
-                CompilableText::from(CompilableTextPart::new_fixed(Self::html_standard_compile_multi_image(multi_image, self.nuid.as_ref(), codex, compilation_configuration, compilation_configuration_overlay.clone())?))
+                Self::html_standard_compile_multi_image(multi_image, self.nuid.as_ref(), codex, compilation_configuration, compilation_configuration_overlay.clone())
             },
-        });
-
-        Ok(())
+        }
     }
 
-    fn html_fast_compile(&mut self, _codex: &Codex, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
+    fn html_fast_compile(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationOutcome, CompilationError> {
         
-
-        match &self.content {
+        let outcome: CompilationOutcome = match &self.content {
             ImageParagraphContent::SingleImage(image) => {
-                self.compiled_content = Some(image_utility::compile_image_resource_in_html(image, SINGLE_IMAGE_CLASSES.to_vec(), self.nuid.as_ref())?);
+                CompilationOutcome::from(image_utility::compile_image_resource_in_html(image, SINGLE_IMAGE_CLASSES.to_vec(), self.nuid.as_ref(), codex, compilation_configuration, compilation_configuration_overlay.clone())?)
             },
             ImageParagraphContent::AbridgedImage(image) => {
-                self.compiled_content = Some(image_utility::compile_image_resource_in_html(image, ABRIDGED_IMAGE_CLASSES.to_vec(), self.nuid.as_ref())?);
+                CompilationOutcome::from(image_utility::compile_image_resource_in_html(image, ABRIDGED_IMAGE_CLASSES.to_vec(), self.nuid.as_ref(), codex, compilation_configuration, compilation_configuration_overlay.clone())?)
             }
             ImageParagraphContent::MultiImage(multi_image) => {
-                self.compiled_content = Some(CompilableText::from(CompilableTextPart::new_fixed(format!(r#"<img alt="multi-image paragraph with {} image(s)" />"#, multi_image.images.len()))))
+                CompilationOutcome::from(format!(r#"<img alt="multi-image paragraph with {} image(s)" />"#, multi_image.images.len()))
             },
         };
         
-        Ok(())
+        Ok(outcome)
     }
 }
 
 
 impl Compilable for ImageParagraph {
-    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
+    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationOutcome, CompilationError> {
         
         match format {
             OutputFormat::Html => self.html_standard_compile(codex, compilation_configuration, compilation_configuration_overlay.clone()),
         }
     }
 
-    fn fast_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
+    fn fast_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationOutcome, CompilationError> {
         
         match format {
             OutputFormat::Html => self.html_fast_compile(codex, compilation_configuration, compilation_configuration_overlay.clone()),

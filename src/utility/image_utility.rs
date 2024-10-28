@@ -1,5 +1,5 @@
 use oxipng::Options;
-use crate::{codex::modifier::ModifiersBucket, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, resource::{image_resource::ImageResource, source::Source, ResourceError}};
+use crate::{codex::{modifier::ModifiersBucket, Codex}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, output_format::OutputFormat, resource::{image_resource::ImageResource, source::Source, ResourceError}};
 use super::{nmd_unique_identifier::NmdUniqueIdentifier, text_utility};
 
 
@@ -40,9 +40,9 @@ pub fn set_image_base64_embed_src(image: &mut ImageResource, compression: bool) 
 }
 
 
-pub fn compile_image_resource_in_html(image: &ImageResource, img_classes: Vec<&str>, nuid: Option<&NmdUniqueIdentifier>) -> Result<CompilableText, ResourceError> {
+pub fn compile_image_resource_in_html(image: &ImageResource, img_classes: Vec<&str>, nuid: Option<&NmdUniqueIdentifier>, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationOutcome, CompilationError> {
     
-    let mut compilation_result = CompilableText::new_empty();
+    let mut outcome = String::new();
     
     let id_attr: String;
 
@@ -68,15 +68,7 @@ pub fn compile_image_resource_in_html(image: &ImageResource, img_classes: Vec<&s
         classes = String::new();
     }
 
-    compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<figure class="figure {}" style="{}" {} {}>"#, classes, styles, id_attr, text_utility::html_nuid_tag_or_nothing(nuid))));
-
-    // let html_alt: String;
-
-    // if let Some(a) = alt {
-    //     html_alt = format!(r#"alt="{}""#, a);
-    // } else {
-    //     html_alt = String::new();
-    // }
+    outcome.push_str(&format!(r#"<figure class="figure {}" style="{}" {} {}>"#, classes, styles, id_attr, text_utility::html_nuid_tag_or_nothing(nuid)));
 
     let src: String = match image.src() {
         Source::Remote { url: _ } | Source::Local { path: _ } => image.src().to_string(),
@@ -101,17 +93,21 @@ pub fn compile_image_resource_in_html(image: &ImageResource, img_classes: Vec<&s
         },
     };
 
-    compilation_result.parts_mut().push(CompilableTextPart::new_fixed(format!(r#"<img src="{}" class="{}" />"#, src, img_classes.join(" "))));
+    outcome.push_str(&format!(r#"<img src="{}" class="{}" />"#, src, img_classes.join(" ")));
 
 
     if let Some(caption) = image.caption() {
 
-        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"<figcaption class="image-caption">"#)));
-        compilation_result.parts_mut().push(CompilableTextPart::new_compilable(caption.clone(), ModifiersBucket::None));
-        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from(r#"</figcaption>"#)));
+        outcome.push_str(r#"<figcaption class="image-caption">"#);
+
+        let mut compilable_text = CompilableText::from(CompilableTextPart::new_compilable(caption.clone(), ModifiersBucket::None));
+
+        outcome.push_str(&compilable_text.compile(&OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone())?.content());
+        
+        outcome.push_str(r#"</figcaption>"#);
     }
 
-    compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from("</figure>")));
+    outcome.push_str("</figure>");
 
-    Ok(compilation_result)
+    Ok(CompilationOutcome::from(outcome))
 } 
