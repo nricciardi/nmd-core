@@ -3,7 +3,7 @@ use getset::{Getters, Setters};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use regex::Regex;
 use super::ParagraphLoadingRule;
-use crate::{codex::Codex, dossier::document::chapter::paragraph::{metadata_wrapper_paragraph::MetadataWrapperParagraph, Paragraph}};
+use crate::{codex::Codex, dossier::document::chapter::paragraph::{metadata_wrapper_paragraph::MetadataWrapperParagraph, Paragraph}, load::{LoadConfiguration, LoadConfigurationOverLay, LoadError}, load_block::LoadBlock};
 
 
 pub type StyleElaborationFn = Arc<dyn Sync + Send + Fn(&str, bool) -> (Option<String>, Option<String>)>;
@@ -47,7 +47,7 @@ impl MetadataWrapperParagraphLoadingRule {
         }
     }
 
-    fn inner_load(&self, raw_content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<MetadataWrapperParagraph, LoadError> {
+    fn inner_load(&self, raw_content: &str, codex: &Codex, configuration: &LoadConfiguration, configuration_overlay: LoadConfigurationOverLay) -> Result<MetadataWrapperParagraph, LoadError> {
 
         if let Some(captures) = self.loading_regex.captures(raw_content) {
 
@@ -77,7 +77,7 @@ impl MetadataWrapperParagraphLoadingRule {
 
             if let Some(body) = captures.get(self.content_group) {
 
-                let paragraph_blocks = Loader::load_paragraphs_from_str_with_workaround(body.as_str(), codex, configuration, configuration_overlay.clone())?;
+                let paragraph_blocks = LoadBlock::load_from_str(body.as_str(), codex, configuration, configuration_overlay.clone())?;
         
                 let paragraphs: Vec<Box<dyn Paragraph>> = paragraph_blocks.into_par_iter().map(|block| TryInto::<Box<dyn Paragraph>>::try_into(block).unwrap()).collect();
 
@@ -105,7 +105,7 @@ impl MetadataWrapperParagraphLoadingRule {
 
 
 impl ParagraphLoadingRule for MetadataWrapperParagraphLoadingRule {
-    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Box<dyn Paragraph>, LoadError> {
+    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoadConfiguration, configuration_overlay: LoadConfigurationOverLay) -> Result<Box<dyn Paragraph>, LoadError> {
         
         Ok(Box::new(self.inner_load(raw_content, codex, configuration, configuration_overlay.clone())?))
     }
@@ -117,7 +117,7 @@ mod test {
 
     use std::sync::Arc;
 
-    use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, loader::loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, utility::text_utility};
+    use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, load::{LoadConfiguration, LoadConfigurationOverLay}, utility::text_utility};
     use super::MetadataWrapperParagraphLoadingRule;
 
 
@@ -146,7 +146,7 @@ mod test {
             }))
         );
 
-        let paragraph = rule.inner_load(&nmd_text, &Codex::of_html(), &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();    
+        let paragraph = rule.inner_load(&nmd_text, &Codex::of_html(), &LoadConfiguration::default(), LoadConfigurationOverLay::default()).unwrap();    
     
         assert_eq!(paragraph.raw_id().as_ref(), None);
 

@@ -2,7 +2,7 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 
 use super::ParagraphLoadingRule;
-use crate::{codex::{modifier::constants::{IDENTIFIER_PATTERN, STYLE_PATTERN}, Codex}, content_bundle::ContentBundle, dossier::document::chapter::paragraph::{table_paragraph::{TableParagraph, TableParagraphContent}, Paragraph}, resource::table::{Table, TableCell, TableCellAlignment}, utility::text_utility};
+use crate::{codex::{modifier::constants::{IDENTIFIER_PATTERN, STYLE_PATTERN}, Codex}, content_bundle::ContentBundle, dossier::document::chapter::paragraph::{table_paragraph::{TableParagraph, TableParagraphContent}, Paragraph}, load::{LoadConfiguration, LoadConfigurationOverLay, LoadError}, load_block::LoadBlock, resource::table::{Table, TableCell, TableCellAlignment}, utility::text_utility};
 
 
 /// (caption, id, styles, classes)
@@ -84,7 +84,7 @@ impl TableParagraphLoadingRule {
         Some(alignments)
     }
 
-    fn build_row(row: &Vec<String>, alignments: &Vec<TableCellAlignment>, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Vec<TableCell<ContentBundle>>, LoadError> {
+    fn build_row(row: &Vec<String>, alignments: &Vec<TableCellAlignment>, codex: &Codex, configuration: &LoadConfiguration, configuration_overlay: LoadConfigurationOverLay) -> Result<Vec<TableCell<ContentBundle>>, LoadError> {
 
         let mut cells: Vec<TableCell<ContentBundle>> = Vec::new();
 
@@ -119,7 +119,7 @@ impl TableParagraphLoadingRule {
                     cell.remove(cell.len() - 1);
                 }
 
-                let inner_blocks = Loader::load_from_str(&cell, codex, configuration, configuration_overlay.clone())?;
+                let inner_blocks = LoadBlock::load_from_str(&cell, codex, configuration, configuration_overlay.clone())?;
 
                 cells.push(TableCell::ContentCell { content: ContentBundle::from(inner_blocks), alignment: align});
             }
@@ -162,7 +162,7 @@ impl TableParagraphLoadingRule {
 }
 
 impl ParagraphLoadingRule for TableParagraphLoadingRule {
-    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Box<dyn Paragraph>, LoadError> {
+    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoadConfiguration, configuration_overlay: LoadConfigurationOverLay) -> Result<Box<dyn Paragraph>, LoadError> {
 
         let mut table: TableParagraphContent = Table::new_empty();
 
@@ -243,33 +243,9 @@ impl ParagraphLoadingRule for TableParagraphLoadingRule {
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashMap;
+    
+    use crate::{codex::Codex, load::{LoadConfiguration, LoadConfigurationOverLay}, load_block::{LoadBlock, LoadBlockContent}};
 
-    use indexmap::IndexMap;
-
-    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, Modifier}, Codex}, loader::{load_block::LoadBlockContent, loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, paragraph_loading_rule::ParagraphLoadingRule, Loader}};
-
-    use super::TableParagraphLoadingRule;
-
-    fn codex() -> Codex {
-        Codex::new(
-            IndexMap::new(),
-            IndexMap::from([
-                (
-                    String::from("table"),
-                    Box::new(Into::<BaseModifier>::into(StandardParagraphModifier::Table)) as Box<dyn Modifier>
-                )
-            ]),
-            HashMap::new(),
-            HashMap::from([
-                (
-                    String::from("table"),
-                    Box::new(TableParagraphLoadingRule::new()) as Box<dyn ParagraphLoadingRule>
-                )
-            ]),
-            Some(StandardParagraphModifier::CommonParagraph.identifier())
-        )
-    }
 
     #[test]
     fn generic_loading() {
@@ -283,9 +259,9 @@ mod test {
             "\n\n"
         );
 
-        let codex = codex();
+        let codex = Codex::of_html();
         
-        let paragraphs = Loader::load_from_str(&nmd_text, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
+        let paragraphs = LoadBlock::load_from_str(&nmd_text, &codex, &LoadConfiguration::default(), LoadConfigurationOverLay::default()).unwrap();
 
         assert_eq!(paragraphs.len(), 1);
 
@@ -309,9 +285,9 @@ mod test {
             "\n\n"
         );
 
-        let codex = codex();
+        let codex = Codex::of_html();
         
-        let paragraphs = Loader::load_from_str(&nmd_text, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
+        let paragraphs = LoadBlock::load_from_str(&nmd_text, &codex, &LoadConfiguration::default(), LoadConfigurationOverLay::default()).unwrap();
 
         assert_eq!(paragraphs.len(), 1);
 

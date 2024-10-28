@@ -107,7 +107,7 @@ impl Paragraph for MetadataWrapperParagraph {
 
 #[cfg(test)]
 mod test {
-    use crate::{codex::Codex, dossier::document::chapter::paragraph::paragraph_loading_rule::block_quote_paragraph_loading_rule::BlockQuoteParagraphLoadingRule};
+    use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, dossier::document::chapter::paragraph::paragraph_loading_rule::block_quote_paragraph_loading_rule::BlockQuoteParagraphLoadingRule, load::{LoadConfiguration, LoadConfigurationOverLay}, output_format::OutputFormat};
 
 
 
@@ -123,7 +123,7 @@ mod test {
         let codex = Codex::of_html();
         let rule = BlockQuoteParagraphLoadingRule::new();
 
-        let mut paragraph = rule.load(&nmd_text, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();    
+        let mut paragraph = rule.load(&nmd_text, &codex, &LoadConfiguration::default(), LoadConfigurationOverLay::default()).unwrap();    
     
         paragraph.compile(&OutputFormat::Html, &codex, &CompilationConfiguration::default(), CompilationConfigurationOverLay::default()).unwrap();
     }

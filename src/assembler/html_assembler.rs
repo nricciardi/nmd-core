@@ -337,7 +337,7 @@ impl Assembler for HtmlAssembler {
                 },
 
                 _ => {
-                    log::warn!("chapter tag key not supported yet")
+                    log::warn!("{} chapter tag key not supported yet", tag.key())
                 }
             }
         }
@@ -347,12 +347,9 @@ impl Assembler for HtmlAssembler {
 
         div_chapter_content.push_str(&compiled_heading.content());
 
-        for paragraph in compiled_paragraphs {
-            let compiled_content = paragraph.content();
+        for compiled_paragraph in compiled_paragraphs {
 
-            if compiled_content.is_empty() {
-                continue;
-            }
+            let compiled_content = compiled_paragraph.content();
 
             div_chapter_content.push_str(&compiled_content);
         }

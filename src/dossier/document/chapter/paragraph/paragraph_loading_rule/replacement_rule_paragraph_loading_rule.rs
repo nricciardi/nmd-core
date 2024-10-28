@@ -1,5 +1,5 @@
 use super::ParagraphLoadingRule;
-use crate::{codex::{modifier::ModifiersBucket, Codex}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::compilation_rule::replacement_rule::ReplacementRule, dossier::document::chapter::paragraph::{replacement_rule_paragraph::ReplacementRuleParagraph, Paragraph}};
+use crate::{codex::{modifier::ModifiersBucket, Codex}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::compilation_rule::replacement_rule::ReplacementRule, dossier::document::chapter::paragraph::{replacement_rule_paragraph::ReplacementRuleParagraph, Paragraph}, load::{LoadConfiguration, LoadConfigurationOverLay, LoadError}};
 
 
 #[derive(Debug)]
@@ -17,7 +17,7 @@ impl ReplacementRuleParagraphLoadingRule {
 }
 
 impl ParagraphLoadingRule for ReplacementRuleParagraphLoadingRule {
-    fn load(&self, raw_content: &str, _codex: &Codex, _configuration: &LoaderConfiguration, _configuration_overlay: LoaderConfigurationOverLay) -> Result<Box<dyn Paragraph>, LoadError> {
+    fn load(&self, raw_content: &str, _codex: &Codex, _configuration: &LoadConfiguration, _configuration_overlay: LoadConfigurationOverLay) -> Result<Box<dyn Paragraph>, LoadError> {
         
         let compilable_text = CompilableText::from(CompilableTextPart::new_compilable(
             raw_content.to_string(),

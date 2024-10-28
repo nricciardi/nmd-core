@@ -5,7 +5,6 @@ use build_html::HtmlContainer;
 use build_html::TableCell as HtmlTableCell;
 use build_html::TableRow as HtmlTableRow;
 use getset::{Getters, Setters};
-use crate::compilable_text::compilable_text_part::CompilableTextPart;
 use crate::compilable_text::CompilableText;
 use crate::compilation::compilation_outcome::CompilationOutcome;
 use crate::content_bundle::ContentBundle;
@@ -219,11 +218,7 @@ impl TableParagraph {
             html_table.add_caption(html_caption);
         }
 
-        let compilation_result = CompilableText::from(
-            CompilableTextPart::new_fixed(html_table.to_html_string())
-        );
-
-        Ok(())
+        Ok(html_table.to_html_string())
     }
 }
 

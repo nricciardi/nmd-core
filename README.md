@@ -23,17 +23,29 @@ cargo add nmd-core
 [Full documentation](target/doc/nmd_core/index.html)
 
 
-There are two tricky algorithms in core:
-
-- Load of `ContentBundle`
-- Compilation of `CompilableText`
-
-
-### Load of ContentBundle
+### Quick start
 
 TODO
 
-### Compilation of CompilableText
+
+### Codex
+
+TODO
+
+
+### Tricky algorithms
+
+There are two tricky algorithms in core:
+
+- Load of `LoadBlock`
+- Compilation of `CompilableText`
+
+
+#### Load of LoadBlock
+
+TODO
+
+#### Compilation of CompilableText
 
 `CompilableText` (CT) can be considered as the compilable text unit in NMD. It performs low level compilation of strings using text rules inserted in `Codex` 
 
