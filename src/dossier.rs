@@ -35,14 +35,8 @@ pub struct Dossier {
     #[getset(get = "pub", set = "pub")]
     configuration: DossierConfiguration,
 
-    #[getset(get = "pub", set = "pub")]
-    table_of_contents: Option<TableOfContents>,
-
     #[getset(get = "pub", set = "pub", get_mut = "pub")]
     documents: Vec<Document>,
-
-    #[getset(get = "pub", set = "pub")]
-    bibliography: Option<Bibliography>,
 }
 
 impl Dossier {
@@ -51,9 +45,7 @@ impl Dossier {
 
         Self {
             configuration,
-            table_of_contents: None,
             documents,
-            bibliography: None,
         }
     }
 
@@ -160,11 +152,13 @@ impl Compilable for Dossier {
 
         let fast_draft = compilation_configuration.fast_draft();
 
+        let mut documents_outcomes: Vec<CompilationOutcome> = Vec::new();
+
         if compilation_configuration.parallelization() {
 
             let compile_only_documents = compilation_configuration_overlay.compile_only_documents();
 
-            let maybe_fails = self.documents_mut().par_iter_mut()
+            let documents_results: Vec<Result<CompilationOutcome, CompilationError>> = self.documents_mut().par_iter_mut()
                 .filter(|document| {
                     if fast_draft {
     
@@ -192,17 +186,27 @@ impl Compilable for Dossier {
 
                     res
                 })
-                .find_any(|result| result.is_err());
+                .collect();
 
-                if let Some(Err(fail)) = maybe_fails {
-                    return Err(fail)
+            let errors: Vec<CompilationError> = Vec::new();
+
+            for result in documents_results {
+                match result {
+                    Ok(outcome) => documents_outcomes.push(outcome),
+                    Err(err) => errors.push(err),
                 }
+            }
+
+            if !errors.is_empty() {
+                return Err(CompilationError::BucketOfErrors(errors))
+            }
+
             
         } else {
 
             let compile_only_documents = compilation_configuration_overlay.compile_only_documents();
 
-            let maybe_fails = self.documents_mut().iter_mut()
+            let documents_to_compile = self.documents_mut().iter_mut()
                 .filter(|document| {
 
                     if fast_draft {
@@ -220,22 +224,21 @@ impl Compilable for Dossier {
                     }
 
                     true
-                })
-                .map(|document| {
-                    let now = Instant::now();
+                });
 
-                    let res = document.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone());
+            for document in documents_to_compile {let now = Instant::now();
 
-                    log::info!("document '{}' compiled in {} ms", document.name(), now.elapsed().as_millis());
+                let outcome = document.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
 
-                    res
-                })
-                .find(|result| result.is_err());
+                log::info!("document '{}' compiled in {} ms", document.name(), now.elapsed().as_millis());
 
-                if let Some(Err(fail)) = maybe_fails {
-                    return Err(fail)
-                }
+                documents_outcomes.push(outcome);
+
+            }
         }
+
+        let mut compiled_toc: Option<CompilationOutcome> = None;
+        let mut compiled_bib: Option<CompilationOutcome> = None;
 
         if self.configuration().table_of_contents_configuration().include_in_output() {
 
@@ -257,9 +260,7 @@ impl Compilable for Dossier {
                 headings
             );
 
-            table_of_contents.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
-        
-            self.set_table_of_contents(Some(table_of_contents));
+            compiled_toc = Some(table_of_contents.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())?);
         }
 
         if self.configuration().bibliography().include_in_output() {
@@ -268,9 +269,7 @@ impl Compilable for Dossier {
                 self.configuration().bibliography().records().clone()
             );
 
-            bibliography.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
-        
-            self.set_bibliography(Some(bibliography));
+            compiled_bib = Some(bibliography.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())?);
         }
 
         Ok(())

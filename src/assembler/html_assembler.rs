@@ -4,9 +4,7 @@ pub mod html_assembler_configuration;
 use std::path::PathBuf;
 use build_html::{HtmlPage, HtmlContainer, Html, Container};
 use getset::{Getters, Setters};
-use html_assembler_configuration::HtmlAssemblerConfiguration;
-use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
-use crate::{artifact::Artifact, bibliography::Bibliography, compilation::{compilation_outcome::CompilationOutcome, compiled_text_accessor::CompiledTextAccessor}, dossier::{document::{chapter::chapter_tag::{ChapterTag, ChapterTagKey}, Document}, Dossier}, resource::{disk_resource::DiskResource, Resource}, table_of_contents::TableOfContents, theme::Theme};
+use crate::{artifact::Artifact, bibliography::Bibliography, compilation::compilation_outcome::CompilationOutcome, dossier::{document::{chapter::chapter_tag::{ChapterTag, ChapterTagKey}, Document}, Dossier}, resource::{disk_resource::DiskResource, Resource}, table_of_contents::TableOfContents, theme::Theme};
 
 use super::{Assembler, AssemblerError};
 
@@ -207,12 +205,8 @@ impl HtmlAssembler {
 
 impl Assembler for HtmlAssembler {
 
-    fn assemble_dossier(dossier: &Dossier) -> Result<Artifact, AssemblerError> {
-                        
-        if dossier.documents().is_empty() {
-            return Err(AssemblerError::TooFewElements("there are no documents".to_string()))
-        }
-
+    fn assemble_dossier(&self, compiled_documents: &Vec<CompilationOutcome>, compiled_toc: Option<&CompilationOutcome>, compiled_bib: Option<&CompilationOutcome>) -> Result<Artifact, AssemblerError> {
+               
         let mut styles_references: Vec<PathBuf> = dossier.configuration().style().styles_references().iter()
                                                         .map(|p| PathBuf::from(p))
                                                         .collect();
@@ -224,47 +218,22 @@ impl Assembler for HtmlAssembler {
 
         let mut page = Self::create_default_html_page(dossier.name(), &styles_references, configuration.external_styles(), configuration.external_scripts_paths(), configuration.external_scripts(), configuration.theme(), configuration.use_remote_addons())?;
         
-        if let Some(toc) = dossier.table_of_contents() {
-            if let Some(compiled_toc) = toc.compiled_text() {
-                page.add_raw(compiled_toc.content());
-            }
+        if let Some(toc) = compiled_toc {
+            page.add_raw(toc.content());
         }
 
-        if configuration.parallelization() {
+        for document in compiled_documents {
+            let section = Container::new(build_html::ContainerType::Section)
+                                            .with_attributes(vec![
+                                                ("class", "document")
+                                            ])
+                                            .with_raw(Self::assemble_document(document, configuration)?);
 
-            let mut assembled_documents: Vec<Result<Artifact, AssemblerError>> = Vec::new();
-
-            dossier.documents().par_iter().map(|document| {
-                Self::assemble_document(document, configuration)
-            }).collect_into_vec(&mut assembled_documents);
-
-            for assembled_document in assembled_documents {
-                let section = Container::new(build_html::ContainerType::Section)
-                                                .with_attributes(vec![
-                                                    ("class", "document")
-                                                ])
-                                                .with_raw(assembled_document?);
-    
-                page.add_container(section);
-            }
-
-        } else {
-
-            for document in dossier.documents() {
-                let section = Container::new(build_html::ContainerType::Section)
-                                                .with_attributes(vec![
-                                                    ("class", "document")
-                                                ])
-                                                .with_raw(Self::assemble_document(document, configuration)?);
-    
-                page.add_container(section);
-            }
+            page.add_container(section);
         }
 
-        if let Some(bib) = dossier.bibliography() {
-            if let Some(compiled_bib) = bib.compiled_text() {
-                page.add_raw(compiled_bib.content());
-            }
+        if let Some(bib) = compiled_bib {
+            page.add_raw(bib.content());
         }
 
         let artifact = Artifact::new(page.to_html_string());
