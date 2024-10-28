@@ -1,5 +1,5 @@
 use getset::{Getters, Setters};
-use crate::{codex::Codex, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilable::Compilable}, output_format::OutputFormat, utility::{nmd_unique_identifier::NmdUniqueIdentifier, text_utility}};
+use crate::{codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, content_bundle::ContentBundle, output_format::OutputFormat, utility::{nmd_unique_identifier::NmdUniqueIdentifier, text_utility}};
 use super::Paragraph;
 
 
@@ -8,7 +8,7 @@ use super::Paragraph;
 pub struct FocusBlockParagraph {
 
     #[getset(get = "pub", set = "pub")]
-    paragraphs: Vec<Box<dyn Paragraph>>,
+    content: ContentBundle,
     
     #[getset(get = "pub", set = "pub")]
     extended_quote_type: String,
@@ -18,48 +18,35 @@ pub struct FocusBlockParagraph {
 
     #[getset(set = "pub")]
     raw_content: String,
-
-    #[getset(set = "pub")]
-    compiled_content: Option<CompilableText>,
 }
 
 impl FocusBlockParagraph {
     
-    pub fn new(raw_content: String, extended_quote_type: String, paragraphs: Vec<Box<dyn Paragraph>>) -> Self {
+    pub fn new(raw_content: String, extended_quote_type: String, content: ContentBundle,) -> Self {
         Self {
             raw_content,
-            paragraphs,
+            content,
             extended_quote_type,
             nuid: None,
-            compiled_content: None
         }
     }
 
-    fn html_standard_compile(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
-        let mut compilation_result = CompilableText::new_empty();
+    fn html_standard_compile(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationOutcome, CompilationError> {
 
-        let mut content = format!(r#"<div class="focus-block focus-block-{}" {}>"#, self.extended_quote_type, text_utility::html_nuid_tag_or_nothing(self.nuid.as_ref()));
-        content.push_str(&format!(r#"<div class="focus-block-title focus-block-{}-title"></div>"#, self.extended_quote_type));
-        content.push_str(&format!(r#"<div class="focus-block-description focus-block-{}-description">"#, self.extended_quote_type));
+        let mut outcome = format!(r#"<div class="focus-block focus-block-{}" {}>"#, self.extended_quote_type, text_utility::html_nuid_tag_or_nothing(self.nuid.as_ref()));
+        outcome.push_str(&format!(r#"<div class="focus-block-title focus-block-{}-title"></div>"#, self.extended_quote_type));
+        outcome.push_str(&format!(r#"<div class="focus-block-description focus-block-{}-description">"#, self.extended_quote_type));
 
-        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(content));
+        outcome.push_str(&self.content.compile(&OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone())?.content());
 
-        for paragraph in self.paragraphs.iter_mut() {
-            paragraph.standard_compile(&OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
+        outcome.push_str("</div></div>");
 
-            compilation_result.parts_mut().append(&mut paragraph.compiled_text().unwrap().clone().parts_mut());
-        }
-
-        compilation_result.parts_mut().push(CompilableTextPart::new_fixed(String::from("</div></div>")));
-
-        self.compiled_content = Some(compilation_result);
-
-        Ok(())
+        Ok(CompilationOutcome::from(outcome))
     }
 }
 
 impl Compilable for FocusBlockParagraph {
-    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
+    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationOutcome, CompilationError> {
         
         match format {
             OutputFormat::Html => self.html_standard_compile(codex, compilation_configuration, compilation_configuration_overlay),
@@ -67,12 +54,6 @@ impl Compilable for FocusBlockParagraph {
     }
 }
 
-
-impl CompiledTextAccessor for FocusBlockParagraph {
-    fn compiled_text(&self) -> Option<&CompilableText> {
-        self.compiled_content.as_ref()
-    }
-}
 
 impl Paragraph for FocusBlockParagraph {
     fn raw_content(&self) -> &String {
@@ -96,28 +77,28 @@ impl Paragraph for FocusBlockParagraph {
 #[cfg(test)]
 mod test {
 
-    use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, dossier::document::chapter::paragraph::Paragraph, load::{loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}, Loader}, output_format::OutputFormat};
+    use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, content_bundle::ContentBundle, load::{LoadConfiguration, LoadConfigurationOverLay}, load_block::LoadBlock, output_format::OutputFormat};
 
     fn load_and_compile_html(content: &str, expected_n: usize) -> String {
         
         let codex = Codex::of_html();
     
-        let paragraphs = Loader::load_paragraphs_from_str_with_workaround(content, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
+        let blocks = LoadBlock::load_from_str(content, &codex, &LoadConfiguration::default(), LoadConfigurationOverLay::default()).unwrap();
 
-        assert_eq!(paragraphs.len(), expected_n);
+        let mut bundle = ContentBundle::from(blocks);
+
+        assert_eq!(bundle.preamble().len(), expected_n);
 
         let mut compiled_content = String::new();
 
         let cc = CompilationConfiguration::default();
         let cco = CompilationConfigurationOverLay::default();
 
-        for paragraph in paragraphs {
+        for paragraph in bundle.preamble_mut() {
 
-            let mut paragraph: Box<dyn Paragraph> = paragraph.try_into().unwrap();
-
-            paragraph.compile(&OutputFormat::Html, &codex, &cc, cco.clone()).unwrap();
+            let outcome = paragraph.compile(&OutputFormat::Html, &codex, &cc, cco.clone()).unwrap();
         
-            compiled_content.push_str(&paragraph.compiled_text().unwrap().content());
+            compiled_content.push_str(outcome.content());
         }
 
         compiled_content

@@ -48,6 +48,8 @@ impl LoadBlock {
 
         if let Some((modifier_identifier, (paragraph_modifier, paragraph_loading_rule))) = codex.paragraph_modifiers().get_index(paragraph_modifier_index) {
 
+            log::debug!("load using {}", modifier_identifier);
+
             let mut current_paragraph_blocks: Vec<LoadBlock> = Vec::new();
 
             let mut unmatched_slices: Vec<(usize, &str)> = Vec::new();
@@ -115,7 +117,7 @@ impl LoadBlock {
 
                 if let Some((fb_id, fallback_loading_rule)) = codex.fallback_paragraph_modifier() {
 
-                    log::debug!("fallback rule {:?} will be used to load:\n{}", fallback_loading_rule, s);
+                    log::debug!("fallback rule {}:{:?} will be used to load:\n{}", fb_id, fallback_loading_rule, s);
 
                     let paragraph = fallback_loading_rule.load(s, codex, configuration, configuration_overlay.clone())?;
 

@@ -2,7 +2,7 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use regex::Regex;
 use getset::{Getters, Setters};
 use super::ParagraphLoadingRule;
-use crate::{codex::Codex, dossier::document::chapter::paragraph::{focus_block_paragraph::FocusBlockParagraph, Paragraph}};
+use crate::{codex::Codex, dossier::document::chapter::paragraph::{focus_block_paragraph::FocusBlockParagraph, Paragraph}, load::{LoadConfiguration, LoadConfigurationOverLay, LoadError}, load_block::LoadBlock};
 
 
 const DEFAULT_TYPE: &str = "quote";
@@ -24,7 +24,7 @@ impl FocusBlockParagraphLoadingRule {
         }
     }
 
-    fn inner_load(&self, raw_content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<FocusBlockParagraph, LoadError> {
+    fn inner_load(&self, raw_content: &str, codex: &Codex, configuration: &LoadConfiguration, configuration_overlay: LoadConfigurationOverLay) -> Result<FocusBlockParagraph, LoadError> {
 
         if let Some(captures) = self.loading_regex.captures(raw_content) {
 
@@ -40,7 +40,7 @@ impl FocusBlockParagraphLoadingRule {
 
             if let Some(body) = captures.get(2) {
 
-                let paragraph_blocks = Loader::load_paragraphs_from_str_with_workaround(body.as_str(), codex, configuration, configuration_overlay.clone())?;
+                let paragraph_blocks = LoadBlock::load_from_str(body.as_str(), codex, configuration, configuration_overlay.clone())?;
         
                 let paragraphs: Vec<Box<dyn Paragraph>> = paragraph_blocks.into_par_iter().map(|block| TryInto::<Box<dyn Paragraph>>::try_into(block).unwrap()).collect();
                 
@@ -65,7 +65,7 @@ impl FocusBlockParagraphLoadingRule {
 
 
 impl ParagraphLoadingRule for FocusBlockParagraphLoadingRule {
-    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Box<dyn Paragraph>, LoadError> {
+    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoadConfiguration, configuration_overlay: LoadConfigurationOverLay) -> Result<Box<dyn Paragraph>, LoadError> {
         
         Ok(Box::new(self.inner_load(raw_content, codex, configuration, configuration_overlay.clone())?))
     }
@@ -75,7 +75,7 @@ impl ParagraphLoadingRule for FocusBlockParagraphLoadingRule {
 #[cfg(test)]
 mod test {
 
-    use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, load::loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}};
+    use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, load::{LoadConfiguration, LoadConfigurationOverLay}};
     use super::FocusBlockParagraphLoadingRule;
 
 
@@ -91,7 +91,7 @@ mod test {
 
         let rule = FocusBlockParagraphLoadingRule::new(StandardParagraphModifier::FocusBlock.modifier_pattern_regex().clone());
 
-        let paragraph = rule.inner_load(&nmd_text, &Codex::of_html(), &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();    
+        let paragraph = rule.inner_load(&nmd_text, &Codex::of_html(), &LoadConfiguration::default(), LoadConfigurationOverLay::default()).unwrap();    
     
         assert_eq!(paragraph.extended_quote_type(), "warning");
 

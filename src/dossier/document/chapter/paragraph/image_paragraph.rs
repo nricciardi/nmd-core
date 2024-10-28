@@ -37,9 +37,6 @@ pub struct ImageParagraph {
     
     content: ImageParagraphContent,
 
-    #[getset(set = "pub")]
-    compiled_content: Option<CompilableText>,
-
 }
 
 
@@ -50,7 +47,6 @@ impl ImageParagraph {
             raw_content,
             nuid: None,
             content,
-            compiled_content: None
         }
     }
 
@@ -191,13 +187,6 @@ impl Compilable for ImageParagraph {
         match format {
             OutputFormat::Html => self.html_fast_compile(codex, compilation_configuration, compilation_configuration_overlay.clone()),
         }    
-    }
-}
-
-
-impl CompiledTextAccessor for ImageParagraph {
-    fn compiled_text(&self) -> Option<&CompilableText> {
-        self.compiled_content.as_ref()
     }
 }
 

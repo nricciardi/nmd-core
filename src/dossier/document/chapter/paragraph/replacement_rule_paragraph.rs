@@ -62,7 +62,7 @@ impl Paragraph for ReplacementRuleParagraph {
 mod test {
     use std::sync::Arc;
 
-    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, standard_text_modifier::StandardTextModifier, Modifier, ModifiersBucket}, Codex}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart, single_capture_group_replacement_rule_part::SingleCaptureGroupReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}, compilable::Compilable}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat};
+    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, standard_text_modifier::StandardTextModifier, Modifier, ModifiersBucket}, Codex}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart, single_capture_group_replacement_rule_part::SingleCaptureGroupReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}}, content_bundle::ContentBundle, load::{LoadConfiguration, LoadConfigurationOverLay}, load_block::{LoadBlock, LoadBlockContent}, output_format::OutputFormat};
 
     use super::ReplacementRuleParagraph;
 
@@ -71,22 +71,22 @@ mod test {
         
         let codex = Codex::of_html();
     
-        let paragraphs = Loader::load_paragraphs_from_str_with_workaround(content, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
+        let blocks = LoadBlock::load_from_str(content, &codex, &LoadConfiguration::default(), LoadConfigurationOverLay::default()).unwrap();
 
-        assert_eq!(paragraphs.len(), expected_n);
+        let mut bundle = ContentBundle::from(blocks);
+
+        assert_eq!(bundle.preamble().len(), expected_n);
 
         let mut compiled_content = String::new();
 
         let cc = CompilationConfiguration::default();
         let cco = CompilationConfigurationOverLay::default();
 
-        for paragraph in paragraphs {
+        for paragraph in bundle.preamble_mut() {
 
-            let mut paragraph: Box<dyn Paragraph> = paragraph.try_into().unwrap();
+            let outcome = paragraph.compile(&OutputFormat::Html, &codex, &cc, cco.clone()).unwrap();
 
-            paragraph.compile(&OutputFormat::Html, &codex, &cc, cco.clone()).unwrap();
-        
-            compiled_content.push_str(&paragraph.compiled_text().unwrap().content());
+            compiled_content.push_str(&outcome.content());
         }
 
         compiled_content
@@ -130,11 +130,11 @@ mod test {
 
         let codex = Codex::of_html();
 
-        let mut paragraphs = Loader::load_paragraphs_from_str_with_workaround(
+        let mut paragraphs = LoadBlock::load_from_str(
             &nmd_text,
             &codex,
-            &LoaderConfiguration::default(),
-            LoaderConfigurationOverLay::default(),
+            &LoadConfiguration::default(),
+            LoadConfigurationOverLay::default(),
         ).unwrap();
 
         assert_eq!(paragraphs.len(), 1);
@@ -152,7 +152,7 @@ mod test {
             ).unwrap();
 
             assert_eq!(
-                paragraph.compiled_text().unwrap().content(),
+                paragraph.compile(&OutputFormat::Html, &codex, &CompilationConfiguration::default(), CompilationConfigurationOverLay::default()).unwrap().content(),
                 r#"<p class="paragraph" data-nuid="nuid-test">This is a <strong class="bold">common paragraph</strong></p>"#
             )
         }
@@ -239,7 +239,7 @@ mod test {
 
 
         assert_eq!(
-            paragraph.compiled_text().unwrap().content(),
+            paragraph.compile(&OutputFormat::Html, &codex, &CompilationConfiguration::default(), CompilationConfigurationOverLay::default()).unwrap().content(),
             r#"<p data-nuid="nuid-test">This is a <strong>common paragraph</strong></p>"#
         )
 

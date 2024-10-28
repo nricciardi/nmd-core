@@ -18,9 +18,6 @@ pub struct ListParagraph {
     #[getset(set = "pub")]
     raw_content: String,
 
-    #[getset(set = "pub")]
-    compiled_content: Option<CompilableText>,
-
 }
 
 impl ListParagraph {
@@ -29,7 +26,6 @@ impl ListParagraph {
         Self {
             raw_content,
             nuid: None,
-            compiled_content: None
         }
     }
 
@@ -146,14 +142,6 @@ impl Compilable for ListParagraph {
         }
     }
 }
-
-
-impl CompiledTextAccessor for ListParagraph {
-    fn compiled_text(&self) -> Option<&CompilableText> {
-        self.compiled_content.as_ref()
-    }
-}
-
 impl Paragraph for ListParagraph {
     fn raw_content(&self) -> &String {
         &self.raw_content

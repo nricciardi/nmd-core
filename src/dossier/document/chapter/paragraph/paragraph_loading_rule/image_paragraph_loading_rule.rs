@@ -2,7 +2,7 @@ use std::str::FromStr;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use super::ParagraphLoadingRule;
-use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, dossier::document::chapter::paragraph::{image_paragraph::{ImageParagraph, ImageParagraphContent, MultiImage}, Paragraph}, resource::{image_resource::ImageResource, resource_reference::ResourceReference, source::Source, ResourceError}};
+use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, dossier::document::chapter::paragraph::{image_paragraph::{ImageParagraph, ImageParagraphContent, MultiImage}, Paragraph}, load::{LoadConfiguration, LoadConfigurationOverLay, LoadError}, resource::{image_resource::ImageResource, resource_reference::ResourceReference, source::Source, ResourceError}};
 
 
 static FIND_SINGLE_IMAGE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&StandardParagraphModifier::Image.modifier_pattern()).unwrap());
@@ -25,7 +25,7 @@ pub enum ImageParagraphLoadingRule {
 
 impl ImageParagraphLoadingRule {
 
-    fn load_single_image(raw_content: &str, _codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<ImageResource, LoadError> {
+    fn load_single_image(raw_content: &str, _codex: &Codex, configuration: &LoadConfiguration, configuration_overlay: LoadConfigurationOverLay) -> Result<ImageResource, LoadError> {
         
         let captures = FIND_SINGLE_IMAGE_REGEX.captures(raw_content);
 
@@ -70,7 +70,7 @@ impl ImageParagraphLoadingRule {
         Err(LoadError::ResourceError(ResourceError::InvalidResourceVerbose(String::from("not valid image paragraph provided"))))
     }
 
-    fn load_abridged_image(raw_content: &str, _codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<ImageResource, LoadError> {
+    fn load_abridged_image(raw_content: &str, _codex: &Codex, configuration: &LoadConfiguration, configuration_overlay: LoadConfigurationOverLay) -> Result<ImageResource, LoadError> {
 
         let captures = FIND_ABRIDGED_IMAGE_REGEX.captures(raw_content);
 
@@ -110,7 +110,7 @@ impl ImageParagraphLoadingRule {
         Err(LoadError::ResourceError(ResourceError::InvalidResourceVerbose(String::from("not valid image paragraph provided"))))
     }
 
-    fn load_multi_image(raw_content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<MultiImage, LoadError> {
+    fn load_multi_image(raw_content: &str, codex: &Codex, configuration: &LoadConfiguration, configuration_overlay: LoadConfigurationOverLay) -> Result<MultiImage, LoadError> {
         let captures = FIND_MULTI_IMAGE_REGEX.captures(raw_content);
 
         if let Some(captures) = captures {
@@ -200,7 +200,7 @@ impl ImageParagraphLoadingRule {
 
 
 impl ParagraphLoadingRule for ImageParagraphLoadingRule {
-    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Box<dyn Paragraph>, LoadError> {
+    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoadConfiguration, configuration_overlay: LoadConfigurationOverLay) -> Result<Box<dyn Paragraph>, LoadError> {
         match *self {
             Self::SingleImage => Ok(Box::new(ImageParagraph::new(
                 raw_content.to_string(),
@@ -224,7 +224,7 @@ mod test {
 
     use std::path::PathBuf;
 
-    use crate::{codex::Codex, dossier::document::chapter::paragraph::image_paragraph::ImageParagraphContent, loader::loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}};
+    use crate::{codex::Codex, dossier::document::chapter::paragraph::image_paragraph::ImageParagraphContent, load::{LoadConfiguration, LoadConfigurationOverLay}};
     use super::ImageParagraphLoadingRule;
 
 
@@ -238,7 +238,7 @@ mod test {
 
         let codex = Codex::of_html();
 
-        let image = ImageParagraphLoadingRule::load_single_image(&nmd_text, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
+        let image = ImageParagraphLoadingRule::load_single_image(&nmd_text, &codex, &LoadConfiguration::default(), LoadConfigurationOverLay::default()).unwrap();
     
         assert_eq!(image.src().to_string(), src);
         assert_eq!(image.caption().as_ref().unwrap(), caption);
@@ -255,7 +255,7 @@ mod test {
 
         let codex = Codex::of_html();
 
-        let image = ImageParagraphLoadingRule::load_single_image(&nmd_text, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
+        let image = ImageParagraphLoadingRule::load_single_image(&nmd_text, &codex, &LoadConfiguration::default(), LoadConfigurationOverLay::default()).unwrap();
     
         assert_eq!(image.src().to_string(), src);
         assert_eq!(image.caption().as_ref().unwrap(), caption);
@@ -271,7 +271,7 @@ mod test {
 
         let codex = Codex::of_html();
 
-        let image = ImageParagraphLoadingRule::load_abridged_image(&nmd_text, &codex, &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();
+        let image = ImageParagraphLoadingRule::load_abridged_image(&nmd_text, &codex, &LoadConfiguration::default(), LoadConfigurationOverLay::default()).unwrap();
     
         assert_eq!(image.src().to_string(), src);
     
@@ -291,10 +291,10 @@ mod test {
 
         let codex = Codex::of_html();
 
-        let mut loader_configuration_overlay = LoaderConfigurationOverLay::default();
+        let mut loader_configuration_overlay = LoadConfigurationOverLay::default();
         loader_configuration_overlay.set_document_name(Some("test".to_string()));
 
-        let multi_image = ImageParagraphLoadingRule::load_multi_image(&nmd_text, &codex, &LoaderConfiguration::default(), loader_configuration_overlay).unwrap();
+        let multi_image = ImageParagraphLoadingRule::load_multi_image(&nmd_text, &codex, &LoadConfiguration::default(), loader_configuration_overlay).unwrap();
     
         assert_eq!(multi_image.alignment, "space-between");
 

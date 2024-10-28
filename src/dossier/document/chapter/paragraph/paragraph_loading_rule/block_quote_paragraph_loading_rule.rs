@@ -2,7 +2,7 @@ use once_cell::sync::Lazy;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use regex::Regex;
 use super::ParagraphLoadingRule;
-use crate::{codex::{modifier::constants::NEW_LINE_PATTERN, Codex}, dossier::document::chapter::paragraph::{block_quote_paragraph::ExtendedBlockQuoteParagraph, Paragraph}};
+use crate::{codex::{modifier::constants::NEW_LINE_PATTERN, Codex}, dossier::document::chapter::paragraph::{block_quote_paragraph::ExtendedBlockQuoteParagraph, Paragraph}, load::{LoadConfiguration, LoadConfigurationOverLay, LoadError}, load_block::LoadBlock};
 
 
 static CHECK_EXTENDED_BLOCK_QUOTE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?m:> \[!(\w*)\])").unwrap());
@@ -21,7 +21,7 @@ impl BlockQuoteParagraphLoadingRule {
         Self {}
     }
 
-    fn inner_load(&self, raw_content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<ExtendedBlockQuoteParagraph, LoadError> {
+    fn inner_load(&self, raw_content: &str, codex: &Codex, configuration: &LoadConfiguration, configuration_overlay: LoadConfigurationOverLay) -> Result<ExtendedBlockQuoteParagraph, LoadError> {
         let mut lines: Vec<&str> = raw_content.trim().lines().collect();
 
         let extended_block_quote_type: String;
@@ -61,7 +61,7 @@ impl BlockQuoteParagraphLoadingRule {
             block_quote_body_content.push_str(c.as_str());
         }
         
-        let paragraph_blocks = Loader::load_paragraphs_from_str_with_workaround(&block_quote_body_content, codex, configuration, configuration_overlay.clone())?;
+        let paragraph_blocks = LoadBlock::load_from_str(&block_quote_body_content, codex, configuration, configuration_overlay.clone())?;
 
         let paragraphs: Vec<Box<dyn Paragraph>> = paragraph_blocks.into_par_iter().map(|block| TryInto::<Box<dyn Paragraph>>::try_into(block).unwrap()).collect();
         
@@ -75,7 +75,7 @@ impl BlockQuoteParagraphLoadingRule {
 
 
 impl ParagraphLoadingRule for BlockQuoteParagraphLoadingRule {
-    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoaderConfiguration, configuration_overlay: LoaderConfigurationOverLay) -> Result<Box<dyn Paragraph>, LoadError> {
+    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoadConfiguration, configuration_overlay: LoadConfigurationOverLay) -> Result<Box<dyn Paragraph>, LoadError> {
         
         Ok(Box::new(self.inner_load(raw_content, codex, configuration, configuration_overlay.clone())?))
     }
@@ -85,7 +85,8 @@ impl ParagraphLoadingRule for BlockQuoteParagraphLoadingRule {
 #[cfg(test)]
 mod test {
 
-    use crate::{codex::Codex, loader::loader_configuration::{LoaderConfiguration, LoaderConfigurationOverLay}};
+    use crate::{codex::Codex, load::{LoadConfiguration, LoadConfigurationOverLay}};
+
     use super::{BlockQuoteParagraphLoadingRule, DEFAULT_TYPE};
 
 
@@ -100,7 +101,7 @@ mod test {
 
         let rule = BlockQuoteParagraphLoadingRule::new();
 
-        let paragraph = rule.inner_load(&nmd_text, &Codex::of_html(), &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();    
+        let paragraph = rule.inner_load(&nmd_text, &Codex::of_html(), &LoadConfiguration::default(), LoadConfigurationOverLay::default()).unwrap();    
     
         assert_eq!(paragraph.extended_quote_type(), DEFAULT_TYPE);
 
@@ -121,7 +122,7 @@ mod test {
 
         let rule = BlockQuoteParagraphLoadingRule::new();
 
-        let paragraph = rule.inner_load(&nmd_text, &Codex::of_html(), &LoaderConfiguration::default(), LoaderConfigurationOverLay::default()).unwrap();    
+        let paragraph = rule.inner_load(&nmd_text, &Codex::of_html(), &LoadConfiguration::default(), LoadConfigurationOverLay::default()).unwrap();    
     
         assert_eq!(paragraph.extended_quote_type(), "important");
 

@@ -218,7 +218,7 @@ impl TableParagraph {
             html_table.add_caption(html_caption);
         }
 
-        Ok(html_table.to_html_string())
+        Ok(CompilationOutcome::from(html_table.to_html_string()))
     }
 }
 
