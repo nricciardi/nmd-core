@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use build_html::{HtmlPage, HtmlContainer, Html, Container};
 use getset::{Getters, Setters};
-use crate::{artifact::Artifact, bibliography::Bibliography, compilation::compilation_outcome::CompilationOutcome, dossier::{document::{chapter::chapter_tag::{ChapterTag, ChapterTagKey}, Document}, dossier_configuration::DossierConfiguration}, resource::{disk_resource::DiskResource, Resource}, table_of_contents::TableOfContents, theme::Theme};
+use crate::{compilation::compilation_outcome::CompilationOutcome, dossier::{document::chapter::chapter_tag::{ChapterTag, ChapterTagKey}, dossier_configuration::DossierConfiguration}, resource::{disk_resource::DiskResource, Resource}, theme::Theme};
 
 use super::{assembler_configuration::AssemblerConfiguration, Assembler, AssemblerError};
 
@@ -158,7 +158,7 @@ impl HtmlAssembler {
         page
     }
 
-    fn create_default_html_page(page_title: &String, external_styles_paths: &Vec<PathBuf>, external_styles: &Vec<String>, external_scripts_paths: &Vec<PathBuf>, external_scripts: &Vec<String>, theme: &Theme, use_remote_addons: bool) -> Result<HtmlPage, AssemblerError> {
+    fn create_default_html_page(page_title: &str, external_styles_paths: &Vec<PathBuf>, external_styles: &Vec<String>, external_scripts_paths: &Vec<PathBuf>, external_scripts: &Vec<String>, theme: &Theme, use_remote_addons: bool) -> Result<HtmlPage, AssemblerError> {
 
         let mut page = HtmlPage::new()
                                     .with_title(page_title)
@@ -254,7 +254,7 @@ impl Assembler for HtmlAssembler {
         Ok(result)
     }
 
-    fn assemble_document_standalone(document: &Document, page_title: &String, toc: Option<&TableOfContents>, bibliography: Option<&Bibliography>, configuration: &AssemblerConfiguration) -> Result<Artifact, AssemblerError> {
+    fn assemble_document_standalone(&self, page_title: &str, compiled_document: &CompilationOutcome, compiled_toc: Option<&CompilationOutcome>, compiled_bib: Option<&CompilationOutcome>, configuration: &AssemblerConfiguration) -> Result<String, AssemblerError> {
         
         let mut page = Self::create_default_html_page(
                                     page_title,
@@ -266,24 +266,20 @@ impl Assembler for HtmlAssembler {
                                     configuration.use_remote_addons()
                                 )?;
 
-        if let Some(toc) = toc {
-            if let Some(compiled_toc) = toc.compiled_text() {
-                page.add_raw(compiled_toc.content());
-            }
+        if let Some(toc) = compiled_toc {
+            page.add_raw(toc.content());
         }
 
-        page.add_raw(Into::<String>::into(Self::assemble_document(document, configuration)?));
+        page.add_raw(compiled_document.content());
 
-        if let Some(bib) = bibliography {
-            if let Some(compiled_bib) = bib.compiled_text() {
-                page.add_raw(compiled_bib.content());
-            }
+        if let Some(bib) = compiled_bib {
+            page.add_raw(bib.content());
         }
 
-        Ok(Artifact::new(page.to_html_string()))
+        Ok(page.to_html_string())
     }
     
-    fn assemble_chapter(&self, chapter_tags: &Vec<ChapterTag>, compiled_heading: &CompilationOutcome, compiled_paragraphs: &Vec<CompilationOutcome>, configuration: &AssemblerConfiguration) -> Result<String, AssemblerError> {
+    fn assemble_chapter(&self, chapter_tags: &Vec<ChapterTag>, compiled_heading: &CompilationOutcome, compiled_paragraphs: &Vec<CompilationOutcome>, _configuration: &AssemblerConfiguration) -> Result<String, AssemblerError> {
 
         let mut div_chapter = Container::new(build_html::ContainerType::Div);
         let mut style = String::new();
@@ -302,7 +298,7 @@ impl Assembler for HtmlAssembler {
                 },
 
                 _ => {
-                    log::warn!("{} chapter tag key not supported yet", tag.key())
+                    log::warn!("{:?} chapter tag key not supported yet", tag.key())
                 }
             }
         }
