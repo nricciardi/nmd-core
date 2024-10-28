@@ -100,11 +100,6 @@ impl StandardParagraphModifier {
             Self::MultiImage => String::from("multi-image"),
             Self::Table => String::from("table"),
             Self::CommentBlock => String::from("comment-block"),
-
-            // _ => {
-            //     log::warn!("there is NOT a modifier pattern for {:#?}", self);
-            //     String::from(r"RULE TODO")
-            // }
         }
     }
 
@@ -122,22 +117,17 @@ impl StandardParagraphModifier {
             Self::ListItem => format!(r#"(?m:^([\t ]*)(-\[\]|-\[ \]|-\[x\]|-\[X\]|-|->|\||\*|\+|--|\d[\.)]?|[a-zA-Z]{{1,8}}[\.)]|&[^;]+;) (.*){}?)"#, NEW_LINE_PATTERN),
             Self::List => format!(r#"((?:{}+)+)"#, Self::ListItem.modifier_pattern()),
             Self::ExtendedBlockQuoteLine => String::from(r"(?m:^> (.*))"),
-            Self::ExtendedBlockQuote => format!(r"(?ms:^> .*?)"),
-            Self::LineBreakDash => String::from(r"(?m:^-{3,})"),
-            Self::LineBreakStar => String::from(r"(?m:^\*{3,})"),
-            Self::LineBreakPlus => String::from(r"(?m:^\+{3,})"),
+            Self::ExtendedBlockQuote => format!(r"(?m)(^[ \t]*>.*(?:\r?\n>.*)*)"),
+            Self::LineBreakDash => build_strict_reserved_line_pattern(r"-{3,}"),
+            Self::LineBreakStar => build_strict_reserved_line_pattern(r"\*{3,}"),
+            Self::LineBreakPlus => build_strict_reserved_line_pattern(r"\+{3,}"),
             Self::ParagraphIdentifier => format!(r"\[\[(?sx:(.*?))\]\]{}?{}", NEW_LINE_PATTERN, IDENTIFIER_PATTERN),
             Self::EmbeddedParagraphStyle => format!(r"\[\[(?sx:(.*?))\]\]{}?(?:{})?{}?\{{\{{{}\}}\}}", NEW_LINE_PATTERN, IDENTIFIER_PATTERN, NEW_LINE_PATTERN, STYLE_PATTERN),
-            Self::PageBreak => String::from(r"(?m:^#{3,}$)"),
-            Self::Todo => String::from(r"(?m:^(?i:TODO):?\s(?:(.*?))$)"),
-            Self::AbridgedTodo => String::from(r"(?m:^(?i:TODO)$)"),
-            Self::MultilineTodo => String::from(r"(?i:TODO):(?s:(.*?)):(?i:TODO)"),
+            Self::PageBreak => build_strict_reserved_line_pattern(r"#{3,}"),
+            Self::Todo => build_strict_reserved_line_pattern(r"(?i:TODO):?\s(?:(.*?))"),
+            Self::AbridgedTodo => build_strict_reserved_line_pattern(r"(?i:TODO)"),
+            Self::MultilineTodo => format!("{}{}", build_strict_reserved_line_pattern(r"(?i:TODO):"), r"(?s:(.*?)):(?i:TODO)"),
             Self::Table => format!(r"(\|(.*)\|{}?)+(?:\|(.*)\|)(?U:{}?(?:\[(.*)\])?(?:{})?(?:\{{\{{{}\}}\}})?)?", NEW_LINE_PATTERN, NEW_LINE_PATTERN, IDENTIFIER_PATTERN, STYLE_PATTERN),
-            
-            // _ => {
-            //     log::warn!("there is NOT a modifier pattern for {:#?}", self);
-            //     String::from(r"RULE TODO")
-            // }
         }
     }
 
