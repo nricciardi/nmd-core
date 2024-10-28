@@ -4,7 +4,8 @@ pub mod html_assembler_configuration;
 use std::path::PathBuf;
 use build_html::{HtmlPage, HtmlContainer, Html, Container};
 use getset::{Getters, Setters};
-use crate::{artifact::Artifact, bibliography::Bibliography, compilation::compilation_outcome::CompilationOutcome, dossier::{document::{chapter::chapter_tag::{ChapterTag, ChapterTagKey}, Document}, Dossier}, resource::{disk_resource::DiskResource, Resource}, table_of_contents::TableOfContents, theme::Theme};
+use html_assembler_configuration::HtmlAssemblerConfiguration;
+use crate::{artifact::Artifact, bibliography::Bibliography, compilation::compilation_outcome::CompilationOutcome, dossier::{document::{chapter::chapter_tag::{ChapterTag, ChapterTagKey}, Document}, dossier_configuration::DossierConfiguration, Dossier}, resource::{disk_resource::DiskResource, Resource}, table_of_contents::TableOfContents, theme::Theme};
 
 use super::{Assembler, AssemblerError};
 
@@ -12,12 +13,15 @@ use super::{Assembler, AssemblerError};
 
 #[derive(Debug, Getters, Setters)]
 pub struct HtmlAssembler {
+    configuration: HtmlAssemblerConfiguration
 }
 
 impl HtmlAssembler {
 
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(configuration: HtmlAssemblerConfiguration) -> Self {
+        Self {
+            configuration
+        }
     }
 
     fn apply_standard_remote_addons(mut page: HtmlPage, theme: &Theme) -> HtmlPage {
@@ -205,18 +209,18 @@ impl HtmlAssembler {
 
 impl Assembler for HtmlAssembler {
 
-    fn assemble_dossier(&self, compiled_documents: &Vec<CompilationOutcome>, compiled_toc: Option<&CompilationOutcome>, compiled_bib: Option<&CompilationOutcome>) -> Result<Artifact, AssemblerError> {
+    fn assemble_dossier(&self, compiled_documents: &Vec<CompilationOutcome>, compiled_toc: Option<&CompilationOutcome>, compiled_bib: Option<&CompilationOutcome>, dossier_configuration: &DossierConfiguration) -> Result<String, AssemblerError> {
                
-        let mut styles_references: Vec<PathBuf> = dossier.configuration().style().styles_references().iter()
+        let mut styles_references: Vec<PathBuf> = dossier_configuration.style().styles_references().iter()
                                                         .map(|p| PathBuf::from(p))
                                                         .collect();
 
         log::info!("appending {} custom styles", styles_references.len());
 
-        let mut other_styles = configuration.external_styles_paths().clone();
+        let mut other_styles = self.configuration.external_styles_paths().clone();
         styles_references.append(&mut other_styles);
 
-        let mut page = Self::create_default_html_page(dossier.name(), &styles_references, configuration.external_styles(), configuration.external_scripts_paths(), configuration.external_scripts(), configuration.theme(), configuration.use_remote_addons())?;
+        let mut page = Self::create_default_html_page(dossier_configuration.name(), &styles_references, self.configuration.external_styles(), self.configuration.external_scripts_paths(), self.configuration.external_scripts(), self.configuration.theme(), self.configuration.use_remote_addons())?;
         
         if let Some(toc) = compiled_toc {
             page.add_raw(toc.content());
@@ -227,7 +231,7 @@ impl Assembler for HtmlAssembler {
                                             .with_attributes(vec![
                                                 ("class", "document")
                                             ])
-                                            .with_raw(Self::assemble_document(document, configuration)?);
+                                            .with_raw(document.content());
 
             page.add_container(section);
         }
@@ -236,9 +240,7 @@ impl Assembler for HtmlAssembler {
             page.add_raw(bib.content());
         }
 
-        let artifact = Artifact::new(page.to_html_string());
-
-        Ok(artifact)
+        Ok(page.to_html_string())
     }
     
     fn assemble_bundle(&self, compiled_preamble: &Vec<CompilationOutcome>, compiled_chapters: &Vec<CompilationOutcome>) -> Result<String, AssemblerError> {

@@ -272,7 +272,7 @@ impl Compilable for Dossier {
             compiled_bib = Some(bibliography.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())?);
         }
 
-        Ok(())
+        codex.assembler().assemble_dossier(&documents_outcomes, compiled_toc.as_ref(), compiled_bib.as_ref())
     }
 } 
 
