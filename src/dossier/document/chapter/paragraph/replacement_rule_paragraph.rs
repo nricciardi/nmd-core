@@ -62,7 +62,7 @@ impl Paragraph for ReplacementRuleParagraph {
 mod test {
     use std::sync::Arc;
 
-    use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_paragraph_modifier::StandardParagraphModifier, standard_text_modifier::StandardTextModifier, Modifier, ModifiersBucket}, Codex}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart, single_capture_group_replacement_rule_part::SingleCaptureGroupReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}}, content_bundle::ContentBundle, load::{LoadConfiguration, LoadConfigurationOverLay}, load_block::{LoadBlock, LoadBlockContent}, output_format::OutputFormat};
+    use crate::{codex::{modifier::{standard_paragraph_modifier::StandardParagraphModifier, ModifiersBucket}, Codex}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart, single_capture_group_replacement_rule_part::SingleCaptureGroupReplacementRuleReplacerPart}, ReplacementRule}}, content_bundle::ContentBundle, load::{LoadConfiguration, LoadConfigurationOverLay}, load_block::{LoadBlock, LoadBlockContent}, output_format::OutputFormat};
 
     use super::ReplacementRuleParagraph;
 
@@ -201,34 +201,7 @@ mod test {
             replacement_rule,
         );
 
-        let codex = Codex::new(
-            CodexModifiersOrderedMap::from([
-                (
-                    StandardTextModifier::BoldStarVersion.identifier(),
-                    Box::new(
-                        Into::<BaseModifier>::into(StandardTextModifier::BoldStarVersion)
-                    ) as Box<dyn Modifier>
-                )
-            ]),
-            CodexModifiersOrderedMap::new(),
-            CodexCompilationRulesMap::from([
-                (
-                    StandardTextModifier::BoldStarVersion.identifier(),
-                    Box::new(
-                        ReplacementRule::new(
-                            StandardTextModifier::BoldStarVersion.modifier_pattern(),
-                            vec![
-                                Arc::new(FixedReplacementRuleReplacerPart::new(String::from("<strong>"))),
-                                Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, Vec::new(), StandardTextModifier::BoldStarVersion.incompatible_modifiers())),
-                                Arc::new(FixedReplacementRuleReplacerPart::new(String::from("</strong>"))),
-                            ]
-                        )
-                    ) as Box<dyn CompilationRule>
-                )
-            ]),
-            CodexLoadingRulesMap::new(),
-            Some(StandardParagraphModifier::CommonParagraph.identifier())
-        );
+        let codex = Codex::of_html();
 
         paragraph.compile(
             &OutputFormat::Html,

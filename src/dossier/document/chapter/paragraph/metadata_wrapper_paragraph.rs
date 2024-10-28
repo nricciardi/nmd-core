@@ -41,8 +41,6 @@ impl MetadataWrapperParagraph {
 
     fn html_standard_compile(&mut self, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationOutcome, CompilationError> {
         
-        let mut compilation_result = CompilableText::new_empty();
-
         let nuid_attr = text_utility::html_nuid_tag_or_nothing(self.nuid.as_ref());
 
         let id_attr;

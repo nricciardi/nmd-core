@@ -255,7 +255,7 @@ impl Paragraph for TableParagraph {
 #[cfg(test)]
 mod test {
 
-    use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, dossier::document::chapter::paragraph::{paragraph_loading_rule::table_paragraph_loading_rule::TableParagraphLoadingRule, Paragraph}, load::{LoadConfiguration, LoadConfigurationOverLay}, output_format::OutputFormat};
+    use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, dossier::document::chapter::paragraph::{paragraph_loading_rule::{table_paragraph_loading_rule::TableParagraphLoadingRule, ParagraphLoadingRule}, Paragraph}, load::{LoadConfiguration, LoadConfigurationOverLay}, output_format::OutputFormat};
 
     fn load_table(nmd_text: &str, codex: &Codex) -> Box<dyn Paragraph> {
 
@@ -283,9 +283,9 @@ mod test {
 
         let mut paragraph = load_table(nmd_text, &codex);
         
-        paragraph.compile(&OutputFormat::Html, &codex, &compilation_configuration, compilation_configuration_overlay).unwrap();
+        let outcome = paragraph.compile(&OutputFormat::Html, &codex, &compilation_configuration, compilation_configuration_overlay).unwrap();
         
-        let outcome = paragraph.compiled_text().as_ref().unwrap().content();
+        let outcome = outcome.content();
 
         assert!(outcome.contains("<thead"));
         assert!(outcome.contains("<tbody"));
@@ -312,9 +312,9 @@ mod test {
 
         let mut paragraph = load_table(nmd_text, &codex);
         
-        paragraph.compile(&OutputFormat::Html, &codex, &compilation_configuration, compilation_configuration_overlay).unwrap();
+        let outcome = paragraph.compile(&OutputFormat::Html, &codex, &compilation_configuration, compilation_configuration_overlay).unwrap();
         
-        let outcome = paragraph.compiled_text().as_ref().unwrap().content();
+        let outcome = outcome.content();
 
         assert!(outcome.contains("<img"))
     }
