@@ -40,6 +40,24 @@ impl Artifact {
     }
 }
 
+impl From<&str> for Artifact {
+    fn from(value: &str) -> Self {
+        Self::new(String::from(value))
+    }
+}
+
+impl From<&String> for Artifact {
+    fn from(value: &String) -> Self {
+        Self::new(value.clone())
+    }
+}
+
+impl From<String> for Artifact {
+    fn from(value: String) -> Self {
+        Self::new(value)
+    }
+}
+
 impl Display for Artifact {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&self.content)

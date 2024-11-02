@@ -22,13 +22,14 @@ use crate::compilation::compilation_rule::replacement_rule::replacement_rule_par
 use crate::compilation::compilation_rule::replacement_rule::replacement_rule_part::single_capture_group_replacement_rule_part::SingleCaptureGroupReplacementRuleReplacerPart;
 use crate::compilation::compilation_rule::replacement_rule::ReplacementRule;
 use crate::dossier::document::chapter::paragraph::paragraph_loading_rule::block_quote_paragraph_loading_rule::BlockQuoteParagraphLoadingRule;
+use crate::dossier::document::chapter::paragraph::paragraph_loading_rule::common_paragraph_loading_rule::CommonParagraphLoadingRule;
 use crate::dossier::document::chapter::paragraph::paragraph_loading_rule::focus_block_paragraph_loading_rule::FocusBlockParagraphLoadingRule;
 use crate::dossier::document::chapter::paragraph::paragraph_loading_rule::image_paragraph_loading_rule::ImageParagraphLoadingRule;
 use crate::dossier::document::chapter::paragraph::paragraph_loading_rule::list_paragraph_loading_rule::ListParagraphLoadingRule;
 use crate::dossier::document::chapter::paragraph::paragraph_loading_rule::metadata_wrapper_paragraph_loading_rule::MetadataWrapperParagraphLoadingRule;
 use crate::dossier::document::chapter::paragraph::paragraph_loading_rule::replacement_rule_paragraph_loading_rule::ReplacementRuleParagraphLoadingRule;
 use crate::dossier::document::chapter::paragraph::paragraph_loading_rule::table_paragraph_loading_rule::TableParagraphLoadingRule;
-use crate::dossier::document::chapter::paragraph::paragraph_loading_rule::ParagraphLoadingRule;
+use crate::dossier::document::chapter::paragraph::paragraph_loading_rule::{MultiParagraphLoadingRule, ParagraphLoadingRule};
 use crate::output_format::OutputFormat;
 use crate::resource::resource_reference::ResourceReference;
 use crate::utility::text_utility;
@@ -41,7 +42,7 @@ use super::compilation::compilation_rule::CompilationRule;
 
 pub type TextModifierOrderedMap = IndexMap<ModifierIdentifier, (Box<dyn Modifier>, Box<dyn CompilationRule>)>;
 pub type ParagraphModifierOrderedMap = IndexMap<ModifierIdentifier, (Box<dyn Modifier>, Box<dyn ParagraphLoadingRule>)>;
-pub type FallbackParagraphModifier = (ModifierIdentifier, Box<dyn ParagraphLoadingRule>);
+pub type FallbackParagraph = (ModifierIdentifier, Box<dyn MultiParagraphLoadingRule>);
 
 
 /// Ordered collection of rules
@@ -56,7 +57,7 @@ pub struct Codex {
     paragraph_modifiers: ParagraphModifierOrderedMap,
 
     #[getset(get = "pub", set = "pub")]
-    fallback_paragraph_modifier: Option<FallbackParagraphModifier>,
+    fallback_paragraph: Option<FallbackParagraph>,
     
     #[getset(get = "pub", set = "pub")]
     assembler: Box<dyn Assembler>
@@ -72,13 +73,13 @@ impl Codex {
 
     /// Create a new `Codex`
     pub fn new(text_modifiers: TextModifierOrderedMap, paragraph_modifiers: ParagraphModifierOrderedMap,
-                fallback_paragraph_modifier: Option<FallbackParagraphModifier>,
+                fallback_paragraph_modifier: Option<FallbackParagraph>,
                 assembler: Box<dyn Assembler>,) -> Self {
 
         Self {
             text_modifiers,
             paragraph_modifiers,
-            fallback_paragraph_modifier,
+            fallback_paragraph: fallback_paragraph_modifier,
             assembler
         }
     }
@@ -883,26 +884,7 @@ impl Codex {
             Some(
                 (
                     StandardParagraphModifier::CommonParagraph.identifier().clone(),
-                    (
-                        Box::new(ReplacementRuleParagraphLoadingRule::new(
-                            ReplacementRule::new(
-                                StandardParagraphModifier::CommonParagraph.modifier_pattern().clone(),
-                                vec![
-                                    Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|_, compilable, _, _, _| {
-        
-                                        Ok(CompilableText::from(vec![
-                                            CompilableTextPart::new_fixed(format!(
-                                                r#"<p class="paragraph"{}>"#,
-                                                text_utility::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
-                                            ))
-                                        ]))
-                                    }))),
-                                    Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardParagraphModifier::CommonParagraph.incompatible_modifiers())),
-                                    Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</p>"#)))
-                                ]
-                            )
-                        ))
-                    )
+                    Box::new(CommonParagraphLoadingRule::new())
                 ),
             ),
             Box::new(HtmlAssembler::new())

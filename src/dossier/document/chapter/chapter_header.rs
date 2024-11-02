@@ -47,7 +47,7 @@ impl ChapterHeader {
 
                 log::debug!("chapter found between {} and {}: {:?}", m_start, m_end, &matched_str);
 
-                if let Some((mut heading, mut tags)) = Self::parse_chapter_heading_and_tags_from_str(content, &mut last_heading_level, codex, configuration)? {
+                if let Some((mut heading, mut tags)) = Self::parse_chapter_heading_and_tags_from_str(&matched_str, &mut last_heading_level, codex, configuration)? {
 
                     heading.set_start(heading.start() + m_start);
                     heading.set_end(heading.end() + m_start);

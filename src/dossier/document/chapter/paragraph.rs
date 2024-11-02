@@ -5,6 +5,7 @@ pub mod image_paragraph;
 pub mod block_quote_paragraph;
 pub mod focus_block_paragraph;
 pub mod metadata_wrapper_paragraph;
+pub mod common_paragraph;
 pub mod paragraph_loading_rule;
 
 

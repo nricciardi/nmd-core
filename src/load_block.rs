@@ -44,7 +44,9 @@ impl LoadBlock {
     /// Inner load method to load content from `&str` based on `Codex`
     /// 
     /// This method uses recursive algorithm, use `content_offset=0` and `paragraph_modifier_index=0` to start.
-    fn inner_load_from_str(content: &str, content_offset: usize, codex: &Codex, paragraph_modifier_index: usize, configuration: &LoadConfiguration, configuration_overlay: LoadConfigurationOverLay) -> Result<Vec<LoadBlock>, LoadError> {
+    fn inner_load_from_str(current_content: &str, offset: usize, codex: &Codex, paragraph_modifier_index: usize, configuration: &LoadConfiguration, configuration_overlay: LoadConfigurationOverLay) -> Result<Vec<LoadBlock>, LoadError> {
+
+        let position_in_global_content = |position_in_current: usize| position_in_current + offset;
 
         if let Some((modifier_identifier, (paragraph_modifier, paragraph_loading_rule))) = codex.paragraph_modifiers().get_index(paragraph_modifier_index) {
 
@@ -56,16 +58,18 @@ impl LoadBlock {
             let mut last_position: usize = 0;
 
             // elaborate content based on current paragraph modifier
-            for m in paragraph_modifier.modifier_pattern_regex().find_iter(content) {
+            for m in paragraph_modifier.modifier_pattern_regex().find_iter(current_content) {
 
                 assert!(!m.is_empty());
 
-                let m_start = content_offset + m.start();
-                let m_end = content_offset + m.end();
+                let m_start = m.start();
+                let m_end = m.end();
+
+                log::debug!("match found between {} and {}", m_start, m_end);
 
                 // save previous slice, it will be loaded after
                 if m_start > last_position {
-                    unmatched_slices.push((last_position, &content[last_position..m_start]));
+                    unmatched_slices.push((position_in_global_content(last_position), &current_content[last_position..m_start]));
                 }
 
                 last_position = m_end;
@@ -73,7 +77,12 @@ impl LoadBlock {
                 let paragraph = paragraph_loading_rule.load(m.as_str(), codex, configuration, configuration_overlay.clone())?;
 
                 if !paragraph.is_empty() {
-                    let block = LoadBlock::new(m_start, m_end, LoadBlockContent::Paragraph(paragraph));
+
+                    let block = LoadBlock::new(
+                        position_in_global_content(m_start),
+                        position_in_global_content(m_end),
+                        LoadBlockContent::Paragraph(paragraph)
+                    );
 
                     log::debug!("added block:\n{:#?}", block);
 
@@ -82,14 +91,17 @@ impl LoadBlock {
             }
 
             // take last slice (if exists)
-            if content.len() > last_position {
-                unmatched_slices.push((last_position, &content[last_position..]));
+            if current_content.len() > last_position {
+                unmatched_slices.push((position_in_global_content(last_position), &current_content[last_position..]));
             }
 
             let mut unmatched_slices_blocks: Vec<LoadBlock> = Vec::new();
 
             // load unmatched slices
             for (offset, unmatched_slice) in unmatched_slices {
+
+                log::debug!("try next paragraph modifier on:\n{}\n(offset: {})", unmatched_slice, offset);
+
                 let mut blocks = Self::inner_load_from_str(unmatched_slice, offset, codex, paragraph_modifier_index + 1, configuration, configuration_overlay.clone())?;
             
                 unmatched_slices_blocks.append(&mut blocks);
@@ -99,59 +111,84 @@ impl LoadBlock {
 
             return Ok(current_paragraph_blocks)
 
-        } else {    // => there are no other modifiers 
+        } else {    // => there are no other modifiers
 
-            // load headings
-            let mut headings_blocks = ChapterHeader::load_headings_and_chapter_tags_from_str(content, codex, configuration)?;
+            log::debug!("next content contains headings or fallback paragraph:\n{}", current_content);
 
-            let mut blocks: Vec<LoadBlock> = Vec::new();
-
-            let mut last_position = 0;
-
-            if codex.fallback_paragraph_modifier().is_none()  {
+            if codex.fallback_paragraph().is_none()  {
 
                 log::warn!("there isn't fallback paragraph loading rule")
             }
 
-            let mut add_fb_block = |s: &str, start: usize, end: usize| -> Result<(), LoadError> {
+            // load headings
+            let mut headings_blocks = ChapterHeader::load_headings_and_chapter_tags_from_str(current_content, codex, configuration)?;
 
-                if let Some((fb_id, fallback_loading_rule)) = codex.fallback_paragraph_modifier() {
+            let mut blocks: Vec<LoadBlock> = Vec::new();
 
-                    log::debug!("fallback rule {}:{:?} will be used to load:\n{}", fb_id, fallback_loading_rule, s);
+            let mut add_fb_blocks = |s: &str, start: usize, end: usize| -> Result<(), LoadError> {
 
-                    let paragraph = fallback_loading_rule.load(s, codex, configuration, configuration_overlay.clone())?;
+                if let Some((fb_id, fallback_loading_rule)) = codex.fallback_paragraph() {
 
-                    blocks.push(LoadBlock::new(
-                        start, 
-                        end,
-                        LoadBlockContent::Paragraph(paragraph)
-                    ));                
+                    log::debug!("fallback rule {} will be used to load:\n{}", fb_id, s);
+
+                    let paragraphs = fallback_loading_rule.load(s, codex, configuration, configuration_overlay.clone())?;
+
+                    let len = paragraphs.len();
+                    assert!((end - start) > len);
+
+                    for (index, paragraph) in paragraphs.into_iter().enumerate() {
+
+                        let fake_start = start + ((end - start) / len * index); 
+                        let fake_end = start + ((end - start) / len * (index + 1)); 
+
+                        let block = LoadBlock::new(
+                            fake_start,
+                            fake_end,
+                            LoadBlockContent::Paragraph(paragraph)
+                        );
+
+                        log::debug!("fallback blocks:\n{:#?}", block);
+    
+                        blocks.push(block);
+                    }
                 }
 
                 Ok(())
             };
+
+            let mut last_position = 0;
 
             // assign fallback paragraph
             for heading_block in headings_blocks.iter_mut() {
 
                 if heading_block.start() > last_position {
 
-                    let s = &content[last_position..heading_block.start()];
+                    let s = &current_content[last_position..heading_block.start()];
 
-                    add_fb_block(s, content_offset + last_position, content_offset + heading_block.start())?;
+                    add_fb_blocks(
+                        s,
+                        position_in_global_content(last_position),
+                        position_in_global_content(heading_block.start())
+                    )?;
                 }
 
                 last_position = heading_block.end();
 
-                heading_block.set_start(heading_block.start() + content_offset);
-                heading_block.set_end(heading_block.end() + content_offset);
+                heading_block.set_start(position_in_global_content(heading_block.start()));
+                heading_block.set_end(position_in_global_content(heading_block.end()));
             }
 
-            if content.len() > last_position {
+            log::debug!("last heading found at position: {}/{}", last_position, current_content.len());
 
-                let s = &content[last_position..];
+            if current_content.len() > last_position {
 
-                add_fb_block(s, content_offset + last_position, content_offset + content.len())?;
+                let s = &current_content[last_position..];
+
+                add_fb_blocks(
+                    s,
+                    position_in_global_content(last_position),
+                    position_in_global_content(current_content.len())
+                )?;
             }
 
             blocks.append(&mut headings_blocks);

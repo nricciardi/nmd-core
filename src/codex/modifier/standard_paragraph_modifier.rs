@@ -109,7 +109,7 @@ impl StandardParagraphModifier {
             Self::Image => build_strict_reserved_line_pattern(&format!(r"!\[([^\]]*)\](?:{})?\(([^)]+)\)(?:\{{\{{{}\}}\}})?", IDENTIFIER_PATTERN, STYLE_PATTERN)),
             Self::AbridgedImage => build_strict_reserved_line_pattern(&format!(r"!\[\((.*)\)\](?:{})?(?:\{{\{{{}\}}\}})?", IDENTIFIER_PATTERN, STYLE_PATTERN)),
             Self::MultiImage => build_strict_reserved_line_pattern(r"!!(?::([\w-]+):)?\[\[(?s:(.*?))\]\]"),
-            Self::CommonParagraph => format!("{}{}{}", MULTI_LINES_CONTENT_EXCLUDING_HEADINGS_PATTERN, NEW_LINE_PATTERN, NEW_LINE_PATTERN),
+            Self::CommonParagraph => String::from(r"([\s\S]+)"),
             Self::CommentBlock => format!(r"<!--(?s:(.*?))-->"),
             Self::CodeBlock => format!(r"{}{}{}{}", build_strict_reserved_line_pattern(r"```[ \t]*(\w+)?"), NEW_LINE_PATTERN, MULTI_LINES_CONTENT_PATTERN, build_strict_reserved_line_pattern("```")),
             Self::MathBlock => format!(r"{}{}{}", build_strict_reserved_line_pattern(r"\$\$"), MULTI_LINES_CONTENT_PATTERN, build_strict_reserved_line_pattern(r"\$\$")),
