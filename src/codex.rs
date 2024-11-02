@@ -106,6 +106,67 @@ impl Codex {
 
         let text_rules: TextModifierOrderedMap = TextModifierOrderedMap::from([
             (
+                StandardTextModifier::Escape.identifier().clone(),
+                (
+                    Box::new(Into::<BaseModifier>::into(StandardTextModifier::Escape)) as Box<dyn Modifier>,
+                    Box::new(ReplacementRule::new(
+                        StandardTextModifier::Escape.modifier_pattern().clone(),
+                        vec![
+                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::Escape.incompatible_modifiers())),
+                        ]
+                    )) as Box<dyn CompilationRule>
+                ) as (Box<dyn Modifier>, Box<dyn CompilationRule>)
+            ),
+            (
+                StandardTextModifier::InlineCode.identifier().clone(),
+                (
+                    Box::new(Into::<BaseModifier>::into(StandardTextModifier::InlineCode)) as Box<dyn Modifier>,
+                    Box::new(ReplacementRule::new(
+                        StandardTextModifier::InlineCode.modifier_pattern().clone(),
+                        vec![
+                            Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<code class="language-markup inline-code">"#))),
+                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::InlineCode.incompatible_modifiers())),
+                            Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</code>"#))),
+                        ]
+                    )) as Box<dyn CompilationRule>
+                ) as (Box<dyn Modifier>, Box<dyn CompilationRule>)
+            ),
+            (
+                StandardTextModifier::InlineMath.identifier().clone(),
+                (
+                    Box::new(Into::<BaseModifier>::into(StandardTextModifier::InlineMath)),
+                    Box::new(ReplacementRule::new(
+                        StandardTextModifier::InlineMath.modifier_pattern().clone(),
+                        vec![
+                            Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<span class="inline-math">$"#))),
+                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, vec![], StandardTextModifier::InlineMath.incompatible_modifiers())),
+                            Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"$</span>"#))),
+                        ]
+                    ))
+                )
+            ),
+            (
+                StandardTextModifier::Comment.identifier().clone(),
+                (
+                    Box::new(Into::<BaseModifier>::into(StandardTextModifier::Comment)),
+                    Box::new(ReplacementRule::new(
+                        StandardTextModifier::Comment.modifier_pattern().clone(),
+                        vec![
+                            Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<!-- "#))),
+                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::Comment.incompatible_modifiers())),
+                            Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#" -->"#))),
+                        ]
+                    ))
+                )
+            ),
+            (
+                StandardTextModifier::GreekLetter.identifier().clone(),
+                (
+                    Box::new(Into::<BaseModifier>::into(StandardTextModifier::GreekLetter)),
+                    Box::new(HtmlGreekLettersRule::new())
+                ),
+            ),
+            (
                 StandardTextModifier::Todo.identifier().clone(),
                 (
                     Box::new(Into::<BaseModifier>::into(StandardTextModifier::Todo)) as Box<dyn Modifier>,
@@ -153,13 +214,6 @@ impl Codex {
                         Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div></div>"#))),
                     ])),
                 )
-            ),
-            (
-                StandardTextModifier::GreekLetter.identifier().clone(),
-                (
-                    Box::new(Into::<BaseModifier>::into(StandardTextModifier::GreekLetter)),
-                    Box::new(HtmlGreekLettersRule::new())
-                ),
             ),
             (
                 StandardTextModifier::AbridgedBookmark.identifier().clone(),
@@ -322,34 +376,6 @@ impl Codex {
                 )
             ),
             (
-                StandardTextModifier::InlineMath.identifier().clone(),
-                (
-                    Box::new(Into::<BaseModifier>::into(StandardTextModifier::InlineMath)),
-                    Box::new(ReplacementRule::new(
-                        StandardTextModifier::InlineMath.modifier_pattern().clone(),
-                        vec![
-                            Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<span class="inline-math">$"#))),
-                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, vec![], StandardTextModifier::InlineMath.incompatible_modifiers())),
-                            Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"$</span>"#))),
-                        ]
-                    ))
-                )
-            ),
-            (
-                StandardTextModifier::InlineCode.identifier().clone(),
-                (
-                    Box::new(Into::<BaseModifier>::into(StandardTextModifier::InlineCode)),
-                    Box::new(ReplacementRule::new(
-                        StandardTextModifier::InlineCode.modifier_pattern().clone(),
-                        vec![
-                            Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<code class="language-markup inline-code">"#))),
-                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::InlineCode.incompatible_modifiers())),
-                            Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</code>"#))),
-                        ]
-                    ))
-                )
-            ),
-            (
                 StandardTextModifier::BoldStarVersion.identifier().clone(),
                 (
                     Box::new(Into::<BaseModifier>::into(StandardTextModifier::BoldStarVersion)),
@@ -484,20 +510,6 @@ impl Codex {
                 )
             ),
             (
-                StandardTextModifier::Comment.identifier().clone(),
-                (
-                    Box::new(Into::<BaseModifier>::into(StandardTextModifier::Comment)),
-                    Box::new(ReplacementRule::new(
-                        StandardTextModifier::Comment.modifier_pattern().clone(),
-                        vec![
-                            Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<!-- "#))),
-                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::Comment.incompatible_modifiers())),
-                            Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#" -->"#))),
-                        ]
-                    ))
-                )
-            ),
-            (
                 StandardTextModifier::Checkbox.identifier().clone(),
                 (
                     Box::new(Into::<BaseModifier>::into(StandardTextModifier::Checkbox)),
@@ -537,18 +549,6 @@ impl Codex {
                                     ))
                                 ]))
                             }))),
-                        ]
-                    ))
-                )
-            ),
-            (
-                StandardTextModifier::Escape.identifier().clone(),
-                (
-                    Box::new(Into::<BaseModifier>::into(StandardTextModifier::Escape)),
-                    Box::new(ReplacementRule::new(
-                        StandardTextModifier::Escape.modifier_pattern().clone(),
-                        vec![
-                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::Escape.incompatible_modifiers())),
                         ]
                     ))
                 )

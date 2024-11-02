@@ -54,10 +54,10 @@ impl StandardTextModifier {
 
         //! they must have the compatibility order
         vec![
-            Self::InlineMath,
-            Self::InlineCode,
-            Self::Comment,
             Self::Escape,
+            Self::InlineCode,
+            Self::InlineMath,
+            Self::Comment,
             Self::GreekLetter,
             Self::Todo,
             Self::Bookmark,
