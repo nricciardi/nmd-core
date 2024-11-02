@@ -64,15 +64,14 @@ impl StandardParagraphModifier {
             Self::AbridgedTodo,
             Self::MultilineTodo,
             Self::Todo,
+            Self::MultiImage,
+            Self::AbridgedImage,
+            Self::Image,
             Self::PageBreak,
             Self::LineBreakDash,
             Self::LineBreakStar,
             Self::LineBreakPlus,
-            Self::MultiImage,
-            Self::AbridgedImage,
-            Self::Image,
             Self::CommentBlock,
-            // Self::CommonParagraph, => fallback
         ]
     }
 
@@ -108,7 +107,7 @@ impl StandardParagraphModifier {
         match *self {
             Self::Image => build_strict_reserved_line_pattern(&format!(r"!\[([^\]]*)\](?:{})?\(([^)]+)\)(?:\{{\{{{}\}}\}})?", IDENTIFIER_PATTERN, STYLE_PATTERN)),
             Self::AbridgedImage => build_strict_reserved_line_pattern(&format!(r"!\[\((.*)\)\](?:{})?(?:\{{\{{{}\}}\}})?", IDENTIFIER_PATTERN, STYLE_PATTERN)),
-            Self::MultiImage => build_strict_reserved_line_pattern(r"!!(?::([\w-]+):)?\[\[(?s:(.*?))\]\]"),
+            Self::MultiImage => String::from(r"!!(?::([\w-]+):)?\[\[(?s:(.*?))\]\]"),
             Self::CommonParagraph => String::from(r"([\s\S]+)"),
             Self::CommentBlock => format!(r"<!--(?s:(.*?))-->"),
             Self::CodeBlock => format!(r"{}{}{}{}", build_strict_reserved_line_pattern(r"```[ \t]*(\w+)?"), NEW_LINE_PATTERN, MULTI_LINES_CONTENT_PATTERN, build_strict_reserved_line_pattern("```")),

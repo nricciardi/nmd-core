@@ -571,25 +571,58 @@ impl Codex {
 
         let paragraph_rules: ParagraphModifierOrderedMap = ParagraphModifierOrderedMap::from([
             (
-                    StandardParagraphModifier::Table.identifier(),
-                    (
-                        Box::new(Into::<BaseModifier>::into(StandardParagraphModifier::Table)) as Box<dyn Modifier>,
-                        Box::new(TableParagraphLoadingRule::new()) as Box<dyn ParagraphLoadingRule>
-                    ) as (Box<dyn Modifier>, Box<dyn ParagraphLoadingRule>)
+                StandardParagraphModifier::CodeBlock.identifier().clone(),
+                (
+                    Box::new(Into::<BaseModifier>::into(StandardParagraphModifier::CodeBlock)) as Box<dyn Modifier>,
+                    Box::new(ReplacementRuleParagraphLoadingRule::new(
+                        ReplacementRule::new(
+                            StandardParagraphModifier::CodeBlock.modifier_pattern().clone(),
+                            vec![
+                                Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
+    
+                                    let mut lang_class = String::from("language-markup");
+                                    if let Some(lang) = captures.get(1) {
+                                        lang_class = format!("language-{}", lang.as_str());
+                                    }
+    
+                                    Ok(CompilableText::from(vec![
+                                        CompilableTextPart::new_fixed(format!(
+                                            r#"<pre{}><code class="{} code-block">{}</code></pre>"#,
+                                            text_utility::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
+                                            lang_class,
+                                            text_utility::replace(captures.get(2).unwrap().as_str(), &ESCAPE_HTML),
+                                        )
+                                    )
+                                    ]))
+                                }))),
+                            ]
+                        )
+                    )) as Box<dyn ParagraphLoadingRule>
+                ) as (Box<dyn Modifier>, Box<dyn ParagraphLoadingRule>)
             ),
             (
-                    StandardParagraphModifier::PageBreak.identifier().clone(),
-                    (
-                        Box::new(Into::<BaseModifier>::into(StandardParagraphModifier::PageBreak)) as Box<dyn Modifier>,
-                        Box::new(ReplacementRuleParagraphLoadingRule::new(
-                            ReplacementRule::new(
-                                StandardParagraphModifier::PageBreak.modifier_pattern().clone(),
-                                vec![
-                                    Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<div class="page-break"></div>"#)))
-                                ]
-                            )
-                        ))
-                    )
+                StandardParagraphModifier::MathBlock.identifier().clone(),
+                (
+                    Box::new(Into::<BaseModifier>::into(StandardParagraphModifier::MathBlock)) as Box<dyn Modifier>,
+                    Box::new(ReplacementRuleParagraphLoadingRule::new(
+                        ReplacementRule::new(
+                            StandardParagraphModifier::MathBlock.modifier_pattern().clone(),
+                            vec![
+                                Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
+    
+                                    Ok(CompilableText::from(vec![
+                                        CompilableTextPart::new_fixed(format!(
+                                            r#"<p class="math-block"{}>$${}$$</p>"#,
+                                            text_utility::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
+                                            captures.get(1).unwrap().as_str(),
+                                        )
+                                    )
+                                    ]))
+                                }))),
+                            ]
+                        )
+                    ))
+                )
             ),
             (
                 StandardParagraphModifier::EmbeddedParagraphStyle.identifier().clone(),
@@ -629,26 +662,31 @@ impl Codex {
                 )
             ),
             (
-                StandardParagraphModifier::Todo.identifier().clone(),
+                    StandardParagraphModifier::Table.identifier(),
+                    (
+                        Box::new(Into::<BaseModifier>::into(StandardParagraphModifier::Table)) as Box<dyn Modifier>,
+                        Box::new(TableParagraphLoadingRule::new()) as Box<dyn ParagraphLoadingRule>
+                    ) as (Box<dyn Modifier>, Box<dyn ParagraphLoadingRule>)
+            ),
+            (
+                StandardParagraphModifier::ExtendedBlockQuote.identifier().clone(),
                 (
-                    Box::new(Into::<BaseModifier>::into(StandardParagraphModifier::Todo)) as Box<dyn Modifier>,
-                    Box::new(ReplacementRuleParagraphLoadingRule::new(
-                        ReplacementRule::new(
-                            StandardParagraphModifier::Todo.modifier_pattern().clone(),
-                            vec![
-                                Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|_, compilable, _, _, _| {
-    
-                                    Ok(CompilableText::from(CompilableTextPart::new_fixed(format!(
-                                            r#"<div class="todo"{}><div class="todo-title"></div>"#,
-                                            text_utility::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
-                                        ))
-                                    ))
-                                }))),
-                                Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardParagraphModifier::Todo.incompatible_modifiers())),
-                                Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div>"#)))
-                            ]
-                        )
-                    ))
+                    Box::new(Into::<BaseModifier>::into(StandardParagraphModifier::ExtendedBlockQuote)) as Box<dyn Modifier>,
+                    Box::new(BlockQuoteParagraphLoadingRule::new()),
+                )
+            ),
+            (
+                StandardParagraphModifier::FocusBlock.identifier().clone(),
+                (
+                    Box::new(Into::<BaseModifier>::into(StandardParagraphModifier::FocusBlock)) as Box<dyn Modifier>,
+                    Box::new(FocusBlockParagraphLoadingRule::new(StandardParagraphModifier::FocusBlock.modifier_pattern_regex().clone())),
+                )
+            ),
+            (
+                StandardParagraphModifier::List.identifier().clone(),
+                (
+                    Box::new(Into::<BaseModifier>::into(StandardParagraphModifier::List)) as Box<dyn Modifier>,
+                    Box::new(ListParagraphLoadingRule::new()),
                 )
             ),
             (
@@ -696,34 +734,33 @@ impl Codex {
                 )
             ),
             (
-                StandardParagraphModifier::ExtendedBlockQuote.identifier().clone(),
+                StandardParagraphModifier::Todo.identifier().clone(),
                 (
-                    Box::new(Into::<BaseModifier>::into(StandardParagraphModifier::ExtendedBlockQuote)) as Box<dyn Modifier>,
-                    Box::new(BlockQuoteParagraphLoadingRule::new()),
-                )
-            ),
-            (
-                StandardParagraphModifier::MathBlock.identifier().clone(),
-                (
-                    Box::new(Into::<BaseModifier>::into(StandardParagraphModifier::MathBlock)) as Box<dyn Modifier>,
+                    Box::new(Into::<BaseModifier>::into(StandardParagraphModifier::Todo)) as Box<dyn Modifier>,
                     Box::new(ReplacementRuleParagraphLoadingRule::new(
                         ReplacementRule::new(
-                            StandardParagraphModifier::MathBlock.modifier_pattern().clone(),
+                            StandardParagraphModifier::Todo.modifier_pattern().clone(),
                             vec![
-                                Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
+                                Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|_, compilable, _, _, _| {
     
-                                    Ok(CompilableText::from(vec![
-                                        CompilableTextPart::new_fixed(format!(
-                                            r#"<p class="math-block"{}>$${}$$</p>"#,
+                                    Ok(CompilableText::from(CompilableTextPart::new_fixed(format!(
+                                            r#"<div class="todo"{}><div class="todo-title"></div>"#,
                                             text_utility::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
-                                            captures.get(1).unwrap().as_str(),
-                                        )
-                                    )
-                                    ]))
+                                        ))
+                                    ))
                                 }))),
+                                Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardParagraphModifier::Todo.incompatible_modifiers())),
+                                Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div>"#)))
                             ]
                         )
                     ))
+                )
+            ),
+            (
+                StandardParagraphModifier::MultiImage.identifier().clone(),
+                (
+                    Box::new(Into::<BaseModifier>::into(StandardParagraphModifier::MultiImage)) as Box<dyn Modifier>,
+                    Box::new(ImageParagraphLoadingRule::MultiImage)
                 )
             ),
             (
@@ -741,55 +778,18 @@ impl Codex {
                 )
             ),
             (
-                StandardParagraphModifier::MultiImage.identifier().clone(),
-                (
-                    Box::new(Into::<BaseModifier>::into(StandardParagraphModifier::MultiImage)) as Box<dyn Modifier>,
-                    Box::new(ImageParagraphLoadingRule::MultiImage)
-                )
-            ),
-            (
-                StandardParagraphModifier::CodeBlock.identifier().clone(),
-                (
-                    Box::new(Into::<BaseModifier>::into(StandardParagraphModifier::CodeBlock)) as Box<dyn Modifier>,
-                    Box::new(ReplacementRuleParagraphLoadingRule::new(
-                        ReplacementRule::new(
-                            StandardParagraphModifier::CodeBlock.modifier_pattern().clone(),
-                            vec![
-                                Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
-    
-                                    let mut lang_class = String::from("language-markup");
-                                    if let Some(lang) = captures.get(1) {
-                                        lang_class = format!("language-{}", lang.as_str());
-                                    }
-    
-                                    Ok(CompilableText::from(vec![
-                                        CompilableTextPart::new_fixed(format!(
-                                            r#"<pre{}><code class="{} code-block">{}</code></pre>"#,
-                                            text_utility::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
-                                            lang_class,
-                                            text_utility::replace(captures.get(2).unwrap().as_str(), &ESCAPE_HTML),
-                                        )
-                                    )
-                                    ]))
-                                }))),
-                            ]
-                        )
-                    ))
-                )
-            ),
-            (
-                StandardParagraphModifier::List.identifier().clone(),
-                (
-                    Box::new(Into::<BaseModifier>::into(StandardParagraphModifier::List)) as Box<dyn Modifier>,
-                    Box::new(ListParagraphLoadingRule::new()),
-                )
-            ),
-            (
-                StandardParagraphModifier::FocusBlock.identifier().clone(),
-                (
-                    Box::new(Into::<BaseModifier>::into(StandardParagraphModifier::FocusBlock)) as Box<dyn Modifier>,
-                    Box::new(FocusBlockParagraphLoadingRule::new(StandardParagraphModifier::FocusBlock.modifier_pattern_regex().clone())),
-                )
+                    StandardParagraphModifier::PageBreak.identifier().clone(),
+                    (
+                        Box::new(Into::<BaseModifier>::into(StandardParagraphModifier::PageBreak)) as Box<dyn Modifier>,
+                        Box::new(ReplacementRuleParagraphLoadingRule::new(
+                            ReplacementRule::new(
+                                StandardParagraphModifier::PageBreak.modifier_pattern().clone(),
+                                vec![
+                                    Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<div class="page-break"></div>"#)))
+                                ]
+                            )
+                        ))
+                    )
             ),
             (
                 StandardParagraphModifier::LineBreakDash.identifier().clone(),
