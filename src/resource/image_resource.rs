@@ -143,6 +143,9 @@ impl ImageResource {
                                 log::info!("canonicalizing ok: {:?} -> {:?}", path, src);
 
                                 path = src;
+
+                            } else {
+                                log::warn!("canonicalizing fails for {:?}", path);
                             }
                         }
                     }

@@ -333,6 +333,10 @@ body {
     margin-bottom: 14pt;
 }
 
+.toc-item {
+    margin: 1vh 0 1vh 0;
+}
+
 .toc-body {
     list-style-type: none;
     padding: 0;

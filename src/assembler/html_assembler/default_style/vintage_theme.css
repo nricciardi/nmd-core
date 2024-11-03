@@ -419,6 +419,10 @@ body {
     margin-bottom: 7vh;
 }
 
+.toc-item {
+    margin: 1vh 0 1vh 0;
+}
+
 .toc-title {
     font-size: xx-large;
     font-weight: bold;

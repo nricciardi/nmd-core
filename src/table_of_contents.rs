@@ -125,7 +125,7 @@ impl Compilable for TableOfContents {
 
                     let compilation_configuration_overlay = compilation_configuration_overlay.clone();
 
-                    let mut compiled_heading_title = CompilableText::from(self.title.clone());
+                    let mut compiled_heading_title = CompilableText::from(heading.title().clone());
                     
                     compiled_heading_title.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
 

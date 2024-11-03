@@ -424,6 +424,10 @@ body {
     page-break-inside: avoid;
 }
 
+.toc-item {
+    margin: 1vh 0 1vh 0;
+}
+
 .toc-item-indentation {
     padding-left: 2vw;
 }
