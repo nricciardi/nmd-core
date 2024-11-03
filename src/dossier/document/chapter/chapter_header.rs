@@ -81,17 +81,8 @@ impl ChapterHeader {
 
                     StandardHeading::MinorHeading => {
     
-                        let level: HeadingLevel;
-    
-                        if *last_heading_level < 1 {
-                            log::warn!("{} found, but last heading has level {}, so it is set as 1", StandardHeading::MinorHeading.identifier(), last_heading_level);
-                            level = 1;
-    
-                        } else {
-    
-                            level = *last_heading_level - 1;
-                        }
-    
+                        let level = HeadingLevel::Minor;
+
                         let title = capture.get(1).unwrap();    
     
                         let tags = ChapterTag::load_chapter_tags_from_str(&content[title.end()..])?;
@@ -103,13 +94,8 @@ impl ChapterHeader {
                     },
     
                     StandardHeading::MajorHeading => {
-    
-                        let mut level: HeadingLevel = *last_heading_level + 1;
-    
-                        if level < 1 {
-                            log::warn!("level {} < 0, so it is set as 1", level);
-                            level = 1;
-                        }
+                        
+                        let level = HeadingLevel::Major;
     
                         let title = capture.get(1).unwrap();
        
@@ -124,15 +110,8 @@ impl ChapterHeader {
     
                     StandardHeading::SameHeading => {
     
-                        let level: HeadingLevel;
-                        if *last_heading_level < 1 {
-                            log::warn!("{} found, but last heading has level {}, so it is set as 1", StandardHeading::MinorHeading.identifier(), last_heading_level);
-                            level = 1;
-    
-                        } else {
-    
-                            level = *last_heading_level;
-                        }
+                        
+                        let level = HeadingLevel::Same;
                         
                         let title = capture.get(1).unwrap();
     
@@ -153,7 +132,7 @@ impl ChapterHeader {
                         let tags = ChapterTag::load_chapter_tags_from_str(&content[title.end()..])?;
                     
                         return Ok(Some((
-                            Heading::new(level, title.as_str().to_string()),
+                            Heading::new(HeadingLevel::Explicit(level), title.as_str().to_string()),
                             tags
                         )))
                     },
@@ -161,7 +140,7 @@ impl ChapterHeader {
                     StandardHeading::HeadingGeneralCompactVersion(_) => {
                         let matched = heading_modifier.modifier_pattern_regex().captures(content).unwrap();
     
-                        let level: HeadingLevel = matched.get(1).unwrap().as_str().parse().unwrap();
+                        let level = HeadingLevel::Explicit(matched.get(1).unwrap().as_str().parse().unwrap());
                         let title = capture.get(2).unwrap();    
     
                         let tags = ChapterTag::load_chapter_tags_from_str(&content[title.end()..])?;

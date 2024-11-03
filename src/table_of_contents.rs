@@ -2,7 +2,7 @@ pub mod content_tree;
 
 use getset::{CopyGetters, Getters, Setters};
 use serde::Serialize;
-use crate::{codex::Codex, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, output_format::OutputFormat};
+use crate::{codex::Codex, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, dossier::document::chapter::heading::HeadingLevel, output_format::OutputFormat};
 use super::dossier::document::chapter::heading::Heading;
 
 
@@ -41,20 +41,22 @@ impl TableOfContents {
     }
 
     /// Return minimum header level (if exists)
-    fn min_headers_lv(headings: &Vec<Heading>) -> Option<u32> {
-        let mut m: Option<u32> = None;
+    fn min_headers_lv(headings: &Vec<Heading>) -> Result<u32, CompilationError> {
+        let mut m: u32 = 0;
 
         for h in headings {
+
+            let level = if let HeadingLevel::Explicit(l) = h.level() {
+                *l
+            } else {
+
+                return Err(CompilationError::HeadingLevelNotInferable(h.title().to_string()))
+            };
             
-            if m.is_none() {
-                m = Some(h.level());
-                continue;
-            }
-            
-            m = Some(m.unwrap().min(h.level()));
+            m = m.min(level);
         }
 
-        m
+        Ok(m)
     }
 }
 
@@ -72,6 +74,8 @@ impl Compilable for TableOfContents {
 
             unimplemented!("table of contents with page numbers not already usable...");
         }
+
+        let min_heading_lv = Self::min_headers_lv(self.headings())?;
         
         match format {
             OutputFormat::Html => {
@@ -89,7 +93,14 @@ impl Compilable for TableOfContents {
 
                 for heading in self.headings() {
 
-                    let heading_lv: u32 = heading.level();
+                    let heading_lv: u32 = if let HeadingLevel::Explicit(l) = heading.level() {
+
+                        *l
+                        
+                    } else {
+
+                        return Err(CompilationError::HeadingLevelNotInferable(heading.title().to_string()))
+                    };
 
                     if heading_lv > self.maximum_heading_level() as u32 {
                         continue;
@@ -99,16 +110,7 @@ impl Compilable for TableOfContents {
 
                     if !self.plain() {
 
-                        let min_heading_lv = Self::min_headers_lv(self.headings());
-
-                        if let Some(m) = min_heading_lv {
-
-                            outcome.parts_mut().push(CompilableTextPart::new_fixed(TOC_INDENTATION.repeat((heading_lv - m) as usize)));
-
-                        } else {
-                            outcome.parts_mut().push(CompilableTextPart::new_fixed(TOC_INDENTATION.repeat(heading_lv as usize)));
-
-                        }
+                        outcome.parts_mut().push(CompilableTextPart::new_fixed(TOC_INDENTATION.repeat((heading_lv - min_heading_lv) as usize)));
                     }
 
                     outcome.parts_mut().push(CompilableTextPart::new_fixed(r#"<span class="toc-item-bullet"></span><span class="toc-item-content">"#.to_string()));

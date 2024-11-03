@@ -1,7 +1,7 @@
 use getset::{Getters, MutGetters, Setters};
 use rayon::{iter::{IntoParallelRefMutIterator, ParallelIterator}, slice::ParallelSliceMut};
 use serde::Serialize;
-use crate::{codex::Codex, compilable_text::CompilableText, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, dossier::document::{chapter::paragraph::Paragraph, Chapter}, load_block::{LoadBlock, LoadBlockContent}, output_format::OutputFormat};
+use crate::{codex::Codex, compilable_text::CompilableText, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, dossier::document::{chapter::{heading::HeadingLevel, paragraph::Paragraph}, Chapter}, load_block::{LoadBlock, LoadBlockContent}, output_format::OutputFormat};
 
 
 #[derive(Debug, Getters, MutGetters, Setters, Serialize)]
@@ -70,7 +70,63 @@ impl From<Vec<LoadBlock>> for ContentBundle {
 
                     assert!(current_chapter.is_none());
 
-                    // TODO: set heading level
+                    let level = match header.heading().level() {
+                        HeadingLevel::Minor => {
+                            
+                            let l;
+                            if last_heading_level < 1 {
+                                log::warn!("minor heading found, but last heading has level {}, so it is set as 1", last_heading_level);
+                                
+                                l = HeadingLevel::Explicit(1)
+                            
+                            } else {
+
+                                l = HeadingLevel::Explicit(last_heading_level - 1);
+                            }
+                            
+                            l
+                        },
+                        HeadingLevel::Major => {
+                            let l;
+                            if last_heading_level < 1 {
+                                log::warn!("major heading found, but last heading has level {}, so it is set as 1", last_heading_level);
+                                
+                                l = HeadingLevel::Explicit(1)
+                            
+                            } else {
+
+                                l = HeadingLevel::Explicit(last_heading_level + 1);
+                            }
+                            
+                            l
+                        },
+                        HeadingLevel::Same => {
+                            let l;
+                            if last_heading_level < 1 {
+                                log::warn!("same heading found, but last heading has level {}, so it is set as 1", last_heading_level);
+                                
+                                l = HeadingLevel::Explicit(1)
+                            
+                            } else {
+
+                                l = HeadingLevel::Explicit(last_heading_level);
+                            }
+                            
+                            l
+                        },
+                        HeadingLevel::Explicit(l) => HeadingLevel::Explicit(*l)
+                    };
+
+                    if let HeadingLevel::Explicit(l) = &level {
+                    
+                        last_heading_level = *l;
+                    
+                    } else {
+
+                        unreachable!("heading level must be made explicit now");
+                    }
+
+                    header.heading_mut().set_level(level);
 
                     current_chapter = Some(Chapter::new(header, Vec::new()));
                 },
