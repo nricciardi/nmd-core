@@ -172,7 +172,7 @@ body {
 .list {
     list-style-type: none;
     padding: 0;
-    margin: 0 1vw 0 3.5vw;
+    margin: 5vh 1vw 5vh 3.5vw;
 
     page-break-inside: avoid;
 }
@@ -206,6 +206,8 @@ body {
     background-color: #1e1e1e;
     color: #fdfdfd;
     page-break-inside: avoid;
+    margin-top: 5vh;
+    margin-bottom: 5vh;
 }
 
 .focus-block-quote, .focus-quote-block-quote {
@@ -292,6 +294,8 @@ body {
     overflow-x: hidden;
     padding-right: calc(var(--body-margin-right) / 2.0);
     padding-left: calc(var(--body-margin-right) / 2.0);
+    margin-top: 5vh;
+    margin-bottom: 5vh;
 
     page-break-inside: avoid;
 }
@@ -326,6 +330,8 @@ body {
     overflow-x: hidden;
     padding-right: calc(var(--body-margin-right) / 2.0);
     padding-left: calc(var(--body-margin-right) / 2.0);
+    margin-top: 5vh;
+    margin-bottom: 5vh;
 
     page-break-inside: avoid;
 }
