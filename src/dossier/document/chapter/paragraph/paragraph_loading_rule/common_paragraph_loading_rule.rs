@@ -71,7 +71,7 @@ mod test {
 
         let paragraphs = rule.inner_load(&nmd_text, &Codex::of_html(), &LoadConfiguration::default(), LoadConfigurationOverLay::default());    
     
-        assert_eq!(paragraphs.len(), 2);
+        assert_eq!(paragraphs.len(), 3);
     }
 
 

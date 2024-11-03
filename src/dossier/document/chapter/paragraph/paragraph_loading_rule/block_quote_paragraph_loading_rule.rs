@@ -51,13 +51,10 @@ impl BlockQuoteParagraphLoadingRule {
                 }
             }
 
-            let mut c = line[1..].trim_start();
-
-            if c.is_empty() {
-                c = "\n";
-            }
+            let c = line[1..].trim_start();
 
             block_quote_body_content.push_str(c);
+            block_quote_body_content.push_str("\n");
         }
         
         let blocks = LoadBlock::load_from_str(&block_quote_body_content, codex, configuration, configuration_overlay.clone())?;
@@ -108,13 +105,11 @@ mod test {
     #[test]
     fn load_explicit_quote() {
         let nmd_text = concat!(
-            "\n\n",
             "> [!IMPORTANT]\n",
             "> p1a\n",
             "> p1b\n",
             ">\n",
             "> p2a\n",
-            "\n\n"
         );
 
         let rule = BlockQuoteParagraphLoadingRule::new();

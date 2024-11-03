@@ -93,7 +93,11 @@ mod test {
 
         let mut paragraph = rule.load(&nmd_text, &codex, &LoadConfiguration::default(), LoadConfigurationOverLay::default()).unwrap();    
     
-        paragraph.compile(&OutputFormat::Html, &codex, &CompilationConfiguration::default(), CompilationConfigurationOverLay::default()).unwrap();
+        let mut cco = CompilationConfigurationOverLay::default();
+
+        cco.set_document_name(Some(String::from("test")));
+
+        paragraph.compile(&OutputFormat::Html, &codex, &CompilationConfiguration::default(), cco).unwrap();
     }
 
 }

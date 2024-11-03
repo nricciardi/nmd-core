@@ -1,7 +1,7 @@
 ![Logo](images/logo.png)
 
 [![License](https://img.shields.io/badge/license-GPL3-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-v0.40.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.41.0-blue.svg)](CHANGELOG.md)
 
 # NMD core
 
@@ -26,7 +26,7 @@ cargo add nmd-core
 ### Quick start
 
 ```rust
-let dossier_path = PathBuf::from("...");
+let dossier_path = PathBuf::from(".");
 
 let codex = Codex::of_html();
 
@@ -34,12 +34,14 @@ let loader_configuration = LoadConfiguration::default();
 
 let dossier = Dossier::load_dossier_from_path_buf(&dossier_path, &codex, &loader_configuration, LoadConfigurationOverLay::default()).unwrap();
 
-let compiled_dossier = dossier.compile(...).unwrap();
+let compilation_configuration = CompilationConfiguration::default();
+
+let compiled_dossier = dossier.compile(&OutputFormat::Html, &codex, &compilation_configuration, CompilationConfigurationOverLay::default()).unwrap();
 ```
 
 ### Codex
 
-TODO
+`Codex` contains rules to load and compile all NMD components (`Dossier`, `Document`, `CompilableText`, ...).
 
 
 ### Tricky algorithms
@@ -52,7 +54,11 @@ There are two tricky algorithms in core:
 
 #### Load of LoadBlock
 
-TODO
+A string raw content is segmented recursively using one-by-one all paragraph modifiers.
+
+After tried all paragraph modifiers, unmatched segments are processed first as headers, then using fallback paragraph loading rules.
+
+Each slice of original raw content is inserted in an independent `LoadBlock`, set of all blocks are used to compose documents.
 
 #### Compilation of CompilableText
 

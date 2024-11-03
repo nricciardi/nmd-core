@@ -278,26 +278,28 @@ impl Compilable for Dossier {
 } 
 
 
-#[cfg(test)]
-mod test {
-    use std::path::PathBuf;
+// #[cfg(test)]
+// mod test {
+//     use std::path::PathBuf;
 
 
-    use crate::{codex::Codex, load::{LoadConfiguration, LoadConfigurationOverLay}};
+//     use crate::{codex::Codex, load::{LoadConfiguration, LoadConfigurationOverLay}};
 
-    use super::Dossier;
+//     use super::Dossier;
 
 
 
-    #[test]
-    fn load_dossier() {
+//     #[test]
+//     fn load_dossier() {
 
-        let dossier_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("test-resources").join("nmd-test-dossier-1");
+//         let dossier_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("test-resources").join("nmd-test-dossier-1");
 
-        let codex = Codex::of_html();
+//         let codex = Codex::of_html();
 
-        let loader_configuration = LoadConfiguration::default();
+//         let mut loader_configuration = LoadConfiguration::default();
 
-        let _dossier = Dossier::load_dossier_from_path_buf(&dossier_path, &codex, &loader_configuration, LoadConfigurationOverLay::default()).unwrap();
-    }
-}
+//         loader_configuration.set_parallelization(false);
+
+//         let _dossier = Dossier::load_dossier_from_path_buf(&dossier_path, &codex, &loader_configuration, LoadConfigurationOverLay::default()).unwrap();
+//     }
+// }

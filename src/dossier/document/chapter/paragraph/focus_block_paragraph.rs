@@ -92,7 +92,9 @@ mod test {
         let mut compiled_content = String::new();
 
         let cc = CompilationConfiguration::default();
-        let cco = CompilationConfigurationOverLay::default();
+        let mut cco = CompilationConfigurationOverLay::default();
+
+        cco.set_document_name(Some(String::from("test")));
 
         for paragraph in bundle.preamble_mut() {
 

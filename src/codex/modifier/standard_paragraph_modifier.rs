@@ -123,7 +123,7 @@ impl StandardParagraphModifier {
             Self::ParagraphIdentifier => format!(r"\[\[(?sx:(.*?))\]\]{}?{}", NEW_LINE_PATTERN, IDENTIFIER_PATTERN),
             Self::EmbeddedParagraphStyle => format!(r"\[\[(?sx:(.*?))\]\]{}?(?:{})?{}?\{{\{{{}\}}\}}", NEW_LINE_PATTERN, IDENTIFIER_PATTERN, NEW_LINE_PATTERN, STYLE_PATTERN),
             Self::PageBreak => build_strict_reserved_line_pattern(r"#{3,}"),
-            Self::Todo => build_strict_reserved_line_pattern(r"(?i:TODO):?\s(?:(.*?))"),
+            Self::Todo => build_strict_reserved_line_pattern(r"(?i:TODO):\s(?:(.*?))"),
             Self::AbridgedTodo => build_strict_reserved_line_pattern(r"(?i:TODO)"),
             Self::MultilineTodo => format!("{}{}", build_strict_reserved_line_pattern(r"(?i:TODO):"), r"(?s:(.*?)):(?i:TODO)"),
             Self::Table => format!(r"(\|(.*)\|{}?)+(?:\|(.*)\|)(?:{}?(?:\[(.*)\])?(?:{})?(?:\{{\{{{}\}}\}})?)?", NEW_LINE_PATTERN, NEW_LINE_PATTERN, IDENTIFIER_PATTERN, STYLE_PATTERN),

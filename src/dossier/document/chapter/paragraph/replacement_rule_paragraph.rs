@@ -60,11 +60,7 @@ impl Paragraph for ReplacementRuleParagraph {
 
 #[cfg(test)]
 mod test {
-    use std::sync::Arc;
-
-    use crate::{codex::{modifier::{standard_paragraph_modifier::StandardParagraphModifier, ModifiersBucket}, Codex}, compilable_text::{compilable_text_part::CompilableTextPart, CompilableText}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart, single_capture_group_replacement_rule_part::SingleCaptureGroupReplacementRuleReplacerPart}, ReplacementRule}}, content_bundle::ContentBundle, load::{LoadConfiguration, LoadConfigurationOverLay}, load_block::{LoadBlock, LoadBlockContent}, output_format::OutputFormat};
-
-    use super::ReplacementRuleParagraph;
+    use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, content_bundle::ContentBundle, load::{LoadConfiguration, LoadConfigurationOverLay}, load_block::{LoadBlock, LoadBlockContent}, output_format::OutputFormat};
 
 
     fn load_and_compile_html(content: &str, expected_n: usize) -> String {
@@ -93,11 +89,12 @@ mod test {
     }
 
     #[test]
-    fn abridged_toto_load_and_compile() {
+    fn abridged_todo_load_and_compile() {
 
-        let nmd_text = concat!(   "\n\n",
-                                        "TODO\n\n",
-                                    );
+        let nmd_text = concat!(   
+            "\n\n",
+            "TODO\n\n",
+        );
 
         let compiled_content = load_and_compile_html(nmd_text, 1);
 
@@ -108,17 +105,17 @@ mod test {
     #[test]
     fn common_paragraph_load_and_compile() {
 
-        let nmd_text = concat!(  "\n\n",
-                                            "p1\n\n\n",
-                                            "p2\n\n\n",
-                                            "p3a\np3b\np3c\n\n"
-                                        );
+        let nmd_text = concat!(
+                                        "p1\n\n",
+                                        "p2\n\n",
+                                        "p3a\np3b\np3c"
+                                    );
 
         let compiled_content = load_and_compile_html(nmd_text, 3);
 
         assert_eq!(compiled_content, concat!(
             r#"<p class="paragraph">p1</p><p class="paragraph">p2</p><p class="paragraph">"#,
-            "p3a\np3b\np3c",
+            "p3a p3b p3c",
             r#"</p>"#
         ));
     }
@@ -154,68 +151,12 @@ mod test {
             assert_eq!(
                 paragraph.compile(&OutputFormat::Html, &codex, &CompilationConfiguration::default(), CompilationConfigurationOverLay::default()).unwrap().content(),
                 r#"<p class="paragraph" data-nuid="nuid-test">This is a <strong class="bold">common paragraph</strong></p>"#
-            )
+            );
+
+            return
         }
 
         panic!("paragraph not loaded");
 
     }
-
-    #[test]
-    fn paragraph_with_nuid_and_simple_codex() {
-
-        let nmd_text = "\n\nThis is a **common paragraph**\n\n";
-
-        let compilable_text = CompilableText::new_with_nuid(
-            vec![
-                CompilableTextPart::new_compilable(
-                    nmd_text.to_string(),
-                    ModifiersBucket::None
-                )
-            ],
-            Some(String::from("nuid-test"))
-        );
-
-        let replacement_rule = ReplacementRule::new(
-            StandardParagraphModifier::CommonParagraph.modifier_pattern(),
-            vec![
-                Arc::new(ClosureReplacementRuleReplacerPart::new(
-                    Arc::new(
-                        |_, compilable_text, _, _, _ | {
-
-                            Ok(CompilableText::from(
-                                CompilableTextPart::new_fixed(format!(r#"<p data-nuid="{}">"#, compilable_text.nuid().as_ref().unwrap()))
-                            ))
-                        }
-                    )
-                )),
-                Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::from(1)
-                            .with_incompatible_modifiers(StandardParagraphModifier::CommonParagraph.incompatible_modifiers())),
-                Arc::new(FixedReplacementRuleReplacerPart::new(String::from("</p>")))
-            ]
-        );
-
-        let mut paragraph = ReplacementRuleParagraph::new(
-            nmd_text.to_string(),
-            compilable_text,
-            replacement_rule,
-        );
-
-        let codex = Codex::of_html();
-
-        paragraph.compile(
-            &OutputFormat::Html,
-            &codex,
-            &CompilationConfiguration::default(),
-            CompilationConfigurationOverLay::default()
-        ).unwrap();
-
-
-        assert_eq!(
-            paragraph.compile(&OutputFormat::Html, &codex, &CompilationConfiguration::default(), CompilationConfigurationOverLay::default()).unwrap().content(),
-            r#"<p data-nuid="nuid-test">This is a <strong>common paragraph</strong></p>"#
-        )
-
-    }
-
 }

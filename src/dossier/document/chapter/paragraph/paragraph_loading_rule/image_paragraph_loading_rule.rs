@@ -129,7 +129,9 @@ impl ImageParagraphLoadingRule {
 
             for mut raw_image_line in raw_images.lines() {
 
-                if raw_image_line.trim().is_empty() {
+                raw_image_line = raw_image_line.trim();
+
+                if raw_image_line.is_empty() {
                     continue;
                 }
 
@@ -284,8 +286,8 @@ mod test {
 
         let nmd_text = concat!(
             "!!:space-between:[[\n",
-            ":center:![(https://en.wikipedia.org/wiki/Main_Page)]#image-7{width:70%}\n",
-            "![Wikipedia](https://en.wikipedia.org/wiki/Main_Page){width:45%;margin:0;}\n",
+            ":center:![(https://en.wikipedia.org/wiki/Main_Page)]#image-7{{width:70%}}\n",
+            "![Wikipedia](https://en.wikipedia.org/wiki/Main_Page){{width:45%;margin:0;}}\n",
             "]]"
         );
 

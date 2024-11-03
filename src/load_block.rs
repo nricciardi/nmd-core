@@ -37,9 +37,8 @@ impl LoadBlock {
     /// 
     /// Blocks are not sorted, sort if you want:
     /// 
-    /// ```rust
-    /// blocks.par_sort_by(|a, b| a.start().cmp(&b.start()));
-    /// ```
+    /// `blocks.par_sort_by(|a, b| a.start().cmp(&b.start()));``
+    /// 
     pub fn load_from_str(content: &str, codex: &Codex, configuration: &LoadConfiguration, configuration_overlay: LoadConfigurationOverLay) -> Result<Vec<LoadBlock>, LoadError> {
         Self::inner_load_from_str(content, 0, codex, 0, configuration, configuration_overlay.clone())
     }
@@ -133,6 +132,8 @@ impl LoadBlock {
                 for (offset, unmatched_slice) in unmatched_slices {
     
                     log::debug!("try next paragraph modifier on:\n{}\n(offset: {})", unmatched_slice, offset);
+
+                    println!("try next paragraph modifier on:\n{}\n(offset: {})", unmatched_slice, offset);
     
                     let mut blocks = Self::inner_load_from_str(unmatched_slice, offset, codex, paragraph_modifier_index + 1, configuration, configuration_overlay.clone())?;
                 

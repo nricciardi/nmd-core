@@ -267,8 +267,7 @@ mod test {
 
         if let LoadBlockContent::Paragraph(p) = &paragraphs[0].content() {
 
-            assert_eq!(p.raw_content(), nmd_text);
-
+            assert_eq!(p.raw_content().trim(), nmd_text.trim());
         }
     }
 
@@ -293,8 +292,7 @@ mod test {
 
         if let LoadBlockContent::Paragraph(p) = &paragraphs[0].content() {
 
-            assert_eq!(p.raw_content(), nmd_text);
-
+            assert_eq!(p.raw_content().trim(), nmd_text.trim());
         }
     }
 

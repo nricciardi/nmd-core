@@ -32,7 +32,7 @@ impl CommonParagraph {
 
         let compiled_content = CompilableText::from(text_utility::replace(&self.raw_content, &ESCAPE_HTML)).compile(&OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay)?;
 
-        outcome.push_str(&compiled_content.content());
+        outcome.push_str(&compiled_content.content().trim().replace("\n", " ").replace("\r", "").replace("\t", ""));
         
         outcome.push_str("</p>");
 
