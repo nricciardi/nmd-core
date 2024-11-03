@@ -1,7 +1,7 @@
 use getset::{Getters, MutGetters, Setters};
 use rayon::{iter::{IntoParallelRefMutIterator, ParallelIterator}, slice::ParallelSliceMut};
 use serde::Serialize;
-use crate::{codex::Codex, compilable_text::CompilableText, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, dossier::document::{chapter::{chapter_header::ChapterHeader, paragraph::Paragraph}, Chapter}, load_block::{LoadBlock, LoadBlockContent}, output_format::OutputFormat};
+use crate::{codex::Codex, compilable_text::CompilableText, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, dossier::document::{chapter::paragraph::Paragraph, Chapter}, load_block::{LoadBlock, LoadBlockContent}, output_format::OutputFormat};
 
 
 #[derive(Debug, Getters, MutGetters, Setters, Serialize)]
@@ -61,7 +61,7 @@ impl From<Vec<LoadBlock>> for ContentBundle {
                     }
 
                 },
-                LoadBlockContent::Heading(heading) => {
+                LoadBlockContent::ChapterHeader(header) => {
 
                     if let Some(cc) = current_chapter.take() {
                         chapters.push(cc);
@@ -69,14 +69,7 @@ impl From<Vec<LoadBlock>> for ContentBundle {
 
                     assert!(current_chapter.is_none());
 
-                    current_chapter = Some(Chapter::new(ChapterHeader::new(heading, Vec::new()), Vec::new()));
-                },
-                LoadBlockContent::ChapterTag(chapter_tag) => {
-
-                    assert!(current_chapter.is_some());
-
-                    current_chapter.as_mut().unwrap().header_mut().tags_mut().push(chapter_tag);
-
+                    current_chapter = Some(Chapter::new(header, Vec::new()));
                 },
             }
         }

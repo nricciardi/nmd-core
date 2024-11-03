@@ -1,5 +1,5 @@
 use getset::{CopyGetters, Getters, MutGetters, Setters};
-use crate::{codex::Codex, dossier::document::chapter::{chapter_header::ChapterHeader, chapter_tag::ChapterTag, heading::Heading, paragraph::Paragraph}, load::{LoadConfiguration, LoadConfigurationOverLay, LoadError}};
+use crate::{codex::Codex, dossier::document::chapter::{chapter_header::ChapterHeader, paragraph::Paragraph}, load::{LoadConfiguration, LoadConfigurationOverLay, LoadError}};
 
 
 
@@ -121,7 +121,7 @@ impl LoadBlock {
             }
 
             // load headings
-            let mut headings_blocks = ChapterHeader::load_headings_and_chapter_tags_from_str(current_content, codex, configuration)?;
+            let mut headers_blocks = ChapterHeader::load(current_content, codex, configuration)?;
 
             let mut blocks: Vec<LoadBlock> = Vec::new();
 
@@ -159,23 +159,23 @@ impl LoadBlock {
             let mut last_position = 0;
 
             // assign fallback paragraph
-            for heading_block in headings_blocks.iter_mut() {
+            for header_block in headers_blocks.iter_mut() {
 
-                if heading_block.start() > last_position {
+                if header_block.start() > last_position {
 
-                    let s = &current_content[last_position..heading_block.start()];
+                    let s = &current_content[last_position..header_block.start()];
 
                     add_fb_blocks(
                         s,
                         position_in_global_content(last_position),
-                        position_in_global_content(heading_block.start())
+                        position_in_global_content(header_block.start())
                     )?;
                 }
 
-                last_position = heading_block.end();
+                last_position = header_block.end();
 
-                heading_block.set_start(position_in_global_content(heading_block.start()));
-                heading_block.set_end(position_in_global_content(heading_block.end()));
+                header_block.set_start(position_in_global_content(header_block.start()));
+                header_block.set_end(position_in_global_content(header_block.end()));
             }
 
             log::debug!("last heading found at position: {}/{}", last_position, current_content.len());
@@ -191,7 +191,7 @@ impl LoadBlock {
                 )?;
             }
 
-            blocks.append(&mut headings_blocks);
+            blocks.append(&mut headers_blocks);
 
             return Ok(blocks);
         }
@@ -218,36 +218,10 @@ impl TryInto<Box<dyn Paragraph>> for LoadBlock {
     }
 }
 
-impl TryInto<Heading> for LoadBlock {
-    type Error = String;
-
-    fn try_into(self) -> Result<Heading, Self::Error> {
-        if let LoadBlockContent::Heading(h) = self.content {
-            return Ok(h)
-        }
-
-        Err(String::from("this block doesn't contain an heading"))
-    }
-}
-
-impl TryInto<ChapterTag> for LoadBlock {
-    type Error = String;
-
-    fn try_into(self) -> Result<ChapterTag, Self::Error> {
-        if let LoadBlockContent::ChapterTag(t) = self.content {
-            return Ok(t)
-        }
-
-        Err(String::from("this block doesn't contain a chapter tag"))
-    }
-}
-
-
 #[derive(Debug)]
 pub enum LoadBlockContent {
     Paragraph(Box<dyn Paragraph>),
-    Heading(Heading),
-    ChapterTag(ChapterTag)
+    ChapterHeader(ChapterHeader)
 }
 
 

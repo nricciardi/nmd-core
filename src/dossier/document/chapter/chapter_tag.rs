@@ -3,10 +3,10 @@ use getset::{Getters, Setters};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use crate::{codex::{modifier::constants::CHAPTER_STYLE_PATTERN, Codex}, load::LoadConfiguration, load_block::{LoadBlock, LoadBlockContent}};
+use crate::{codex::modifier::constants::CHAPTER_STYLE_PATTERN, load::LoadError};
 
 
-static FROM_STR_PATTERN_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"@(\w+) (.*)").unwrap());
+static FROM_STR_PATTERN_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"@(\w+)(?: (.*))?").unwrap());
 static CHAPTER_STYLE_PATTERN_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(CHAPTER_STYLE_PATTERN).unwrap());
 
 
@@ -23,34 +23,34 @@ pub struct ChapterTag {
 impl ChapterTag {
 
     /// Load chapter tags (e.g. `author`) from string. This method returns empty `Vec` if there are no tags.
-    pub fn load_chapter_tags_from_str(content: &str, _codex: &Codex, _configuration: &LoadConfiguration) -> Vec<LoadBlock> {
+    pub fn load_chapter_tags_from_str(content: &str) -> Result<Vec<ChapterTag>, LoadError> {
         
-        let mut tags: Vec<LoadBlock> = Vec::new();
+        let mut tags: Vec<ChapterTag> = Vec::new();
         
-        let mut pos: usize = 0;
         for line in content.lines() {
-            
-            let tag = ChapterTag::from_str(line);
+
+            if line.trim().is_empty() {
+                continue;
+            }
+
+            let tag = ChapterTag::from_str(&line);
 
             if let Ok(t) = tag {
 
-                tags.push(LoadBlock::new(
-                    pos, 
-                    pos + line.len(),
-                    LoadBlockContent::ChapterTag(t)
-                ));
+                tags.push(t);
 
+            } else {
+
+                return Err(LoadError::InvalidTag(tag.err().unwrap()))
             }
-
-            pos += line.len();
         }
 
-        tags
+        Ok(tags)
     }
 
     #[allow(dead_code)]
     /// Load the chapter style from string
-    fn load_chapter_style_from_str(content: &str, _codex: &Codex, _configuration: &LoadConfiguration) -> Option<String> {
+    fn load_chapter_style_from_str(content: &str) -> Option<String> {
         
         let mut style: Option<String> = None;
 
@@ -88,6 +88,7 @@ impl FromStr for ChapterTagKey {
             "intent" => Ok(Self::Intent),
             "style" => Ok(Self::Style),
             "styleclass" => Ok(Self::StyleClass),
+            "class" => Ok(Self::StyleClass),
 
             _ => Err(format!("chapter key '{}' not found", s))
         }
@@ -113,7 +114,14 @@ impl FromStr for ChapterTag {
             if let Some(key) = captures.get(1) {
 
                 let mut chapter_tag = ChapterTag::default();
-                chapter_tag.set_key(ChapterTagKey::from_str(key.as_str())?);
+
+                if let Ok(key) = ChapterTagKey::from_str(key.as_str()) {
+
+                    chapter_tag.set_key(key);
+                
+                } else {
+                    return Err(s.to_string())
+                }
 
                 if let Some(value) = captures.get(2) {
                     chapter_tag.set_value(Some(value.as_str().to_string()));
@@ -123,6 +131,47 @@ impl FromStr for ChapterTag {
             }
         }
         
-        Err(format!("{} is not a valid tag", s))
+        Err(s.to_string())
     }
+}
+
+
+#[cfg(test)]
+mod test {
+    use super::ChapterTag;
+
+
+    #[test]
+    fn load_tags() {
+        let s = concat!(
+            "\r\n",
+            "@style color:red\n",
+            "@class class\r\n",
+            "\t\r\n"
+        );
+
+        let tags = ChapterTag::load_chapter_tags_from_str(s).unwrap();
+
+        assert_eq!(tags.len(), 2);
+    }
+
+    #[test]
+    fn load_empty() {
+        let s = concat!(
+            ""
+        );
+
+        let tags = ChapterTag::load_chapter_tags_from_str(s).unwrap();
+
+        assert_eq!(tags.len(), 0);
+
+        let s = concat!(
+            "\r\n"
+        );
+
+        let tags = ChapterTag::load_chapter_tags_from_str(s).unwrap();
+
+        assert_eq!(tags.len(), 0);
+    }
+
 }

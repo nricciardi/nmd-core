@@ -61,9 +61,9 @@ impl StandardParagraphModifier {
             Self::ExtendedBlockQuote,
             Self::FocusBlock,
             Self::List,
-            Self::AbridgedTodo,
             Self::MultilineTodo,
             Self::Todo,
+            Self::AbridgedTodo,
             Self::MultiImage,
             Self::AbridgedImage,
             Self::Image,
@@ -126,7 +126,7 @@ impl StandardParagraphModifier {
             Self::Todo => build_strict_reserved_line_pattern(r"(?i:TODO):?\s(?:(.*?))"),
             Self::AbridgedTodo => build_strict_reserved_line_pattern(r"(?i:TODO)"),
             Self::MultilineTodo => format!("{}{}", build_strict_reserved_line_pattern(r"(?i:TODO):"), r"(?s:(.*?)):(?i:TODO)"),
-            Self::Table => format!(r"(\|(.*)\|{}?)+(?:\|(.*)\|)(?U:{}?(?:\[(.*)\])?(?:{})?(?:\{{\{{{}\}}\}})?)?", NEW_LINE_PATTERN, NEW_LINE_PATTERN, IDENTIFIER_PATTERN, STYLE_PATTERN),
+            Self::Table => format!(r"(\|(.*)\|{}?)+(?:\|(.*)\|)(?:{}?(?:\[(.*)\])?(?:{})?(?:\{{\{{{}\}}\}})?)?", NEW_LINE_PATTERN, NEW_LINE_PATTERN, IDENTIFIER_PATTERN, STYLE_PATTERN),
         }
     }
 

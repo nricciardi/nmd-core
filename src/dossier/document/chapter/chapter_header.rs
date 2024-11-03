@@ -1,5 +1,4 @@
 use getset::{Getters, MutGetters, Setters};
-use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use serde::Serialize;
 use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_heading_modifier::StandardHeading, Modifier}, Codex}, load::{LoadConfiguration, LoadError}, load_block::{LoadBlock, LoadBlockContent}};
 use super::{chapter_tag::ChapterTag, heading::{Heading, HeadingLevel}};
@@ -29,10 +28,12 @@ impl ChapterHeader {
     }
 
     /// Load headings and chapter tags from `&str`
-    pub fn load_headings_and_chapter_tags_from_str(content: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<Vec<LoadBlock>, LoadError> {
-       
+    pub fn load(content: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<Vec<LoadBlock>, LoadError> {
+
+        log::error!("{}\n{}", content, content.len());
+
         let mut last_heading_level = 0;
-        let mut headings_and_chapter_tags: Vec<LoadBlock> = Vec::new();
+        let mut headers: Vec<LoadBlock> = Vec::new();
 
         for heading in StandardHeading::ordered() {     // TODO: include `StandardHeading::ordered()` in `Codex`
 
@@ -45,36 +46,31 @@ impl ChapterHeader {
                 let m_start = m.start();
                 let m_end = m.end();
 
-                log::debug!("chapter found between {} and {}: {:?}", m_start, m_end, &matched_str);
+                log::error!("header found (between {} and {}): {:?}", m_start, m_end, &matched_str);
 
-                if let Some((mut heading, mut tags)) = Self::parse_chapter_heading_and_tags_from_str(&matched_str, &mut last_heading_level, codex, configuration)? {
+                if let Some((heading, tags)) = Self::parse_chapter_heading_and_tags_from_str(&matched_str, &mut last_heading_level, codex, configuration)? {
 
-                    heading.set_start(heading.start() + m_start);
-                    heading.set_end(heading.end() + m_start);
-
-                    tags.par_iter_mut().for_each(|tag| {
-                        tag.set_start(tag.start() + m_start);
-                        tag.set_end(tag.end() + m_start);
-                    });
-
-                    headings_and_chapter_tags.push(heading);
-                    headings_and_chapter_tags.append(&mut tags);
+                    headers.push(LoadBlock::new(
+                        m_start,
+                        m_end,
+                        LoadBlockContent::ChapterHeader(ChapterHeader::new(heading, tags))
+                    ));
                 }
 
             };
         }
 
-        // headings_and_chapter_tags.par_sort_by(|a, b| a.start().cmp(&b.start()));
+        log::debug!("found headers:\n{:#?}", headers);
 
-        Ok(headings_and_chapter_tags)
+        Ok(headers)
     }
 
     /// Load the chapter heading and metadata from `&str`. This method returns a tuple with optional heading and a chapter tags vector.
-    fn parse_chapter_heading_and_tags_from_str(content: &str, last_heading_level: &mut HeadingLevel, codex: &Codex, configuration: &LoadConfiguration) -> Result<Option<(LoadBlock, Vec<LoadBlock>)>, LoadError> {
+    fn parse_chapter_heading_and_tags_from_str(content: &str, last_heading_level: &mut HeadingLevel, _codex: &Codex, _configuration: &LoadConfiguration) -> Result<Option<(Heading, Vec<ChapterTag>)>, LoadError> {
 
         log::debug!("parse headings and chapter tags from (last heading level: {}):\n{}", last_heading_level, content);
 
-        for heading in StandardHeading::ordered() {
+        for heading in StandardHeading::ordered() {         // TODO: insert in codex
 
             let heading_modifier = Into::<BaseModifier>::into(heading.clone());
 
@@ -99,18 +95,14 @@ impl ChapterHeader {
                             level = *last_heading_level - 1;
                         }
     
-                        let title = capture.get(1).unwrap();
+                        let title = capture.get(1).unwrap();    
     
-                        let heading = LoadBlock::new(
-                            title.start(),
-                            title.end(),
-                            LoadBlockContent::Heading(Heading::new(level, title.as_str().to_string()))
-                        );
-    
-    
-                        let tags = ChapterTag::load_chapter_tags_from_str(content, codex, configuration);
+                        let tags = ChapterTag::load_chapter_tags_from_str(&content[title.end()..])?;
                     
-                        return Ok(Some((heading, tags)))
+                        return Ok(Some((
+                            Heading::new(level, title.as_str().to_string()),
+                            tags
+                        )))
                     },
     
                     StandardHeading::MajorHeading => {
@@ -123,17 +115,14 @@ impl ChapterHeader {
                         }
     
                         let title = capture.get(1).unwrap();
+       
     
-                        let heading = LoadBlock::new(
-                            title.start(),
-                            title.end(),
-                            LoadBlockContent::Heading(Heading::new(level, title.as_str().to_string()))
-                        );
-    
-    
-                        let tags = ChapterTag::load_chapter_tags_from_str(content, codex, configuration);
+                        let tags = ChapterTag::load_chapter_tags_from_str(&content[title.end()..])?;
                     
-                        return Ok(Some((heading, tags)))
+                        return Ok(Some((
+                            Heading::new(level, title.as_str().to_string()),
+                            tags
+                        )))
                     },
     
                     StandardHeading::SameHeading => {
@@ -150,51 +139,40 @@ impl ChapterHeader {
                         
                         let title = capture.get(1).unwrap();
     
-                        let heading = LoadBlock::new(
-                            title.start(),
-                            title.end(),
-                            LoadBlockContent::Heading(Heading::new(level, title.as_str().to_string()))
-                        );
     
-    
-                        let tags = ChapterTag::load_chapter_tags_from_str(content, codex, configuration);
+                        let tags = ChapterTag::load_chapter_tags_from_str(&content[title.end()..])?;
                     
-                        return Ok(Some((heading, tags)))
+                        return Ok(Some((
+                            Heading::new(level, title.as_str().to_string()),
+                            tags
+                        )))
                     },
     
                     StandardHeading::HeadingGeneralExtendedVersion(_) => {
                         let level: u32 = content.chars().take_while(|&c| c == '#').count() as u32;
     
-                        let title = capture.get(1).unwrap();
+                        let title = capture.get(1).unwrap();    
     
-                        let heading = LoadBlock::new(
-                            title.start(),
-                            title.end(),
-                            LoadBlockContent::Heading(Heading::new(level, title.as_str().to_string()))
-                        );
-    
-    
-                        let tags = ChapterTag::load_chapter_tags_from_str(content, codex, configuration);
+                        let tags = ChapterTag::load_chapter_tags_from_str(&content[title.end()..])?;
                     
-                        return Ok(Some((heading, tags)))
+                        return Ok(Some((
+                            Heading::new(level, title.as_str().to_string()),
+                            tags
+                        )))
                     },
     
                     StandardHeading::HeadingGeneralCompactVersion(_) => {
                         let matched = heading_modifier.modifier_pattern_regex().captures(content).unwrap();
     
                         let level: HeadingLevel = matched.get(1).unwrap().as_str().parse().unwrap();
-                        let title = capture.get(2).unwrap();
+                        let title = capture.get(2).unwrap();    
     
-                        let heading = LoadBlock::new(
-                            title.start(),
-                            title.end(),
-                            LoadBlockContent::Heading(Heading::new(level, title.as_str().to_string()))
-                        );
-    
-    
-                        let tags = ChapterTag::load_chapter_tags_from_str(content, codex, configuration);
+                        let tags = ChapterTag::load_chapter_tags_from_str(&content[title.end()..])?;
                     
-                        return Ok(Some((heading, tags)))
+                        return Ok(Some((
+                            Heading::new(level, title.as_str().to_string()),
+                            tags
+                        )))
                     },
                 }   
             }

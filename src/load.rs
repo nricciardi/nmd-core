@@ -23,7 +23,10 @@ pub enum LoadError {
     IoError(#[from] io::Error),
 
     #[error("block error: {0}")]
-    BlockError(String)
+    BlockError(String),
+
+    #[error("invalid tag: {0}")]
+    InvalidTag(String)
 }
 
 impl Clone for LoadError {

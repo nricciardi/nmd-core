@@ -690,27 +690,6 @@ impl Codex {
                 )
             ),
             (
-                StandardParagraphModifier::AbridgedTodo.identifier().clone(),
-                (
-                    Box::new(Into::<BaseModifier>::into(StandardParagraphModifier::AbridgedTodo)) as Box<dyn Modifier>,
-                    Box::new(ReplacementRuleParagraphLoadingRule::new(
-                        ReplacementRule::new(
-                            StandardParagraphModifier::AbridgedTodo.modifier_pattern().clone(),
-                            vec![
-                                Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|_, compilable, _, _, _| {
-    
-                                    Ok(CompilableText::from(CompilableTextPart::new_fixed(format!(
-                                            r#"<div class="todo abridged-todo"{}><div class="todo-title"></div></div>"#,
-                                            text_utility::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
-                                        ))
-                                    ))
-                                }))),
-                            ]
-                        )
-                    ))
-                )
-            ),
-            (
                 StandardParagraphModifier::MultilineTodo.identifier().clone(),
                 (
                     Box::new(Into::<BaseModifier>::into(StandardParagraphModifier::MultilineTodo)) as Box<dyn Modifier>,
@@ -751,6 +730,27 @@ impl Codex {
                                 }))),
                                 Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardParagraphModifier::Todo.incompatible_modifiers())),
                                 Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"</div>"#)))
+                            ]
+                        )
+                    ))
+                )
+            ),
+            (
+                StandardParagraphModifier::AbridgedTodo.identifier().clone(),
+                (
+                    Box::new(Into::<BaseModifier>::into(StandardParagraphModifier::AbridgedTodo)) as Box<dyn Modifier>,
+                    Box::new(ReplacementRuleParagraphLoadingRule::new(
+                        ReplacementRule::new(
+                            StandardParagraphModifier::AbridgedTodo.modifier_pattern().clone(),
+                            vec![
+                                Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|_, compilable, _, _, _| {
+    
+                                    Ok(CompilableText::from(CompilableTextPart::new_fixed(format!(
+                                            r#"<div class="todo abridged-todo"{}><div class="todo-title"></div></div>"#,
+                                            text_utility::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
+                                        ))
+                                    ))
+                                }))),
                             ]
                         )
                     ))
