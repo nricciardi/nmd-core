@@ -1,15 +1,21 @@
-use getset::{CopyGetters, Getters, Setters};
+use getset::{Getters, Setters};
 use serde::Serialize;
 use crate::{codex::{modifier::ModifiersBucket, Codex}, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, output_format::OutputFormat, resource::resource_reference::ResourceReference, utility::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
-pub type HeadingLevel = u32;
+#[derive(Debug, Clone, Serialize)]
+pub enum HeadingLevel {
+    Explicit(u32),
+    Minor,
+    Major,
+    Same
+}
 
 
-#[derive(Debug, Getters, CopyGetters, Setters, Clone, Serialize)]
+#[derive(Debug, Getters, Setters, Clone, Serialize)]
 pub struct Heading {
 
-    #[getset(get_copy = "pub", set = "pub")]
+    #[getset(get = "pub", set = "pub")]
     level: HeadingLevel,
 
     #[getset(get = "pub", set = "pub")]
@@ -62,10 +68,15 @@ impl Compilable for Heading {
                     nuid_attr = String::new();
                 }
 
+                let level = match self.level {
+                    HeadingLevel::Explicit(l) => l,
+                    _ => return Err(CompilationError::HeadingLevelNotInferable(self.title.to_string()))
+                };
+
                 let outcome = CompilableText::new(vec![
 
                     CompilableTextPart::new(
-                        format!(r#"<h{} class="heading-{}" id="{}" {}>"#, self.level, self.level, id.build_without_internal_sharp(), nuid_attr),
+                        format!(r#"<h{} class="heading-{}" id="{}" {}>"#, level, level, id.build_without_internal_sharp(), nuid_attr),
                         CompilableTextPartType::Fixed
                     ),
                     CompilableTextPart::new(
@@ -73,7 +84,7 @@ impl Compilable for Heading {
                         CompilableTextPartType::Compilable{ incompatible_modifiers: ModifiersBucket::None }
                     ),
                     CompilableTextPart::new(
-                        format!(r#"</h{}>"#, self.level),
+                        format!(r#"</h{}>"#, level),
                         CompilableTextPartType::Fixed
                     ),
                 ]);

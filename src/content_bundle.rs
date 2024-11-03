@@ -44,7 +44,8 @@ impl From<Vec<LoadBlock>> for ContentBundle {
 
         let mut preamble: Vec<Box<dyn Paragraph>> = Vec::new();
         let mut current_chapter: Option<Chapter> = None;
-        let mut chapters: Vec<Chapter> = Vec::new(); 
+        let mut chapters: Vec<Chapter> = Vec::new();
+        let mut last_heading_level: u32 = 0;
 
         for block in blocks {
 
@@ -61,13 +62,15 @@ impl From<Vec<LoadBlock>> for ContentBundle {
                     }
 
                 },
-                LoadBlockContent::ChapterHeader(header) => {
+                LoadBlockContent::ChapterHeader(mut header) => {
 
                     if let Some(cc) = current_chapter.take() {
                         chapters.push(cc);
                     }
 
                     assert!(current_chapter.is_none());
+
+                    // TODO: set heading level
 
                     current_chapter = Some(Chapter::new(header, Vec::new()));
                 },

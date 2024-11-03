@@ -30,7 +30,6 @@ impl ChapterHeader {
     /// Load headings and chapter tags from `&str`
     pub fn load(content: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<Vec<LoadBlock>, LoadError> {
 
-        let mut last_heading_level = 0;
         let mut headers: Vec<LoadBlock> = Vec::new();
 
         for heading in StandardHeading::ordered() {     // TODO: include `StandardHeading::ordered()` in `Codex`
@@ -46,7 +45,7 @@ impl ChapterHeader {
 
                 log::debug!("header found (between {} and {}): {:?}", m_start, m_end, &matched_str);
 
-                if let Some((heading, tags)) = Self::parse_chapter_heading_and_tags_from_str(&matched_str, &mut last_heading_level, codex, configuration)? {
+                if let Some((heading, tags)) = Self::parse_chapter_heading_and_tags_from_str(&matched_str, codex, configuration)? {
 
                     headers.push(LoadBlock::new(
                         m_start,
@@ -64,9 +63,9 @@ impl ChapterHeader {
     }
 
     /// Load the chapter heading and metadata from `&str`. This method returns a tuple with optional heading and a chapter tags vector.
-    fn parse_chapter_heading_and_tags_from_str(content: &str, last_heading_level: &mut HeadingLevel, _codex: &Codex, _configuration: &LoadConfiguration) -> Result<Option<(Heading, Vec<ChapterTag>)>, LoadError> {
+    fn parse_chapter_heading_and_tags_from_str(content: &str, _codex: &Codex, _configuration: &LoadConfiguration) -> Result<Option<(Heading, Vec<ChapterTag>)>, LoadError> {
 
-        log::debug!("parse headings and chapter tags from (last heading level: {}):\n{}", last_heading_level, content);
+        log::debug!("parse headings and chapter tags from:\n{}", content);
 
         for heading in StandardHeading::ordered() {         // TODO: insert in codex
 

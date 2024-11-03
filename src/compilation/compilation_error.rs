@@ -38,6 +38,9 @@ pub enum CompilationError {
     #[error(transparent)]
     CompilableError(#[from] CompilableError),
 
+    #[error("heading level not inferable: {0}")]
+    HeadingLevelNotInferable(String),
+
     #[error("unknown error occurs")]
     Unknown,
 }
