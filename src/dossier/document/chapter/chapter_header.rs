@@ -30,8 +30,6 @@ impl ChapterHeader {
     /// Load headings and chapter tags from `&str`
     pub fn load(content: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<Vec<LoadBlock>, LoadError> {
 
-        log::error!("{}\n{}", content, content.len());
-
         let mut last_heading_level = 0;
         let mut headers: Vec<LoadBlock> = Vec::new();
 
@@ -46,7 +44,7 @@ impl ChapterHeader {
                 let m_start = m.start();
                 let m_end = m.end();
 
-                log::error!("header found (between {} and {}): {:?}", m_start, m_end, &matched_str);
+                log::debug!("header found (between {} and {}): {:?}", m_start, m_end, &matched_str);
 
                 if let Some((heading, tags)) = Self::parse_chapter_heading_and_tags_from_str(&matched_str, &mut last_heading_level, codex, configuration)? {
 
