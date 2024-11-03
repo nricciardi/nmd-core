@@ -127,7 +127,7 @@ impl Codex {
                         StandardTextModifier::InlineMath.modifier_pattern().clone(),
                         vec![
                             Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"<span class="inline-math">$"#))),
-                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, vec![], StandardTextModifier::InlineMath.incompatible_modifiers())),
+                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::InlineMath.incompatible_modifiers())),
                             Arc::new(FixedReplacementRuleReplacerPart::new(String::from(r#"$</span>"#))),
                         ]
                     ))
@@ -614,7 +614,7 @@ impl Codex {
                                         CompilableTextPart::new_fixed(format!(
                                             r#"<p class="math-block"{}>$${}$$</p>"#,
                                             text_utility::html_nuid_tag_or_nothing(compilable.nuid().as_ref()),
-                                            captures.get(1).unwrap().as_str(),
+                                            text_utility::replace(captures.get(1).unwrap().as_str(), &ESCAPE_HTML),
                                         )
                                     )
                                     ]))
