@@ -25,8 +25,17 @@ cargo add nmd-core
 
 ### Quick start
 
-TODO
+```rust
+let dossier_path = PathBuf::from("...");
 
+let codex = Codex::of_html();
+
+let loader_configuration = LoadConfiguration::default();
+
+let dossier = Dossier::load_dossier_from_path_buf(&dossier_path, &codex, &loader_configuration, LoadConfigurationOverLay::default()).unwrap();
+
+let compiled_dossier = dossier.compile(...).unwrap();
+```
 
 ### Codex
 
