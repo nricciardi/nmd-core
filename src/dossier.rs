@@ -105,7 +105,7 @@ impl Dossier {
             return Err(LoadError::ResourceError(ResourceError::InvalidResourceVerbose("there is no name".to_string())))
         }
 
-        if dossier_configuration.compilation().parallelization() {
+        if configuration.parallelization() {
 
             let mut documents_res: Vec<Result<Document, LoadError>> = Vec::new();
 

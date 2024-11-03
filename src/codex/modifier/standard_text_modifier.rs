@@ -54,7 +54,6 @@ impl StandardTextModifier {
 
         //! they must have the compatibility order
         vec![
-            Self::Escape,
             Self::InlineCode,
             Self::InlineMath,
             Self::Comment,
@@ -78,6 +77,7 @@ impl StandardTextModifier {
             Self::Checkbox,
             Self::CheckboxChecked,
             Self::Emoji,
+            Self::Escape,
             Self::Reference,
             Self::Cite,
         ]
@@ -137,7 +137,7 @@ impl StandardTextModifier {
             Self::Underlined => String::from(r"\+\+(.*?)\+\+"),
             Self::Link => String::from(r"\[([^\]]+)\]\(([^)]+)\)"),
             Self::InlineCode => String::from(r"`(.*?)`"),
-            Self::InlineMath => format!(r#"\$([^${}]+)\$"#, NEW_LINE_PATTERN),
+            Self::InlineMath => format!(r#"\$([^$]+)\$"#),
             Self::GreekLetter => String::from(r"%(\w*?)%"),        // if it changes, fix greek letters rules
             Self::Escape => String::from(r"\\([\*\+\\~%\^\$@=\[\]!<>\{\}\(\)#-_\|\?&]+)"),
             Self::Reference => String::from(r"&([\w-]+)&"),

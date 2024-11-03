@@ -1,4 +1,7 @@
+use std::sync::RwLock;
+
 use getset::{CopyGetters, Getters, MutGetters, Setters};
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use crate::{codex::Codex, dossier::document::chapter::{chapter_header::ChapterHeader, paragraph::Paragraph}, load::{LoadConfiguration, LoadConfigurationOverLay, LoadError}};
 
 
@@ -95,19 +98,49 @@ impl LoadBlock {
                 unmatched_slices.push((position_in_global_content(last_position), &current_content[last_position..]));
             }
 
-            let mut unmatched_slices_blocks: Vec<LoadBlock> = Vec::new();
 
             // load unmatched slices
-            for (offset, unmatched_slice) in unmatched_slices {
+            if configuration.parallelization() {
 
-                log::debug!("try next paragraph modifier on:\n{}\n(offset: {})", unmatched_slice, offset);
+                let unmatched_slices_blocks: RwLock<Vec<LoadBlock>> = RwLock::new(Vec::new());
 
-                let mut blocks = Self::inner_load_from_str(unmatched_slice, offset, codex, paragraph_modifier_index + 1, configuration, configuration_overlay.clone())?;
-            
-                unmatched_slices_blocks.append(&mut blocks);
+                let errors: Vec<LoadError> = unmatched_slices.into_par_iter().map(|(offset, unmatched_slice)| -> Result<(), LoadError> {
+
+                    log::debug!("try next paragraph modifier on:\n{}\n(offset: {})", unmatched_slice, offset);
+    
+                    let mut blocks = Self::inner_load_from_str(unmatched_slice, offset, codex, paragraph_modifier_index + 1, configuration, configuration_overlay.clone())?;
+                
+                    unmatched_slices_blocks.write().unwrap().append(&mut blocks);
+
+                    Ok(())
+                })
+                .filter(|result| result.is_err())
+                .map(|result| result.err().unwrap())
+                .collect();
+
+                if errors.len() > 0 {
+                    return Err(LoadError::BucketOfErrors(errors))
+                }
+
+                let mut unmatched_slices_blocks = unmatched_slices_blocks.into_inner().unwrap();
+
+                current_paragraph_blocks.append(&mut unmatched_slices_blocks);
+
+            } else {
+
+                let mut unmatched_slices_blocks: Vec<LoadBlock> = Vec::new();
+
+                for (offset, unmatched_slice) in unmatched_slices {
+    
+                    log::debug!("try next paragraph modifier on:\n{}\n(offset: {})", unmatched_slice, offset);
+    
+                    let mut blocks = Self::inner_load_from_str(unmatched_slice, offset, codex, paragraph_modifier_index + 1, configuration, configuration_overlay.clone())?;
+                
+                    unmatched_slices_blocks.append(&mut blocks);
+                }
+
+                current_paragraph_blocks.append(&mut unmatched_slices_blocks);
             }
-
-            current_paragraph_blocks.append(&mut unmatched_slices_blocks);
 
             return Ok(current_paragraph_blocks)
 

@@ -2,6 +2,7 @@ pub mod chapter;
 
 
 use std::path::PathBuf;
+use std::time::Instant;
 
 pub use chapter::Chapter;
 use getset::{Getters, MutGetters, Setters};
@@ -57,6 +58,8 @@ impl Document {
     }
 
     pub fn load_document_from_str(document_name: &str, content: &str, codex: &Codex, configuration: &LoadConfiguration, mut configuration_overlay: LoadConfigurationOverLay) -> Result<Document, LoadError> {
+        
+        let now = Instant::now();
 
         log::info!("loading document '{}' from its content...", document_name);
 
@@ -68,7 +71,7 @@ impl Document {
 
         let document = Self::create_document_by_blocks(document_name, blocks)?;
 
-        log::info!("document '{}' loaded (preamble: {}, chapters: {})", document_name, document.content().preamble().is_empty(), document.content().chapters().len());
+        log::info!("document '{}' loaded in {} ms (preamble: {}, chapters: {})", document_name, now.elapsed().as_millis(), document.content().preamble().is_empty(), document.content().chapters().len());
 
         Ok(document)      
     }
@@ -80,7 +83,11 @@ impl Document {
             return Err(LoadError::ResourceError(ResourceError::InvalidResourceVerbose(format!("{} not exists", path_buf.to_string_lossy())))) 
         }
 
+        let now = Instant::now();
+
         let resource = DiskResource::try_from(path_buf.clone())?;
+
+        log::info!("document in {:?} read in {} ms", path_buf, now.elapsed().as_millis());
 
         let content = resource.content()?;
 

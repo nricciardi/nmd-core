@@ -106,18 +106,6 @@ impl Codex {
 
         let text_rules: TextModifierOrderedMap = TextModifierOrderedMap::from([
             (
-                StandardTextModifier::Escape.identifier().clone(),
-                (
-                    Box::new(Into::<BaseModifier>::into(StandardTextModifier::Escape)) as Box<dyn Modifier>,
-                    Box::new(ReplacementRule::new(
-                        StandardTextModifier::Escape.modifier_pattern().clone(),
-                        vec![
-                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::Escape.incompatible_modifiers())),
-                        ]
-                    )) as Box<dyn CompilationRule>
-                ) as (Box<dyn Modifier>, Box<dyn CompilationRule>)
-            ),
-            (
                 StandardTextModifier::InlineCode.identifier().clone(),
                 (
                     Box::new(Into::<BaseModifier>::into(StandardTextModifier::InlineCode)) as Box<dyn Modifier>,
@@ -552,6 +540,18 @@ impl Codex {
                         ]
                     ))
                 )
+            ),
+            (
+                StandardTextModifier::Escape.identifier().clone(),
+                (
+                    Box::new(Into::<BaseModifier>::into(StandardTextModifier::Escape)) as Box<dyn Modifier>,
+                    Box::new(ReplacementRule::new(
+                        StandardTextModifier::Escape.modifier_pattern().clone(),
+                        vec![
+                            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), StandardTextModifier::Escape.incompatible_modifiers())),
+                        ]
+                    )) as Box<dyn CompilationRule>
+                ) as (Box<dyn Modifier>, Box<dyn CompilationRule>)
             ),
             (
                 StandardTextModifier::Reference.identifier().clone(),

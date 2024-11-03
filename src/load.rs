@@ -10,6 +10,10 @@ use crate::resource::ResourceError;
 
 #[derive(Error, Debug)]
 pub enum LoadError {
+
+    #[error("bucket of errors: '{0:#?}'")]
+    BucketOfErrors(Vec<LoadError>),
+
     #[error(transparent)]
     ResourceError(#[from] ResourceError),
 
@@ -50,6 +54,9 @@ pub struct LoadConfiguration {
 
     #[getset(get_copy = "pub", set = "pub")]
     strict_paragraphs_loading_rules_check: bool,
+
+    #[getset(get_copy = "pub", set = "pub")]
+    parallelization: bool,
 }
 
 impl Default for LoadConfiguration {
@@ -58,6 +65,7 @@ impl Default for LoadConfiguration {
             input_location: PathBuf::from("."),
             strict_focus_block_check: false,
             strict_paragraphs_loading_rules_check: true,
+            parallelization: true
         }
     }
 }
