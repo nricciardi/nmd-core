@@ -214,7 +214,15 @@ impl Assembler for HtmlAssembler {
         let mut other_styles = configuration.external_styles_paths().clone();
         styles_references.append(&mut other_styles);
 
-        let mut page = Self::create_default_html_page(dossier_configuration.name(), &styles_references, configuration.external_styles(), configuration.external_scripts_paths(), configuration.external_scripts(), configuration.theme(), configuration.use_remote_addons())?;
+        let mut page = Self::create_default_html_page(
+            dossier_configuration.name(), 
+            &styles_references, 
+            configuration.external_styles(), 
+            configuration.external_scripts_paths(), 
+            configuration.external_scripts(), 
+            configuration.theme(), 
+            configuration.use_remote_addons()
+        )?;
         
         if let Some(toc) = compiled_toc {
             page.add_raw(toc.content());
