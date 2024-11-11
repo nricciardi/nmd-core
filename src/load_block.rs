@@ -1,7 +1,7 @@
 use std::sync::RwLock;
 
 use getset::{CopyGetters, Getters, MutGetters, Setters};
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use rayon::{iter::{IntoParallelIterator, ParallelIterator}, slice::ParallelSliceMut};
 use crate::{codex::Codex, dossier::document::chapter::{chapter_header::ChapterHeader, paragraph::Paragraph}, load::{LoadConfiguration, LoadConfigurationOverLay, LoadError}};
 
 
@@ -105,7 +105,7 @@ impl LoadBlock {
 
                 let errors: Vec<LoadError> = unmatched_slices.into_par_iter().map(|(offset, unmatched_slice)| -> Result<(), LoadError> {
 
-                    log::debug!("try next paragraph modifier on:\n{}\n(offset: {})", unmatched_slice, offset);
+                    log::debug!("no matches using paragraph modifier {} on:\n{}\n(offset: {})", modifier_identifier, unmatched_slice, offset);
     
                     let mut blocks = Self::inner_load_from_str(unmatched_slice, offset, codex, paragraph_modifier_index + 1, configuration, configuration_overlay.clone())?;
                 
@@ -132,8 +132,6 @@ impl LoadBlock {
                 for (offset, unmatched_slice) in unmatched_slices {
     
                     log::debug!("try next paragraph modifier on:\n{}\n(offset: {})", unmatched_slice, offset);
-
-                    println!("try next paragraph modifier on:\n{}\n(offset: {})", unmatched_slice, offset);
     
                     let mut blocks = Self::inner_load_from_str(unmatched_slice, offset, codex, paragraph_modifier_index + 1, configuration, configuration_overlay.clone())?;
                 
@@ -147,7 +145,7 @@ impl LoadBlock {
 
         } else {    // => there are no other modifiers
 
-            log::debug!("next content contains headings or fallback paragraph:\n{}", current_content);
+            log::debug!("next content contains headings and/or fallback paragraph:\n{}", current_content);
 
             if codex.fallback_paragraph().is_none()  {
 
@@ -157,15 +155,17 @@ impl LoadBlock {
             // load headings
             let mut headers_blocks = ChapterHeader::load(current_content, codex, configuration)?;
 
+            headers_blocks.par_sort_by(|a, b| a.start().cmp(&b.start()));
+
             let mut blocks: Vec<LoadBlock> = Vec::new();
 
-            let mut add_fb_blocks = |s: &str, start: usize, end: usize| -> Result<(), LoadError> {
+            let mut add_fb_blocks = |raw_fb_paragraph: &str, start: usize, end: usize| -> Result<(), LoadError> {
 
                 if let Some((fb_id, fallback_loading_rule)) = codex.fallback_paragraph() {
 
-                    log::debug!("fallback rule {} will be used to load:\n{}", fb_id, s);
+                    log::debug!("fallback rule {} will be used to load:\n{}", fb_id, raw_fb_paragraph);
 
-                    let paragraphs = fallback_loading_rule.load(s, codex, configuration, configuration_overlay.clone())?;
+                    let paragraphs = fallback_loading_rule.load(raw_fb_paragraph, codex, configuration, configuration_overlay.clone())?;
 
                     let len = paragraphs.len();
                     assert!((end - start) > len);
@@ -181,7 +181,7 @@ impl LoadBlock {
                             LoadBlockContent::Paragraph(paragraph)
                         );
 
-                        log::debug!("fallback blocks:\n{:#?}", block);
+                        log::debug!("generated fallback blocks:\n{:#?}", block);
     
                         blocks.push(block);
                     }
@@ -197,12 +197,19 @@ impl LoadBlock {
 
                 if header_block.start() > last_position {
 
-                    let s = &current_content[last_position..header_block.start()];
+                    let start = last_position;
+                    let global_start = position_in_global_content(last_position);
+                    let end = header_block.start();
+                    let global_end = position_in_global_content(header_block.start());
+
+                    let s = &current_content[start..end];
+
+                    log::debug!("found not header slice between {} (global pos: {}) and {} (global pos: {}) of current content:\n{}", start, global_start, end, global_end, s);
 
                     add_fb_blocks(
                         s,
-                        position_in_global_content(last_position),
-                        position_in_global_content(header_block.start())
+                        global_start,
+                        global_end
                     )?;
                 }
 
@@ -212,7 +219,7 @@ impl LoadBlock {
                 header_block.set_end(position_in_global_content(header_block.end()));
             }
 
-            log::debug!("last heading found at position: {}/{}", last_position, current_content.len());
+            log::debug!("last heading found at position (of current content): {}/{}", last_position, current_content.len());
 
             if current_content.len() > last_position {
 

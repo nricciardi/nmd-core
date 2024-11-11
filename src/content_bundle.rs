@@ -123,7 +123,7 @@ impl From<Vec<LoadBlock>> for ContentBundle {
                     
                     } else {
 
-                        unreachable!("heading level must be made explicit now");
+                        unreachable!("heading level must be made 'explicit' now");
                     }
 
                     header.heading_mut().set_level(level);

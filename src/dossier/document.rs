@@ -109,7 +109,7 @@ impl Document {
 
         let document = Document::new(document_name.to_string(), content);
 
-        log::debug!("document '{}' has {} chapters and preamble {}", document.name(), document.content().chapters().len(), !document.content().preamble().is_empty());
+        log::debug!("document '{}' created: {:#?}", document_name, document);
 
         Ok(document)
     }

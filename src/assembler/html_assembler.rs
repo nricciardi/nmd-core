@@ -294,7 +294,7 @@ impl Assembler for HtmlAssembler {
                     style.push_str(format!("{};", tag.value().as_ref().unwrap().as_str()).as_str())
                 },
                 ChapterTagKey::StyleClass => {
-                    div_chapter = div_chapter.with_attributes(vec![("class", tag.value().as_ref().unwrap().as_str())])
+                    div_chapter = div_chapter.with_attributes(vec![(String::from("class"), format!("chapter {}", tag.value().as_ref().unwrap().as_str()))])
                 },
 
                 _ => {
