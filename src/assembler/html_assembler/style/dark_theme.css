@@ -1,22 +1,3 @@
-:root {
-    --body-margin-top: 2cm;
-    --body-margin-right: 2cm;
-    --body-margin-bottom: 2cm;
-    --body-margin-left: 2cm;
-}
-
-/* Reset CSS */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body, h1, h2, h3, p, ul, li {
-    margin: 0;
-    padding: 0;
-}
-
 /* PAGE */
 
 body {
@@ -28,36 +9,9 @@ body {
     overflow-x: hidden;
 }
 
-@media print {
-    body {
-        font-family: Arial, sans-serif;
-        font-size: 11pt;
-        margin: 2cm;
-        background-color: white;
-        color: black;
-    }
-}
-
-@page:right {
-    @bottom-center {
-        content: counter(page);
-    }
-}
-
-.paragraph {
-    line-height: 1.5;
-    margin-top: 0.5em;
-    margin-bottom: 0.5em;
-    text-align: justify;
-    padding-left: 0.25em;
-}
 
 .link {
     color: #b2e9ff;
-}
-
-.page-break {
-    page-break-after: always;
 }
 
 /* HEADING */
@@ -83,18 +37,6 @@ body {
     page-break-before: always;
 }
 
-@media print {
-    .heading-1 {
-        font-size: 2em;
-        margin-top: 0;
-        padding-bottom: 0.3em;
-        border-bottom-width: 1px;
-        border-bottom-style: solid;
-        border-bottom-color: black;
-
-        page-break-before: always;
-    }
-}
 
 .heading-2 {
     font-size: 1.5em;
@@ -102,29 +44,6 @@ body {
     border-bottom-width: 1px;
     border-bottom-style: solid;
     border-bottom-color: #444;
-}
-
-.heading-3 {
-    font-size: 1.25em;
-    font-weight: bold;
-}
-
-.heading-4 {
-    font-size: 1.1em;
-}
-
-.heading-5 {
-    font-size: 1em;
-}
-
-.heading-6 {
-    font-size: 0.875em;
-}
-
-/* EMBEDDED STYLE */
-
-.abridged-embedded-style {
-    border-radius: 5%;
 }
 
 
@@ -146,51 +65,6 @@ body {
     display: block;
     text-align: center;
     line-height: 18px;
-}
-
-/* IMAGE */
-
-.figure {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-}
-
-.image {
-    max-width: 100%;
-    height: auto;
-    margin-bottom: 10px; /* Aggiungi uno spazio inferiore tra l'immagine e la didascalia */
-}
-
-.image-caption  {
-    width: 100%;
-}
-
-/* LIST */
-
-.list {
-    list-style-type: none;
-    padding: 0;
-    margin: 5vh 1vw 5vh 3.5vw;
-
-    page-break-inside: avoid;
-}
-
-.list-item-indentation {
-    padding-left: 2vw;
-}
-
-
-.list-item-bullet {
-    display: inline-block;
-    margin-right: 1vw;
-    font-size: medium;
-    width: 0.5em;
-}
-
-.list-item-bullet > .checkbox {
-    margin-right: 1.3vw;
 }
 
 /* FOCUS BLOCK */
@@ -300,16 +174,6 @@ body {
     page-break-inside: avoid;
 }
 
-.bookmark-title, .abridged-bookmark-title {
-    font-size: large;
-    font-weight: bold;
-}
-
-.bookmark-title::after, .abridged-bookmark-title::after {
-    margin-left: 1vw;
-    content: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="%23d0a4f5" class="bi bi-bookmark-fill" viewBox="0 0 16 16"><path d="M2 2v13.5a.5.5 0 0 0 .74.439L8 13.069l5.26 2.87A.5.5 0 0 0 14 15.5V2a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2"/></svg>');
-}
-
 /* .TODO */
 
 .todo {
@@ -343,11 +207,6 @@ body {
     color: #ffab40;
 }
 
-.todo-title::after {
-    margin-left: 1vw;
-    content: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="%23ffab40" class="bi bi-pencil-square" viewBox="0 0 16 16"><path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/><path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5z"/></svg>');
-}
-
 /* .TABLE */
 
 .table {
@@ -356,18 +215,6 @@ body {
     border-collapse: collapse;
     margin: 5%;
     color: #fdfdfd;
-}
-
-.table-header {
-    display: table-header-group;
-}
-
-.table-body-row {
-    display: table-row;
-}
-
-.table-footer {
-    display: table-footer-group;
 }
 
 .table-cell, .table-empty-cell {
@@ -386,23 +233,6 @@ body {
     background-color: #444;
 }
 
-.table-empty-cell {
-    visibility: hidden;
-    border: none;
-}
-
-.table-right-cell {
-    text-align: right;
-}
-
-.table-center-cell {
-    text-align: center;
-}
-
-.table-left-cell {
-    text-align: left;
-}
-
 /* TOC */
 
 .toc {
@@ -411,37 +241,12 @@ body {
     margin-bottom: 7vh;
 }
 
-.toc-title {
-    font-size: xx-large;
-    font-weight: bold;
-    margin-bottom: 2vh;
-}
-
-.toc-body {
-    list-style-type: none;
-    padding: 0;
-
-    page-break-inside: avoid;
-}
-
-.toc-item {
-    margin: 5px 0 0 0;
-}
-
-.toc-item-indentation {
-    padding-left: 2vw;
-}
-
 .toc-item-bullet {
     display: inline-block;
     margin-right: 0.5vw;
     font-size: large;
     width: 0.5em;
     color: #ffd700;
-}
-
-.toc-item-bullet::before {
-    content: "-";
 }
 
 /* BIBLIOGRAPHY */
@@ -453,75 +258,10 @@ body {
     page-break-before: always;
 }
 
-.bibliography-title {
-    font-size: xx-large;
-    font-weight: bold;
-    margin-bottom: 2vh;
-
-    page-break-after: avoid;
-}
-
-.bibliography-body {
-    list-style-type: none;
-    padding: 0;
-
-    page-break-inside: avoid;
-}
-
-.bibliography-item {
-    margin: 1vh 0 0 1vh;
-    font-size: small;
-}
-
-.bibliography-item-title {
-    font-size: x-large;
-    font-style: italic;
-    margin-left: 1vw;
-    margin-bottom: 0.5vh;
-}
-
-.bibliography-item-title::before {
-    content: '"';
-}
-
-.bibliography-item-title::after {
-    content: '"';
-}
-
-.bibliography-item-authors {
-    font-size: medium;
-    margin-left: 2vw;
-}
-
-.bibliography-item-url {
-    text-decoration: underline;
-    margin-left: 2vw;
-}
-
-.bibliography-item-description {
-    margin-left: 2vw;
-}
-
-.bibliography-item-year {
-    margin-left: 2vw;
-}
-
 /* CITE */
 
 .cite {
     text-decoration: none;
     color: #d0a4f5;
-}
-
-.cite::before {
-    content: '[';
-    margin-left: 0.2rem;
-    margin-right: 0.05rem;
-}
-
-.cite::after {
-    content: ']';
-    margin-right: 0.2rem;
-    margin-left: 0.05rem;
 }
 

@@ -30,8 +30,6 @@ body {
 
 @media print {
     body {
-        font-family: Arial, sans-serif;
-        font-size: 11pt;
         margin: 2cm;
         background-color: white;
     }
@@ -72,11 +70,10 @@ body {
 
 .heading-1 {
     font-size: 2em;
-	margin-top: 5vh;
-	padding-bottom: 0.3em;
-	border-bottom-width: 1px;
-	border-bottom-style: solid;
-
+    margin-top: 5vh;
+    padding-bottom: 0.3em;
+    border-bottom: 1px solid #000000;
+    
     page-break-before: always;
 }
 
@@ -155,7 +152,7 @@ body {
 .image {
     max-width: 100%;
     height: auto;
-    margin-bottom: 10px; /* Aggiungi uno spazio inferiore tra l'immagine e la didascalia */
+    margin-bottom: 10px;
 }
 
 .image-caption  {

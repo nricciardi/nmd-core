@@ -143,15 +143,14 @@ impl HtmlAssembler {
 
     fn apply_theme_style(mut page: HtmlPage, theme: &Theme) -> HtmlPage {
 
+        page.add_style(include_str!("html_assembler/style/default_style.css"));
+
         match theme {
-            Theme::Light => page.add_style(include_str!("html_assembler/default_style/light_theme.css")),
-            Theme::Dark => page.add_style(include_str!("html_assembler/default_style/dark_theme.css")),
-            Theme::Scientific => page.add_style(include_str!("html_assembler/default_style/scientific_theme.css")),
-            Theme::Vintage => page.add_style(include_str!("html_assembler/default_style/vintage_theme.css")),
-            Theme::HighContrast => {
-                page.add_style(include_str!("html_assembler/default_style/light_theme.css"));
-                page.add_style(include_str!("html_assembler/default_style/high_contrast_theme.css"));
-            },
+            Theme::Light => page.add_style(include_str!("html_assembler/style/light_theme.css")),
+            Theme::Dark => page.add_style(include_str!("html_assembler/style/dark_theme.css")),
+            Theme::Scientific => page.add_style(include_str!("html_assembler/style/scientific_theme.css")),
+            Theme::Vintage => page.add_style(include_str!("html_assembler/style/vintage_theme.css")),
+            Theme::HighContrast => page.add_style(include_str!("html_assembler/style/high_contrast_theme.css")),
             Theme::None => ()       // nothing,
         }
 
