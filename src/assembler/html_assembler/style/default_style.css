@@ -164,7 +164,7 @@ body {
 .list {
     list-style-type: none;
     padding: 0;
-    margin: 5vh 1vw 5vh 3.5vw;
+    margin: 3vh 1vw 3vh 3.5vw;
 
     page-break-inside: avoid;
 }
@@ -194,8 +194,7 @@ body {
     gap: 10px;
     align-items: center;
     font-size: 1.05em;
-    margin-top: 5vh;
-    margin-bottom: 5vh;
+    margin: 3vh 2vw;
 
     page-break-inside: avoid;
 }
