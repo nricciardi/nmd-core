@@ -1,0 +1,44 @@
+/* PAGE */
+
+body {
+    font-family: "Times New Roman", serif;
+    font-size: 12pt;
+    margin: var(--body-margin-top) var(--body-margin-right) var(--body-margin-bottom) var(--body-margin-left);
+    background-color: #ffffff;
+    overflow-x: hidden;
+    color: #333333;
+}
+
+
+/* HEADINGS */
+
+.heading-1, .heading-2, .heading-3, .heading-4, .heading-5, .heading-6 {
+    font-weight: bold;
+    font-family: "Times New Roman", serif;
+    margin-top: 0.75em;
+    margin-bottom: 0.5em;
+    line-height: 1.25;
+    page-break-after: avoid;
+}
+
+.heading-2 {
+    font-size: 1.75em;
+    padding-bottom: 0.3em;
+    border-bottom: 1px solid #000000;
+}
+
+.heading-3 {
+    font-size: 1.5em;
+}
+
+.heading-4 {
+    font-size: 1.25em;
+}
+
+.heading-5 {
+    font-size: 1.1em;
+}
+
+.heading-6 {
+    font-size: 1em;
+}
