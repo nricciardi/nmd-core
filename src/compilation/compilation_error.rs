@@ -1,5 +1,6 @@
 use thiserror::Error;
-use crate::{assembler::AssemblerError, compilable_text::CompilableError, resource::{resource_reference::ResourceReferenceError, ResourceError}};
+
+use crate::{mmo::{uri::UriError, MultiMediaObjectError}, text::compilable_string::CompilableStringError};
 
 
 #[derive(Error, Debug)]
@@ -30,13 +31,13 @@ pub enum CompilationError {
     InvalidParameter(String),
 
     #[error(transparent)]
-    ReferenceError(#[from] ResourceReferenceError),
+    UriError(#[from] UriError),
 
     #[error(transparent)]
-    ResourceError(#[from] ResourceError),
+    MmoError(#[from] MultiMediaObjectError),
 
     #[error(transparent)]
-    CompilableError(#[from] CompilableError),
+    CompilableStringError(#[from] CompilableStringError),
 
     #[error("heading level not inferable: {0}")]
     HeadingLevelNotInferable(String),

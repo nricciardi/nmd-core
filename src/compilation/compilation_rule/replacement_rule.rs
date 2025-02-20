@@ -18,6 +18,8 @@ use crate::compilation::compilation_error::CompilationError;
 pub type ReplacementRuleParts = Vec<Arc<dyn ReplacementRuleReplacerPart>>;
 
 
+// TODO: refactor it
+
 /// Rule to replace a NMD text based on a specific pattern matching rule
 #[derive(Debug, Clone, Getters, Setters)]
 pub struct ReplacementRule {

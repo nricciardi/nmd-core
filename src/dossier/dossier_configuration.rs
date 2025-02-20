@@ -17,9 +17,9 @@ use serde::{Deserialize, Serialize};
 use log;
 
 use crate::constants::{DOSSIER_CONFIGURATION_JSON_FILE_NAME, DOSSIER_CONFIGURATION_YAML_FILE_NAME, NMD_EXTENSION};
-use crate::resource::text_reference::TextReferenceMap;
-use crate::resource::Resource;
-use crate::resource::{disk_resource::DiskResource, ResourceError};
+use crate::mmo::MultiMediaObjectError;
+use crate::utility::datastruct::resource::disk_resource::DiskResource;
+use crate::utility::datastruct::text_reference::TextReferenceMap;
 use crate::utility::file_utility;
 
 use self::dossier_configuration_path_reference::{DossierConfigurationPathReference, DossierConfigurationRawPathReference};
@@ -35,21 +35,27 @@ pub struct DossierConfiguration {
     name: String,
 
     #[serde(rename(serialize = "toc", deserialize = "toc"), default = "default_toc")]
+    #[getset(get = "pub", set = "pub")]
     table_of_contents_configuration: DossierConfigurationTableOfContents,
 
     #[serde(rename = "documents")]
+    #[getset(get = "pub", set = "pub")]
     raw_documents_paths: Vec<DossierConfigurationRawPathReference>,
 
     #[serde(default = "default_style")]
+    #[getset(get = "pub", set = "pub")]
     style: DossierConfigurationStyle,
 
     #[serde(default = "default_references")]
+    #[getset(get = "pub", set = "pub")]
     references: TextReferenceMap,
 
     #[serde(default = "default_bibliography")]
+    #[getset(get = "pub", set = "pub")]
     bibliography: DossierConfigurationBibliography,
 
     #[serde(default = "default_compilation")]
+    #[getset(get = "pub", set = "pub")]
     compilation: DossierConfigurationCompilation,
 }
 
@@ -96,10 +102,6 @@ impl DossierConfiguration {
         }
     }
 
-    pub fn raw_documents_paths(&self) -> &Vec<String> {
-        &self.raw_documents_paths
-    }
-
     pub fn documents_paths(&self) -> Vec<DossierConfigurationPathReference> {
 
         let dcrfm = DOSSIER_CONFIGURATION_RAW_REFERENCE_MANAGER.lock().unwrap();
@@ -118,39 +120,15 @@ impl DossierConfiguration {
         }
     }
 
-    pub fn set_raw_documents_paths(&mut self, documents: Vec<String>) -> () {
-        self.raw_documents_paths = documents
-    }
-
     pub fn append_raw_document_path(&mut self, raw_document_path: String) -> () {
         self.raw_documents_paths.push(raw_document_path)
-    }
-
-    pub fn style(&self) -> &DossierConfigurationStyle {
-        &self.style
-    }
-
-    pub fn compilation(&self) -> &DossierConfigurationCompilation {
-        &self.compilation
-    }
-
-    pub fn references(&self) -> &TextReferenceMap {
-        &self.references
-    }
-
-    pub fn bibliography(&self) -> &DossierConfigurationBibliography {
-        &self.bibliography
-    }
-
-    pub fn table_of_contents_configuration(&self) -> &DossierConfigurationTableOfContents {
-        &self.table_of_contents_configuration
     }
 
     pub fn set_root_path(&mut self, root_path: PathBuf) {
         DOSSIER_CONFIGURATION_RAW_REFERENCE_MANAGER.lock().unwrap().set_root_path(root_path);
     }
 
-    pub fn dump_as_yaml(&self, complete_output_path: PathBuf) -> Result<(), ResourceError> {
+    pub fn dump_as_yaml(&self, complete_output_path: PathBuf) -> Result<(), MultiMediaObjectError> {
         let yaml_string = serde_yaml::to_string(&self).unwrap();
 
         let mut disk_resource = DiskResource::try_from(complete_output_path)?;
@@ -188,7 +166,7 @@ impl Default for DossierConfiguration {
 
 
 impl DossierConfiguration {
-    fn try_from_as_yaml(content: String) -> Result<Self, ResourceError> {
+    fn try_from_as_yaml(content: String) -> Result<Self, MultiMediaObjectError> {
 
         log::info!("try to load dossier configuration from yaml content...");
         
@@ -197,11 +175,11 @@ impl DossierConfiguration {
                 log::info!("dossier configuration loaded from yaml");
                 return Ok(config)
             },
-            Err(e) => return Err(ResourceError::InvalidResourceVerbose(e.to_string()))
+            Err(e) => return Err(MultiMediaObjectError::InvalidResourceVerbose(e.to_string()))
         }
     }
 
-    fn try_from_as_json(content: String) -> Result<Self, ResourceError> {
+    fn try_from_as_json(content: String) -> Result<Self, MultiMediaObjectError> {
 
         log::info!("try to load dossier configuration from json content...");
 
@@ -210,17 +188,17 @@ impl DossierConfiguration {
                 log::info!("dossier configuration loaded from json");
                 return Ok(config)
             },
-            Err(e) => return Err(ResourceError::InvalidResourceVerbose(e.to_string()))
+            Err(e) => return Err(MultiMediaObjectError::InvalidResourceVerbose(e.to_string()))
         }
     }
 
-    pub fn load(path_buf: &PathBuf) -> Result<Self, ResourceError> {
+    pub fn load(path_buf: &PathBuf) -> Result<Self, MultiMediaObjectError> {
         Self::try_from(path_buf)
     }
 }
 
 impl TryFrom<&PathBuf> for DossierConfiguration {
-    type Error = ResourceError;
+    type Error = MultiMediaObjectError;
 
     fn try_from(path_buf: &PathBuf) -> Result<Self, Self::Error> {
 
@@ -282,7 +260,7 @@ impl TryFrom<&PathBuf> for DossierConfiguration {
             }
         }
 
-        Err(ResourceError::ResourceNotFound("dossier configuration".to_string()))
+        Err(MultiMediaObjectError::ResourceNotFound("dossier configuration".to_string()))
     }
 }
 

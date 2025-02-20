@@ -13,7 +13,7 @@ pub const PARAGRAPH_SEPARATOR_END: &str = r"(?m:[ \t]*\r?\n){2}";
 static MODIFIER_PATTERNS_REGEX: Lazy<HashMap<ModifierIdentifier, Regex>> = Lazy::new(|| {
     let mut regex: HashMap<ModifierIdentifier, Regex> = HashMap::new();
 
-    StandardParagraphModifier::ordered().into_iter().for_each(|m| {
+    StandardParagraphModifier::compatibility_ordered().into_iter().for_each(|m| {
         regex.insert(m.identifier(), Regex::new(&m.modifier_pattern()).unwrap());
     });
 
@@ -49,7 +49,7 @@ pub enum StandardParagraphModifier {
 }
 
 impl StandardParagraphModifier {
-    pub fn ordered() -> Vec<Self> {
+    pub fn compatibility_ordered() -> Vec<Self> {
 
         //! they must have the compatibility order
         vec![

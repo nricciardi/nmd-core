@@ -3,7 +3,8 @@ use std::collections::BTreeMap;
 use getset::{CopyGetters, Getters, Setters};
 use serde::{Deserialize, Serialize};
 
-use crate::bibliography::bibliography_record::BibliographyRecord;
+use crate::dossier::bibliography::bibliography_record::BibliographyRecord;
+
 
 #[derive(Debug, Clone, Getters, CopyGetters, Setters, Deserialize, Serialize)]
 pub struct DossierConfigurationBibliography {

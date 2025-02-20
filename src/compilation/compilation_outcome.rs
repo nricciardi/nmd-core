@@ -1,6 +1,5 @@
 use getset::{Getters, MutGetters, Setters};
 use serde::{Deserialize, Serialize};
-
 use crate::compilable_text::CompilableText;
 
 

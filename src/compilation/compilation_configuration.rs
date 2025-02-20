@@ -3,8 +3,9 @@ pub mod compilation_configuration_overlay;
 
 use std::{collections::HashMap, path::PathBuf};
 use getset::{CopyGetters, Getters, MutGetters, Setters};
-use crate::{bibliography::Bibliography, resource::text_reference::TextReferenceMap, theme::Theme};
-use self::list_bullet_configuration_record::ListBulletConfigurationRecord;
+use list_bullet_configuration_record::ListBulletConfigurationRecord;
+
+use crate::{dossier::bibliography::Bibliography, theme::Theme, utility::datastruct::text_reference::TextReferenceMap};
 
 
 
@@ -64,8 +65,9 @@ pub struct CompilationConfiguration {
     #[getset(get = "pub", set = "pub")]
     theme: Theme,
 
-    #[getset(get = "pub", set = "pub")]
-    resource_type: CompilableResourceType,
+    // TODO: remove
+    // #[getset(get = "pub", set = "pub")]
+    // resource_type: CompilableResourceType,
 
     #[getset(get_copy = "pub", set = "pub")]
     strict_greek_letters_check: bool,
@@ -83,7 +85,7 @@ impl CompilationConfiguration {
                 compress_embed_image: bool, strict_image_src_check: bool,
                 parallelization: bool, list_bullets_configuration: Vec<ListBulletConfigurationRecord>, strict_list_check: bool, 
                 strict_focus_block_check: bool, references: TextReferenceMap, fast_draft: bool, bibliography: Option<Bibliography>,
-                theme: Theme, resource_type: CompilableResourceType, strict_greek_letters_check: bool, strict_cite_check: bool,
+                theme: Theme, strict_greek_letters_check: bool, strict_cite_check: bool,
                 strict_reference_check: bool,) -> Self {
 
         Self {
@@ -101,7 +103,6 @@ impl CompilationConfiguration {
             fast_draft,
             bibliography,
             theme,
-            resource_type,
             strict_cite_check,
             strict_greek_letters_check,
             strict_reference_check,
@@ -126,7 +127,6 @@ impl Default for CompilationConfiguration {
             fast_draft: false,
             bibliography: None,
             theme: Theme::default(),
-            resource_type: CompilableResourceType::default(),
             strict_cite_check: true,
             strict_greek_letters_check: true,
             strict_reference_check: true,

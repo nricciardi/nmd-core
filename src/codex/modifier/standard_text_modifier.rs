@@ -9,7 +9,7 @@ use super::{base_modifier::BaseModifier, constants::{ABRIDGED_STYLE_PATTERN, IDE
 static MODIFIER_PATTERNS_REGEX: Lazy<HashMap<ModifierIdentifier, Regex>> = Lazy::new(|| {
     let mut regex: HashMap<ModifierIdentifier, Regex> = HashMap::new();
 
-    StandardTextModifier::ordered().into_iter().for_each(|m| {
+    StandardTextModifier::compatibility_ordered().into_iter().for_each(|m| {
         regex.insert(m.identifier(), Regex::new(&m.modifier_pattern()).unwrap());
     });
 
@@ -50,7 +50,7 @@ pub enum StandardTextModifier {
 
 impl StandardTextModifier {
 
-    pub fn ordered() -> Vec<Self> {
+    pub fn compatibility_ordered() -> Vec<Self> {
 
         //! they must have the compatibility order
         vec![

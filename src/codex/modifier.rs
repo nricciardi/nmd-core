@@ -3,10 +3,8 @@ pub mod standard_text_modifier;
 pub mod standard_heading_modifier;
 pub mod base_modifier;
 pub mod constants;
-
-
 use regex::Regex;
-use crate::resource::bucket::Bucket;
+use crate::utility::datastruct::bucket::Bucket;
 use self::base_modifier::BaseModifier;
 
 

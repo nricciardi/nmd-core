@@ -44,5 +44,4 @@ pub trait CompilationRule: Send + Sync + Debug {
         self.standard_compile(compilable, format, compilation_configuration, compilation_configuration_overlay)
     }
 
-
 }

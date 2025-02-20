@@ -30,8 +30,8 @@ use crate::dossier::document::chapter::paragraph::paragraph_loading_rule::metada
 use crate::dossier::document::chapter::paragraph::paragraph_loading_rule::replacement_rule_paragraph_loading_rule::ReplacementRuleParagraphLoadingRule;
 use crate::dossier::document::chapter::paragraph::paragraph_loading_rule::table_paragraph_loading_rule::TableParagraphLoadingRule;
 use crate::dossier::document::chapter::paragraph::paragraph_loading_rule::{MultiParagraphLoadingRule, ParagraphLoadingRule};
+use crate::mmo::uri::NUri;
 use crate::output_format::OutputFormat;
-use crate::resource::resource_reference::ResourceReference;
 use crate::utility::text_utility;
 use super::compilation::compilation_rule::constants::ESCAPE_HTML;
 use super::compilation::compilation_rule::html_cite_rule::HtmlCiteRule;
@@ -182,7 +182,7 @@ impl Codex {
                             if let Some(raw_id) = captures.get(2) {
                                 id_attr = format!(
                                     r#"id="{}""#,
-                                    ResourceReference::of_internal_from_without_sharp(raw_id.as_str(), cco.document_name().as_ref())?.build(),
+                                    NUri::of_internal_from_without_sharp(raw_id.as_str(), cco.document_name().as_ref())?.build(),
                                 );
 
                                 identifier_class = String::from("identifier");
@@ -217,7 +217,7 @@ impl Codex {
                                 if let Some(raw_id) = captures.get(2) {
                                     id_attr = format!(
                                         r#"id="{}""#,
-                                        ResourceReference::of_internal_from_without_sharp(raw_id.as_str(), cco.document_name().as_ref())?.build(),
+                                        NUri::of_internal_from_without_sharp(raw_id.as_str(), cco.document_name().as_ref())?.build(),
                                     );
     
                                     identifier_class = String::from("identifier");
@@ -253,7 +253,7 @@ impl Codex {
                                 if let Some(raw_id) = captures.get(2) {
                                     id_attr = format!(
                                         r#"id="{}""#,
-                                        ResourceReference::of_internal_from_without_sharp(raw_id.as_str(), cco.document_name().as_ref())?.build(),
+                                        NUri::of_internal_from_without_sharp(raw_id.as_str(), cco.document_name().as_ref())?.build(),
                                     );
     
                                     identifier_class = String::from("identifier");
@@ -289,7 +289,7 @@ impl Codex {
                                 if let Some(raw_id) = captures.get(2) {
                                     id_attr = format!(
                                         r#"id="{}""#,
-                                        ResourceReference::of_internal_from_without_sharp(raw_id.as_str(), cco.document_name().as_ref())?.build(),
+                                        NUri::of_internal_from_without_sharp(raw_id.as_str(), cco.document_name().as_ref())?.build(),
                                     );
     
                                     identifier_class = String::from("identifier");
@@ -339,7 +339,7 @@ impl Codex {
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
                                         r#"<span class="identifier" id="{}">"#,
-                                        ResourceReference::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
+                                        NUri::of_internal_from_without_sharp(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
                                     ))
                                 ]))
                             }))),
@@ -487,7 +487,7 @@ impl Codex {
                                 Ok(CompilableText::from(vec![
                                     CompilableTextPart::new_fixed(format!(
                                         r#"<a href="{}" class="link">"#,
-                                        ResourceReference::of(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
+                                        NUri::of(captures.get(2).unwrap().as_str(), cco.document_name().as_ref())?.build(),
                                     ))
                                 ]))
                             }))),

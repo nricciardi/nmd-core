@@ -4,6 +4,7 @@ use crate::{assembler::assembler_configuration::AssemblerConfiguration, codex::m
 
 
 
+// TODO: remove it and place in parameters
 #[derive(Debug, Getters, Setters, Default, Clone)]
 pub struct CompilationConfigurationOverLay {
 

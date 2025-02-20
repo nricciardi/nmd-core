@@ -1,6 +1,5 @@
 use regex::Regex;
-
-use super::nmd_unique_identifier::NmdUniqueIdentifier;
+use super::datastruct::nmd_unique_identifier::NmdUniqueIdentifier;
 
 
 pub fn normalize_newlines(input: &str) -> String {

@@ -1,6 +1,5 @@
 use std::{path::{PathBuf, MAIN_SEPARATOR_STR}, sync::Mutex};
-
-use crate::resource::remote_resource::RemoteResource;
+use crate::utility::url_utility;
 
 use super::dossier_configuration_path_reference::{DossierConfigurationPathReference, DossierConfigurationRawPathReference};
 
@@ -72,7 +71,7 @@ impl DossierConfigurationRawReferenceManager {
             
             return DossierConfigurationPathReference::from(&raw_reference);
 
-        } else if !raw_reference.is_empty() && raw_reference.chars().nth(0).unwrap().is_alphanumeric() && !RemoteResource::is_valid_remote_resource(&raw_reference) {
+        } else if !raw_reference.is_empty() && raw_reference.chars().nth(0).unwrap().is_alphanumeric() && !url_utility::is_valid_remote_resource(&raw_reference) {
 
             // it's plain
             log::debug!("parsing raw path reference... it is plain reference, plain root path: {:#?}", plain_root_path);

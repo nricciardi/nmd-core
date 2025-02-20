@@ -1,6 +1,6 @@
 use getset::{Getters, Setters};
 use serde::Serialize;
-use crate::{codex::{modifier::ModifiersBucket, Codex}, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, output_format::OutputFormat, resource::resource_reference::ResourceReference, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+use crate::{codex::{modifier::ModifiersBucket, Codex}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, mmo::uri::NUri, output_format::OutputFormat, text::compilable_string::{compilable_string_part::CompilableStringPart, CompilableString}, utility::datastruct::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 #[derive(Debug, Clone, Serialize)]
@@ -22,7 +22,7 @@ pub struct Heading {
     title: String,
 
     #[getset(get = "pub", set = "pub")]
-    resource_reference: Option<ResourceReference>,
+    nuri: Option<NUri>,
 
     #[getset(get = "pub", set = "pub")]
     nuid: Option<NmdUniqueIdentifier>,
@@ -34,7 +34,7 @@ impl Heading {
         Self {
             level,
             title,
-            resource_reference: None,
+            nuri: None,
             nuid: None,
         }
     }
@@ -51,9 +51,9 @@ impl Compilable for Heading {
 
         let document_name = document_name.unwrap();
 
-        let id: ResourceReference = ResourceReference::of_internal_from_without_sharp(&self.title, Some(&document_name))?;
+        let id: NUri = NUri::of_internal_from_without_sharp(&self.title, Some(&document_name))?;
 
-        let mut compiled_title = CompilableText::from(self.title.clone());
+        let mut compiled_title = CompilableString::from(self.title.clone());
         
         compiled_title.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
 
@@ -73,19 +73,17 @@ impl Compilable for Heading {
                     _ => return Err(CompilationError::HeadingLevelNotInferable(self.title.to_string()))
                 };
 
-                let outcome = CompilableText::new(vec![
+                let outcome = CompilableString::new(vec![
 
-                    CompilableTextPart::new(
+                    CompilableStringPart::Fixed(
                         format!(r#"<h{} class="heading-{}" id="{}" {}>"#, level, level, id.build_without_internal_sharp(), nuid_attr),
-                        CompilableTextPartType::Fixed
                     ),
-                    CompilableTextPart::new(
+                    CompilableStringPart::Compilable(
                         compiled_title.content(),
-                        CompilableTextPartType::Compilable{ incompatible_modifiers: ModifiersBucket::None }
+                        ModifiersBucket::None
                     ),
-                    CompilableTextPart::new(
+                    CompilableStringPart::Fixed(
                         format!(r#"</h{}>"#, level),
-                        CompilableTextPartType::Fixed
                     ),
                 ]);
 

@@ -2,8 +2,7 @@ use std::io;
 use std::path::PathBuf;
 use getset::{CopyGetters, Getters, Setters};
 use thiserror::Error;
-use crate::resource::resource_reference::ResourceReferenceError;
-use crate::resource::ResourceError;
+use crate::mmo::{uri::UriError, MultiMediaObjectError};
 
 
 
@@ -15,10 +14,10 @@ pub enum LoadError {
     BucketOfErrors(Vec<LoadError>),
 
     #[error(transparent)]
-    ResourceError(#[from] ResourceError),
+    MmoError(#[from] MultiMediaObjectError),
 
     #[error(transparent)]
-    ResourceReferenceError(#[from] ResourceReferenceError),
+    UriError(#[from] UriError),
 
     #[error("elaboration error: {0}")]
     ElaborationError(String),
@@ -43,11 +42,14 @@ impl Clone for LoadError {
 }
 
 
-#[derive(Debug, Getters, CopyGetters, Setters)]
+#[derive(Debug, Getters, CopyGetters, Setters, Clone)]
 pub struct LoadConfiguration {
     
     #[getset(get = "pub", set = "pub")]
     input_location: PathBuf,
+
+    #[getset(get_copy = "pub", set = "pub")]
+    strict_dossier_configuration_check: bool,
 
     #[getset(get_copy = "pub", set = "pub")]
     strict_focus_block_check: bool,
@@ -57,6 +59,12 @@ pub struct LoadConfiguration {
 
     #[getset(get_copy = "pub", set = "pub")]
     parallelization: bool,
+
+    // #[getset(get = "pub", set = "pub")]
+    // dossier_name: Option<String>,       // TODO: remove it, place it as method parameter
+
+    // #[getset(get = "pub", set = "pub")]
+    // document_name: Option<String>,       // TODO: remove it, place it as method parameter
 }
 
 impl Default for LoadConfiguration {
@@ -64,19 +72,26 @@ impl Default for LoadConfiguration {
         Self {
             input_location: PathBuf::from("."),
             strict_focus_block_check: false,
+            strict_dossier_configuration_check: true,
             strict_paragraphs_loading_rules_check: true,
-            parallelization: true
+            parallelization: true,
+            // document_name: None,
+            // dossier_name: None
         }
     }
 }
 
 
-#[derive(Debug, Getters, Setters, Default, Clone)]
-pub struct LoadConfigurationOverLay {
 
-    #[getset(get = "pub", set = "pub")]
-    dossier_name: Option<String>,
 
-    #[getset(get = "pub", set = "pub")]
-    document_name: Option<String>,
-}
+
+
+
+
+
+
+
+
+
+
+

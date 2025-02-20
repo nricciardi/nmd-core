@@ -11,7 +11,8 @@ pub mod paragraph_loading_rule;
 
 use std::fmt::Display;
 use thiserror::Error;
-use crate::{compilation::compilable::Compilable, utility::nmd_unique_identifier::NmdUniqueIdentifier};
+
+use crate::{compilation::compilable::Compilable, utility::datastruct::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 #[derive(Error, Debug)]

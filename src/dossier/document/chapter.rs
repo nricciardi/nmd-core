@@ -1,4 +1,3 @@
-pub mod paragraph;
 pub mod heading;
 pub mod chapter_tag;
 pub mod chapter_header;
@@ -6,10 +5,9 @@ pub mod chapter_header;
 
 use chapter_header::ChapterHeader;
 use getset::{Getters, MutGetters, Setters};
-use paragraph::Paragraph;
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use serde::Serialize;
-use crate::{codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, output_format::OutputFormat};
+use crate::{codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, output_format::OutputFormat, text::content_block::ContentBlock};
 
 
 #[derive(Debug, Getters, MutGetters, Setters, Serialize)]
@@ -20,16 +18,16 @@ pub struct Chapter {
     
     #[getset(get = "pub", get_mut = "pub", set = "pub")]
     #[serde(skip)]      // TODO
-    paragraphs: Vec<Box<dyn Paragraph>>,
+    content: Vec<Box<dyn ContentBlock>>,
 }
 
 
 impl Chapter {
 
-    pub fn new(header: ChapterHeader, paragraphs: Vec<Box<dyn Paragraph>>) -> Self {
+    pub fn new(header: ChapterHeader, content: Vec<Box<dyn ContentBlock>>) -> Self {
         Self {
             header,
-            paragraphs
+            content
         }
     }    
 }
@@ -46,7 +44,7 @@ impl Compilable for Chapter {
 
         if compilation_configuration.parallelization() {
 
-            let paragraph_results: Vec<Result<CompilationOutcome, CompilationError>> = self.paragraphs.par_iter_mut()
+            let paragraph_results: Vec<Result<CompilationOutcome, CompilationError>> = self.content.par_iter_mut()
                 .map(|paragraph| {
 
                     paragraph.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())
@@ -69,7 +67,7 @@ impl Compilable for Chapter {
 
         } else {
 
-            for paragraph in self.paragraphs.iter_mut() {
+            for paragraph in self.content.iter_mut() {
 
                 paragraph_outcomes.push(paragraph.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())?);
             }

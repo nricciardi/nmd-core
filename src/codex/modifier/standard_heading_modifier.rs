@@ -19,7 +19,7 @@ pub enum StandardHeading {
 }
 
 impl StandardHeading {
-    pub fn ordered() -> Vec<Self> {
+    pub fn compatibility_ordered() -> Vec<Self> {
         let mut heading_modifiers: Vec<Self> = vec![Self::MinorHeading, Self::MajorHeading, Self::SameHeading];
 
         for i in (1..=MAX_HEADING_LEVEL).rev() {
@@ -31,7 +31,7 @@ impl StandardHeading {
     }
 
     pub fn heading_level(content: &str) -> Option<u32> {
-        let heading_modifiers = Self::ordered();
+        let heading_modifiers = Self::compatibility_ordered();
 
         for heading_modifier in heading_modifiers {
             let regex = Regex::new(&heading_modifier.modifier_pattern()).unwrap();

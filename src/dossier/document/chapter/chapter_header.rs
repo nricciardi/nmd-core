@@ -1,6 +1,6 @@
 use getset::{Getters, MutGetters, Setters};
 use serde::Serialize;
-use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_heading_modifier::StandardHeading, Modifier}, Codex}, load::{LoadConfiguration, LoadError}, load_block::{LoadBlock, LoadBlockContent}};
+use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_heading_modifier::StandardHeading, Modifier}, Codex}, load::{load_block::{LoadBlock, LoadBlockContent}, LoadConfiguration, LoadError}};
 use super::{chapter_tag::ChapterTag, heading::{Heading, HeadingLevel}};
 
 
