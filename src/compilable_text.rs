@@ -731,6 +731,33 @@ mod test {
         ));
     }
 
+    #[test]
+    fn nested_inline_math() {
+        let mut codex = Codex::of_html();
+
+        codex.retain(HashSet::from([
+            StandardTextModifier::BoldStarVersion.identifier(),
+            StandardTextModifier::BoldUnderscoreVersion.identifier(),
+            StandardTextModifier::ItalicStarVersion.identifier(),
+            StandardTextModifier::ItalicUnderscoreVersion.identifier(),
+            StandardTextModifier::InlineCode.identifier(),
+            StandardTextModifier::InlineMath.identifier()
+        ]));
+
+        let compilation_configuration = CompilationConfiguration::default();
+
+        let content = "**$N$ transformer blocks**";
+
+        let mut outcome = CompilableText::from(content);
+        
+        outcome.compile(&OutputFormat::Html, &codex, &compilation_configuration, CompilationConfigurationOverLay::default()).unwrap();       
+
+        assert_eq!(outcome.content(), concat!(
+            r#"<strong class="bold">"#,
+            r#"<span class="inline-math">N</span>"#,
+            r#" transformer blocks</strong>"#,
+        ));
+    }
 }
 
 
