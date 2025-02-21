@@ -8,7 +8,6 @@ pub mod table_block;
 pub mod quote_block;
 
 
-use std::fmt::Display;
 use thiserror::Error;
 use crate::{compilation::compilable::Compilable, utility::datastruct::nmd_unique_identifier::NmdUniqueIdentifier};
 
@@ -22,19 +21,11 @@ pub enum ContentBlockError {
     Empty
 }
 
-// pub type ParagraphType = String;     // TODO: remove
 
-
-pub trait ContentBlock: std::fmt::Debug + Compilable + Sync + Send {
+/// Whatever block of content in the text, e.g. images, textual paragraphs, tables and so on.
+pub trait ContentBlock: Compilable + Sync + Send + std::fmt::Debug {
 
     fn nuid(&self) -> Option<&NmdUniqueIdentifier>;
 
     fn set_nuid(&mut self, nuid: Option<NmdUniqueIdentifier>);
-}
-
-
-impl Display for dyn ContentBlock {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.raw_content())
-    }
 }

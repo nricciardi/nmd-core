@@ -1,18 +1,19 @@
 pub mod text_section;
+pub(self) mod text_loader;
 pub mod compilable_string;
 pub mod content_block;
 pub mod content_block_loading_rule;
 
-
 use content_block::ContentBlock;
 use getset::{Getters, MutGetters, Setters};
-use rayon::{iter::{IntoParallelRefMutIterator, ParallelIterator}, slice::ParallelSliceMut};
+use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use serde::Serialize;
-use text_section::TextSection;
+use text_loader::TextLoader;
 
-use crate::{codex::Codex, compilation::{compilable::Compilable, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, dossier::document::{chapter::heading::HeadingLevel, Chapter}, output_format::OutputFormat};
+use crate::{codex::Codex, compilation::{compilable::Compilable, compilation_configuration::CompilationConfiguration, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, dossier::document::{chapter::heading::HeadingLevel, Chapter}, load::{LoadConfiguration, LoadError}, output_format::OutputFormat};
 
 
+/// Structured text which represents the base of loaded text. It has a `preamble` which contains the first content blocks and a list of chapters.
 #[derive(Debug, Getters, MutGetters, Setters, Serialize)]
 pub struct Text {
     #[getset(get = "pub", get_mut = "pub", set = "pub")]
@@ -33,119 +34,14 @@ impl Text {
         }
     }
 
-}
+    pub fn load_from_str(raw_str: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<Self, LoadError> {
 
-impl From<Vec<TextSection>> for Text {
-    fn from(mut blocks: Vec<TextSection>) -> Self {
-        if !blocks.windows(2).all(|w| {
+        let text_loader = TextLoader::new(codex, configuration);
 
-            assert!(w[0].start() <= w[0].end());
-            assert!(w[1].start() <= w[1].end());
-
-            w[0].start() <= w[1].start()        // TODO: assert!(w[0].start() <= w[1].start())
-        }) {
-            
-            blocks.par_sort_by(|a, b| a.start().cmp(&b.start()));
-        }
-
-        let mut preamble: Vec<Box<dyn ContentBlock>> = Vec::new();
-        let mut current_chapter: Option<Chapter> = None;
-        let mut chapters: Vec<Chapter> = Vec::new();
-        let mut last_heading_level: u32 = 0;
-
-        for block in blocks {
-
-            match Into::<TextSection>::into(block) {
-                TextSection::ContentBlock(paragraph) => {
-
-                    if let Some(ref mut cc) = current_chapter {
-
-                        cc.paragraphs_mut().push(paragraph);
-      
-                    } else {
-
-                        preamble.push(paragraph);
-                    }
-
-                },
-                TextSection::ChapterHeader(mut header) => {
-
-                    if let Some(cc) = current_chapter.take() {
-                        chapters.push(cc);
-                    }
-
-                    assert!(current_chapter.is_none());
-      
-                    let level = match header.heading().level() {
-                        HeadingLevel::Minor => {
-                            
-                            let l;
-                            if last_heading_level < 1 {
-                                log::warn!("minor heading found, but last heading has level {}, so it is set as 1", last_heading_level);
-                                
-                                l = HeadingLevel::Explicit(1)
-                            
-                            } else {
-
-                                l = HeadingLevel::Explicit(last_heading_level - 1);
-                            }
-                            
-                            l
-                        },
-                        HeadingLevel::Major => {
-                            let l;
-                            if last_heading_level < 1 {
-                                log::warn!("major heading found, but last heading has level {}, so it is set as 1", last_heading_level);
-                                
-                                l = HeadingLevel::Explicit(1)
-                            
-                            } else {
-
-                                l = HeadingLevel::Explicit(last_heading_level + 1);
-                            }
-                            
-                            l
-                        },
-                        HeadingLevel::Same => {
-                            let l;
-                            if last_heading_level < 1 {
-                                log::warn!("same heading found, but last heading has level {}, so it is set as 1", last_heading_level);
-                                
-                                l = HeadingLevel::Explicit(1)
-                            
-                            } else {
-
-                                l = HeadingLevel::Explicit(last_heading_level);
-                            }
-                            
-                            l
-                        },
-                        HeadingLevel::Explicit(l) => HeadingLevel::Explicit(*l)
-                    };
-
-                    if let HeadingLevel::Explicit(l) = &level {
-                    
-                        last_heading_level = *l;
-                    
-                    } else {
-
-                        unreachable!("heading level must be made 'explicit' now");
-                    }
-
-                    header.heading_mut().set_level(level);
-
-                    current_chapter = Some(Chapter::new(header, Vec::new()));
-                },
-            }
-        }
-
-        if let Some(cc) = current_chapter.take() {
-            chapters.push(cc);
-        }
-
-        Self::new(preamble, chapters)
+        text_loader.load(raw_str)
     }
 }
+
 
 
 impl Compilable for Text {

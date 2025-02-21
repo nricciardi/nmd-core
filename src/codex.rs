@@ -15,23 +15,13 @@ use self::modifier::standard_paragraph_modifier::StandardParagraphModifier;
 use self::modifier::standard_text_modifier::StandardTextModifier;
 use crate::assembler::html_assembler::HtmlAssembler;
 use crate::assembler::Assembler;
-use crate::compilable_text::compilable_text_part::CompilableTextPart;
-use crate::compilable_text::CompilableText;
 use crate::compilation::compilation_rule::replacement_rule::replacement_rule_part::closure_replacement_rule_part::ClosureReplacementRuleReplacerPart;
 use crate::compilation::compilation_rule::replacement_rule::replacement_rule_part::fixed_replacement_rule_part::FixedReplacementRuleReplacerPart;
 use crate::compilation::compilation_rule::replacement_rule::replacement_rule_part::single_capture_group_replacement_rule_part::SingleCaptureGroupReplacementRuleReplacerPart;
 use crate::compilation::compilation_rule::replacement_rule::ReplacementRule;
-use crate::dossier::document::chapter::paragraph::paragraph_loading_rule::block_quote_paragraph_loading_rule::BlockQuoteParagraphLoadingRule;
-use crate::dossier::document::chapter::paragraph::paragraph_loading_rule::common_paragraph_loading_rule::CommonParagraphLoadingRule;
-use crate::dossier::document::chapter::paragraph::paragraph_loading_rule::focus_block_paragraph_loading_rule::FocusBlockParagraphLoadingRule;
-use crate::dossier::document::chapter::paragraph::paragraph_loading_rule::image_paragraph_loading_rule::ImageParagraphLoadingRule;
-use crate::dossier::document::chapter::paragraph::paragraph_loading_rule::list_paragraph_loading_rule::ListParagraphLoadingRule;
-use crate::dossier::document::chapter::paragraph::paragraph_loading_rule::metadata_wrapper_paragraph_loading_rule::MetadataWrapperParagraphLoadingRule;
-use crate::dossier::document::chapter::paragraph::paragraph_loading_rule::replacement_rule_paragraph_loading_rule::ReplacementRuleParagraphLoadingRule;
-use crate::dossier::document::chapter::paragraph::paragraph_loading_rule::table_paragraph_loading_rule::TableParagraphLoadingRule;
-use crate::dossier::document::chapter::paragraph::paragraph_loading_rule::{MultiParagraphLoadingRule, ParagraphLoadingRule};
 use crate::mmo::uri::NUri;
 use crate::output_format::OutputFormat;
+use crate::text::content_block_loading_rule::ContentBlockLoadingRule;
 use crate::utility::text_utility;
 use super::compilation::compilation_rule::constants::ESCAPE_HTML;
 use super::compilation::compilation_rule::html_cite_rule::HtmlCiteRule;
@@ -40,9 +30,10 @@ use super::compilation::compilation_rule::reference_rule::ReferenceRule;
 use super::compilation::compilation_rule::CompilationRule;
 
 
+// TODO: remove Box<dyn Modifier>?
 pub type TextModifierOrderedMap = IndexMap<ModifierIdentifier, (Box<dyn Modifier>, Box<dyn CompilationRule>)>;
-pub type ParagraphModifierOrderedMap = IndexMap<ModifierIdentifier, (Box<dyn Modifier>, Box<dyn ParagraphLoadingRule>)>;
-pub type FallbackParagraph = (ModifierIdentifier, Box<dyn MultiParagraphLoadingRule>);
+pub type ParagraphModifierOrderedMap = IndexMap<ModifierIdentifier, (Box<dyn Modifier>, Box<dyn ContentBlockLoadingRule>)>;
+pub type FallbackParagraph = (ModifierIdentifier, Box<dyn ContentBlockLoadingRule>);
 
 
 /// Ordered collection of rules

@@ -65,7 +65,6 @@ impl TextSection {
 
                 Self::seq_load_unmatched_slices(current_paragraph_blocks, unmatched_slices, offset, paragraph_modifier_index, modifier_identifier, paragraph_modifier, paragraph_loading_rule, codex, configuration)
             }
-
             
         } else {    // => there are no other modifiers
 
