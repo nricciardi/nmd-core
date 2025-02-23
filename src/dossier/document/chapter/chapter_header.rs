@@ -1,6 +1,8 @@
+use std::collections::HashSet;
+
 use getset::{Getters, MutGetters, Setters};
 use serde::Serialize;
-use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_heading_modifier::StandardHeading, Modifier}, Codex}, load::{load_block::{LoadBlock, LoadBlockContent}, LoadConfiguration, LoadError}};
+use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_heading_modifier::StandardHeading, Modifier}, Codex}, load::{load_block::{LoadBlock, LoadBlockContent}, loading_rule::LoadingRule, LoadConfiguration, LoadError}, utility::datastruct::span::Span};
 use super::{chapter_tag::ChapterTag, heading::{Heading, HeadingLevel}};
 
 
@@ -158,4 +160,14 @@ impl ChapterHeader {
         Ok(None)
     }
 
+}
+
+impl LoadingRule<ChapterHeader> for ChapterHeader {
+    fn find(&self, raw_str: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<HashSet<Span<&str>>, LoadError> {
+        todo!()     // TODO
+    }
+
+    fn load(&self, raw_str: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<ChapterHeader, LoadError> {
+        todo!()     // TODO
+    }
 }

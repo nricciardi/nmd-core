@@ -1,10 +1,12 @@
+use std::collections::HashSet;
+
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
-use crate::{codex::Codex, dossier::document::Chapter, load::{LoadConfiguration, LoadError}, utility::datastruct::span::Span};
+use crate::{codex::Codex, dossier::document::Chapter, load::{load_configuration::LoadConfiguration, load_error::LoadError}, utility::datastruct::span::Span};
 use super::{content_block::ContentBlock, content_block_loading_rule::ContentBlockLoadingRule, Text};
 
 enum RawSpanContent<'a> {
-    RawContentBlock(&'a str, &'a Box<dyn ContentBlockLoadingRule>),
+    RawContentBlock(&'a str, &'a ContentBlockLoadingRule),
     RawHeader(&'a str, ),    // TODO
     Unmatched(&'a str)
 }
@@ -29,13 +31,13 @@ impl<'a> TextLoader<'a> {
     }
 
     pub fn load(&self, raw_str: &str) -> Result<Text, LoadError> {
-        let mut loaded_spans = self.load_raw_spans_from_str_recursively(raw_str, 0, 0)?;
+        let mut loaded_raw_spans = self.load_raw_spans_from_str_recursively(raw_str, 0, 0)?;
 
-        self.build_text(loaded_spans)
+        self.build_text(loaded_raw_spans)
     }
     
 
-    fn load_raw_spans_from_str_recursively(&self, current_str_slice: &str, offset: usize, loading_rule_index: usize) -> Result<Vec<Span<RawSpanContent<'_>>>, LoadError> {
+    fn load_raw_spans_from_str_recursively(&self, current_str_slice: &str, offset: usize, loading_rule_index: usize) -> Result<HashSet<Span<RawSpanContent<'_>>>, LoadError> {
         if let Some((modifier_identifier, (_, _))) = self.codex.paragraph_modifiers().get_index(loading_rule_index) {
             log::debug!("load using {}", modifier_identifier);
 
@@ -54,9 +56,9 @@ impl<'a> TextLoader<'a> {
         }
     }
 
-    fn process_using_loading_rule(&self, current_str_slice: &str, offset: usize, loading_rule_index: usize) -> Result<Vec<Span<RawSpanContent<'_>>>, LoadError> {
+    fn process_using_loading_rule(&self, current_str_slice: &str, offset: usize, loading_rule_index: usize) -> Result<HashSet<Span<RawSpanContent<'_>>>, LoadError> {
 
-        let loading_rule: &Box<dyn ContentBlockLoadingRule> = self.codex.paragraph_modifiers().get_index(loading_rule_index).unwrap();
+        let loading_rule: &ContentBlockLoadingRule = self.codex.paragraph_modifiers().get_index(loading_rule_index).unwrap();
         
         let current_content_block_spans = loading_rule.find(
             current_str_slice,
@@ -66,11 +68,11 @@ impl<'a> TextLoader<'a> {
 
         let unmatched_spans: Vec<Span<RawSpanContent<'a>>> = Self::get_unmatched_spans(
                                                             current_str_slice,
-                                                            current_content_block_spans,
+                                                            &current_content_block_spans,
                                                             offset
                                                         );
 
-        let current_content_block_spans: Vec<Span<RawSpanContent<'a>>> = current_content_block_spans.into_iter().map(|span| {
+        let current_content_block_spans: HashSet<Span<RawSpanContent<'a>>> = current_content_block_spans.into_iter().map(|span| {
             Span::new(
                 span.start() + offset,
                 span.end() + offset,
@@ -79,28 +81,13 @@ impl<'a> TextLoader<'a> {
         }).collect();
         
         // load unmatched slices
-        let loaded_unmatched_slices: Vec<Span<RawSpanContent<'a>>>;
-        if self.configuration.parallelization() {
-
-            loaded_unmatched_slices = self.par_load_unmatched_slices(
-                unmatched_spans,
-                offset,
-                loading_rule_index
-            )?;
-        
-        } else {
-
-            loaded_unmatched_slices = self.seq_load_unmatched_slices(
-                unmatched_spans,
-                offset,
-                loading_rule_index
-            )?;
-        }
-
+        let loaded_unmatched_slices: HashSet<Span<RawSpanContent<'a>>> = self.load_unmatched_slices(unmatched_spans, offset, loading_rule_index)?;
         Ok([current_content_block_spans, loaded_unmatched_slices].concat())
     }
 
-    fn get_unmatched_spans(str_slice: &'a str, raw_content_block_spans: Vec<Span<&str>>, offset: usize) -> Vec<Span<RawSpanContent<'a>>> {
+    fn get_unmatched_spans(str_slice: &'a str, raw_content_block_spans: &HashSet<Span<&str>>, offset: usize) -> HashSet<Span<RawSpanContent<'a>>> {
+
+        // TODO: spans must be ordered
 
         let mut content_block_spans: Vec<Span<RawSpanContent>> = Vec::new();
         let mut unmatched_spans: Vec<Span<RawSpanContent>> = Vec::new();
@@ -134,7 +121,30 @@ impl<'a> TextLoader<'a> {
         unmatched_spans
     }
 
-    fn par_load_unmatched_slices(&self, unmatched_slices: Vec<Span<RawSpanContent<'a>>>, offset: usize, current_loading_rule_index: usize) -> Result<Vec<Span<RawSpanContent<'a>>>, LoadError> {
+    fn load_unmatched_slices(&self, unmatched_slices: HashSet<Span<RawSpanContent<'a>>>, offset: usize, current_loading_rule_index: usize) -> Result<HashSet<Span<RawSpanContent<'a>>>, LoadError> {
+        
+        let loaded_unmatched_slices: Vec<Span<RawSpanContent<'a>>>;
+        if self.configuration.parallelization() {
+
+            loaded_unmatched_slices = self.par_load_unmatched_slices(
+                unmatched_slices,
+                offset,
+                current_loading_rule_index
+            )?;
+        
+        } else {
+
+            loaded_unmatched_slices = self.seq_load_unmatched_slices(
+                unmatched_slices,
+                offset,
+                current_loading_rule_index
+            )?;
+        }
+
+        Ok(loaded_unmatched_slices)
+    }
+
+    fn par_load_unmatched_slices(&self, unmatched_slices: HashSet<Span<RawSpanContent<'a>>>, offset: usize, current_loading_rule_index: usize) -> Result<HashSet<Span<RawSpanContent<'a>>>, LoadError> {
         
         let mut loaded_spans: Vec<Result<Span<RawSpanContent<'a>>, LoadError>> = unmatched_slices.into_par_iter()
                 .map(|span| {
@@ -160,7 +170,7 @@ impl<'a> TextLoader<'a> {
         Ok(loaded_spans.into_par_iter().map(|res| res.ok()).collect())
     }
 
-    fn seq_load_unmatched_slices(&self, unmatched_slices: Vec<Span<RawSpanContent<'a>>>, offset: usize, current_loading_rule_index: usize) -> Result<Vec<Span<RawSpanContent<'a>>>, LoadError> {
+    fn seq_load_unmatched_slices(&self, unmatched_slices: HashSet<Span<RawSpanContent<'a>>>, offset: usize, current_loading_rule_index: usize) -> Result<HashSet<Span<RawSpanContent<'a>>>, LoadError> {
         
         let mut loaded_spans: Vec<Span<RawSpanContent<'a>>> = Vec::new();
 
@@ -184,10 +194,21 @@ impl<'a> TextLoader<'a> {
     }
 
     fn process_headers_and_fallback(&self, current_str_slice: &str, offset: usize, loading_rule_index: usize) -> Result<Vec<Span<RawSpanContent<'_>>>, LoadError> {
+        
+        let headers_spans = loading_rule.find(
+            current_str_slice,
+            &self.codex,
+            &self.configuration
+        )?;
+        
         todo!()     // TODO
     }
 
-    fn build_text(&self, spans: Vec<Span<RawSpanContent<'a>>>) -> Result<Text, LoadError> {
+    fn process_raw_spans(&self, spans: HashSet<Span<RawSpanContent<'a>>>) -> Result<Vec<Span<>>> {
+        // TODO: insert check no unmatched
+    }
+
+    fn build_text(&self, spans: HashSet<Span<RawSpanContent<'a>>>) -> Result<Text, LoadError> {
         todo!()     // TODO: check if `from` can be used
     }
 
