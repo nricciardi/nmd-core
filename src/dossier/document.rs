@@ -1,13 +1,8 @@
 pub mod chapter;
-pub mod content_bundle;
 
 use std::path::PathBuf;
 use std::time::Instant;
-
-pub use chapter::Chapter;
-use content_bundle::ContentBundle;
 use getset::{Getters, MutGetters, Setters};
-use rayon::slice::ParallelSliceMut;
 use serde::Serialize;
 use thiserror::Error;
 use crate::codex::Codex;
@@ -16,12 +11,12 @@ use crate::compilation::compilation_configuration::CompilationConfiguration;
 use crate::compilation::compilation_error::CompilationError;
 use crate::compilation::compilable::Compilable;
 use crate::compilation::compilation_outcome::CompilationOutcome;
-use crate::load::load_block::LoadBlock;
-use crate::load::{LoadConfiguration, LoadError};
+use crate::load::load_configuration::LoadConfiguration;
+use crate::load::load_error::LoadError;
 use crate::mmo::MultiMediaObjectError;
 use crate::output_format::OutputFormat;
+use crate::text::Text;
 use crate::utility::datastruct::resource::disk_resource::DiskResource;
-use self::chapter::paragraph::ParagraphError;
 
 
 #[derive(Error, Debug)]
@@ -32,8 +27,6 @@ pub enum DocumentError {
     #[error(transparent)]
     Compilation(#[from] CompilationError),
 
-    #[error(transparent)]
-    ParagraphError(#[from] ParagraphError),
 }
 
 #[derive(Debug, Getters, MutGetters, Setters, Serialize)]
@@ -43,13 +36,13 @@ pub struct Document {
     name: String,
 
     #[getset(get = "pub", get_mut = "pub", set = "pub")]
-    content: ContentBundle
+    content: Text
 }
 
 
 impl Document {
 
-    pub fn new(name: String, content: ContentBundle) -> Self {
+    pub fn new(name: String, content: Text) -> Self {
         
         Self {
             name,
@@ -57,19 +50,17 @@ impl Document {
         }
     }
 
-    pub fn load_document_from_str(document_name: &str, content: &str, codex: &Codex, mut configuration: LoadConfiguration) -> Result<Document, LoadError> {
+    pub fn load_document_from_str(document_name: &str, raw_str: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<Document, LoadError> {
         
         let now = Instant::now();
 
         log::info!("loading document '{}' from its content...", document_name);
 
-        configuration.set_document_name(Some(document_name.to_string()));       // TODO: remove from configuration
+        // configuration.set_document_name(Some(document_name.to_string()));       // TODO: remove from configuration
         
-        let mut blocks: Vec<LoadBlock> = LoadBlock::load_from_str(content, codex, configuration)?;
+        let content = Text::load_from_str(raw_str, codex, configuration)?;
 
-        blocks.par_sort_by(|a, b| a.start().cmp(&b.start()));       // TODO: place in load block?
-
-        let document = Self::create_document_by_blocks(document_name, blocks)?;
+        let document = Document::new(document_name.to_string(), content);
 
         log::info!("document '{}' loaded in {} ms (preamble: {}, chapters: {})", document_name, now.elapsed().as_millis(), document.content().preamble().is_empty(), document.content().chapters().len());
 
@@ -77,7 +68,7 @@ impl Document {
     }
 
     /// Load a document from its path (`PathBuf`). The document have to exist.
-    pub fn load_document_from_path(path_buf: &PathBuf, codex: &Codex, configuration: LoadConfiguration) -> Result<Document, LoadError> {
+    pub fn load_document_from_path(path_buf: &PathBuf, codex: &Codex, configuration: &LoadConfiguration) -> Result<Document, LoadError> {
 
         if !path_buf.exists() {
             return Err(LoadError::ResourceError(MultiMediaObjectError::InvalidResourceVerbose(format!("{} not exists", path_buf.to_string_lossy())))) 
@@ -93,25 +84,12 @@ impl Document {
 
         let document_name = resource.name();
 
-        match Self::load_document_from_str(document_name, &content, codex, configuration.clone()) {
+        match Self::load_document_from_str(document_name, &content, codex, configuration) {
             Ok(document) => {
                 return Ok(document)
             },
             Err(err) => return Err(LoadError::ElaborationError(err.to_string()))
         }
-    }
-
-    fn create_document_by_blocks(document_name: &str, blocks: Vec<LoadBlock>) -> Result<Document, LoadError> {
-
-        log::debug!("create document '{}' using blocks: {:#?}", document_name, blocks);
-
-        let content = ContentBundle::from(blocks);
-
-        let document = Document::new(document_name.to_string(), content);
-
-        log::debug!("document '{}' created: {:#?}", document_name, document);
-
-        Ok(document)
     }
 }
 
@@ -129,7 +107,7 @@ impl Compilable for Document {
 
 #[cfg(test)]
 mod test {
-    use crate::{codex::Codex, dossier::document::Document, load::LoadConfiguration};
+    use crate::{codex::Codex, dossier::document::Document, load::load_configuration::LoadConfiguration};
 
     #[test]
     fn chapters_from_str() {
@@ -153,7 +131,7 @@ paragraph 2a
 paragraph 1b
 "#.trim().to_string();
 
-        let document = Document::load_document_from_str("test", &content, &codex, LoadConfiguration::default()).unwrap();
+        let document = Document::load_document_from_str("test", &content, &codex, &LoadConfiguration::default()).unwrap();
 
         assert_eq!(document.content().preamble().len(), 1);
 

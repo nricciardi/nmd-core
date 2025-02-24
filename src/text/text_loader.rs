@@ -1,16 +1,18 @@
-use std::collections::HashSet;
-
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
-use crate::{codex::Codex, dossier::document::Chapter, load::{load_configuration::LoadConfiguration, load_error::LoadError}, utility::datastruct::span::Span};
+use crate::{codex::Codex, dossier::document::chapter::{chapter_header::{chapter_header_loading_rule::ChapterHeaderLoadingRule, ChapterHeader}, heading::HeadingLevel, Chapter}, load::{load_configuration::LoadConfiguration, load_error::LoadError}, utility::datastruct::span::Span};
 use super::{content_block::ContentBlock, content_block_loading_rule::ContentBlockLoadingRule, Text};
 
 enum RawSpanContent<'a> {
     RawContentBlock(&'a str, &'a ContentBlockLoadingRule),
-    RawHeader(&'a str, ),    // TODO
+    RawHeader(&'a str, &'a ChapterHeaderLoadingRule),
     Unmatched(&'a str)
 }
 
+enum LoadedSpanContent {
+    ContentBlock(Box<dyn ContentBlock>),
+    Header(ChapterHeader)
+}
 
 
 #[derive(Debug)]
@@ -37,7 +39,7 @@ impl<'a> TextLoader<'a> {
     }
     
 
-    fn load_raw_spans_from_str_recursively(&self, current_str_slice: &str, offset: usize, loading_rule_index: usize) -> Result<HashSet<Span<RawSpanContent<'_>>>, LoadError> {
+    fn load_raw_spans_from_str_recursively(&self, current_str_slice: &str, offset: usize, loading_rule_index: usize) -> Result<Vec<Span<RawSpanContent<'_>>>, LoadError> {
         if let Some((modifier_identifier, (_, _))) = self.codex.paragraph_modifiers().get_index(loading_rule_index) {
             log::debug!("load using {}", modifier_identifier);
 
@@ -52,11 +54,11 @@ impl<'a> TextLoader<'a> {
                 log::warn!("there isn't fallback paragraph loading rule")
             }
 
-            return self.process_headers_and_fallback(current_str_slice, offset, loading_rule_index);
+            return self.process_headers_and_fallback(current_str_slice, offset);
         }
     }
 
-    fn process_using_loading_rule(&self, current_str_slice: &str, offset: usize, loading_rule_index: usize) -> Result<HashSet<Span<RawSpanContent<'_>>>, LoadError> {
+    fn process_using_loading_rule(&self, current_str_slice: &str, offset: usize, loading_rule_index: usize) -> Result<Vec<Span<RawSpanContent<'_>>>, LoadError> {
 
         let loading_rule: &ContentBlockLoadingRule = self.codex.paragraph_modifiers().get_index(loading_rule_index).unwrap();
         
@@ -72,7 +74,7 @@ impl<'a> TextLoader<'a> {
                                                             offset
                                                         );
 
-        let current_content_block_spans: HashSet<Span<RawSpanContent<'a>>> = current_content_block_spans.into_iter().map(|span| {
+        let current_content_block_spans: Vec<Span<RawSpanContent<'a>>> = current_content_block_spans.into_iter().map(|span| {
             Span::new(
                 span.start() + offset,
                 span.end() + offset,
@@ -81,19 +83,24 @@ impl<'a> TextLoader<'a> {
         }).collect();
         
         // load unmatched slices
-        let loaded_unmatched_slices: HashSet<Span<RawSpanContent<'a>>> = self.load_unmatched_slices(unmatched_spans, offset, loading_rule_index)?;
+        let loaded_unmatched_slices: Vec<Span<RawSpanContent<'a>>> = self.load_unmatched_slices(unmatched_spans, offset, loading_rule_index)?;
         Ok([current_content_block_spans, loaded_unmatched_slices].concat())
     }
 
-    fn get_unmatched_spans(str_slice: &'a str, raw_content_block_spans: &HashSet<Span<&str>>, offset: usize) -> HashSet<Span<RawSpanContent<'a>>> {
+    fn get_unmatched_spans(str_slice: &'a str, matched_spans: &mut Vec<Span<&str>>, offset: usize) -> Vec<Span<RawSpanContent<'a>>> {
 
-        // TODO: spans must be ordered
+        matched_spans.sort_by(|a, b| {
+                                                            assert!(a.start() < a.end());
+                                                            assert!(b.start() < b.end());
+
+                                                            a.start().cmp(&b.start())
+                                                        });
 
         let mut content_block_spans: Vec<Span<RawSpanContent>> = Vec::new();
         let mut unmatched_spans: Vec<Span<RawSpanContent>> = Vec::new();
 
         let mut slice_position: usize = 0;
-        for content_block_span in raw_content_block_spans {
+        for content_block_span in matched_spans {
 
             if content_block_span.start() > slice_position {
                 unmatched_spans.push(
@@ -121,7 +128,7 @@ impl<'a> TextLoader<'a> {
         unmatched_spans
     }
 
-    fn load_unmatched_slices(&self, unmatched_slices: HashSet<Span<RawSpanContent<'a>>>, offset: usize, current_loading_rule_index: usize) -> Result<HashSet<Span<RawSpanContent<'a>>>, LoadError> {
+    fn load_unmatched_slices(&self, unmatched_slices: Vec<Span<RawSpanContent<'a>>>, offset: usize, current_loading_rule_index: usize) -> Result<Vec<Span<RawSpanContent<'a>>>, LoadError> {
         
         let loaded_unmatched_slices: Vec<Span<RawSpanContent<'a>>>;
         if self.configuration.parallelization() {
@@ -144,7 +151,7 @@ impl<'a> TextLoader<'a> {
         Ok(loaded_unmatched_slices)
     }
 
-    fn par_load_unmatched_slices(&self, unmatched_slices: HashSet<Span<RawSpanContent<'a>>>, offset: usize, current_loading_rule_index: usize) -> Result<HashSet<Span<RawSpanContent<'a>>>, LoadError> {
+    fn par_load_unmatched_slices(&self, unmatched_slices: Vec<Span<RawSpanContent<'a>>>, offset: usize, current_loading_rule_index: usize) -> Result<Vec<Span<RawSpanContent<'a>>>, LoadError> {
         
         let mut loaded_spans: Vec<Result<Span<RawSpanContent<'a>>, LoadError>> = unmatched_slices.into_par_iter()
                 .map(|span| {
@@ -170,7 +177,7 @@ impl<'a> TextLoader<'a> {
         Ok(loaded_spans.into_par_iter().map(|res| res.ok()).collect())
     }
 
-    fn seq_load_unmatched_slices(&self, unmatched_slices: HashSet<Span<RawSpanContent<'a>>>, offset: usize, current_loading_rule_index: usize) -> Result<HashSet<Span<RawSpanContent<'a>>>, LoadError> {
+    fn seq_load_unmatched_slices(&self, unmatched_slices: Vec<Span<RawSpanContent<'a>>>, offset: usize, current_loading_rule_index: usize) -> Result<Vec<Span<RawSpanContent<'a>>>, LoadError> {
         
         let mut loaded_spans: Vec<Span<RawSpanContent<'a>>> = Vec::new();
 
@@ -193,43 +200,93 @@ impl<'a> TextLoader<'a> {
         Ok(loaded_spans)
     }
 
-    fn process_headers_and_fallback(&self, current_str_slice: &str, offset: usize, loading_rule_index: usize) -> Result<Vec<Span<RawSpanContent<'_>>>, LoadError> {
+    fn process_headers_and_fallback(&self, current_str_slice: &str, offset: usize) -> Result<Vec<Span<RawSpanContent<'_>>>, LoadError> {
         
-        let headers_spans = loading_rule.find(
-            current_str_slice,
-            &self.codex,
-            &self.configuration
-        )?;
+        let mut headers_spans: Vec<Span<RawSpanContent<'a>>> = Vec::new();
+
+        for (modifier_identifier, header_loading_rule) in self.codex.header_modifiers() {
+
+            let spans = header_loading_rule.find(
+                current_str_slice,
+                &self.codex,
+                &self.configuration
+            )?;
+
+            headers_spans.extend(spans);
+        }
         
-        todo!()     // TODO
+        let unmatched_spans = Self::get_unmatched_spans(current_str_slice, headers_spans, offset);
+
+        // TODO: backlog: ad hoc method can be created to prevent double iterations
+        // TODO: parallelization?
+        unmatched_spans.into_iter().map(|span| {
+            match span.content() {
+                RawSpanContent::RawContentBlock(_, _) | RawSpanContent::RawHeader(_, _) => unreachable!("unexpected matched span"),
+                RawSpanContent::Unmatched(raw_str) => RawSpanContent::RawContentBlock(&raw_str, self.codex.fallback_paragraph()),
+            }
+        })
+        .collect()
     }
 
-    fn process_raw_spans(&self, spans: HashSet<Span<RawSpanContent<'a>>>) -> Result<Vec<Span<>>> {
-        // TODO: insert check no unmatched
+    fn process_raw_spans(&self, spans: Vec<Span<RawSpanContent<'a>>>) -> Result<Vec<Span<LoadedSpanContent>>, LoadError> {
+        if self.configuration.parallelization() {
+            self.par_process_raw_spans(spans)
+        } else {
+            self.seq_process_raw_spans(spans)
+        }
     }
 
-    fn build_text(&self, spans: HashSet<Span<RawSpanContent<'a>>>) -> Result<Text, LoadError> {
-        todo!()     // TODO: check if `from` can be used
+    fn par_process_raw_spans(&self, spans: Vec<Span<RawSpanContent<'a>>>) -> Result<Vec<Span<LoadedSpanContent>>, LoadError> {
+
+        let loaded_spans: Vec<Result<Span<LoadedSpanContent>, LoadError>> = spans.into_par_iter()
+            .map(|span| {
+                match span.content() {
+                    RawSpanContent::RawContentBlock(raw_str, loading_rule) | RawSpanContent::RawHeader(raw_str, loading_rule) => {
+                        loading_rule.load(raw_str, &self.codex, &self.configuration)
+                    }
+                    RawSpanContent::Unmatched(_) => unreachable!("unmatched span is found"),
+                }
+            })
+            .collect();
+
+        loaded_spans
     }
 
-}
+    fn seq_process_raw_spans(&self, spans: Vec<Span<RawSpanContent<'a>>>) -> Result<Vec<Span<LoadedSpanContent>>, LoadError> {
 
+        let loaded_spans: Vec<Span<LoadedSpanContent>> = Vec::new();
 
-impl<'a> From<Vec<Span<RawSpanContent<'a>>>> for Text {
-    fn from(mut spans: Vec<Vec<Span<RawSpanContent<'a>>>>) -> Self {
+        for span in spans {
+            match span.content() {
+                RawSpanContent::RawContentBlock(raw_str, loading_rule) | RawSpanContent::RawHeader(raw_str, loading_rule) => {
+                    loaded_spans.push(loading_rule.load(raw_str, &self.codex, &self.configuration)?);
+                },
+                RawSpanContent::Unmatched(_) => unreachable!("unmatched span is found"),
+            }
+        }
 
+        Ok(loaded_spans)
+    }
 
-        // TODO: refactor
-        
-        if !blocks.windows(2).all(|w| {
+    fn build_text(&self, spans: Vec<Span<RawSpanContent<'a>>>) -> Result<Text, LoadError> {
 
-            assert!(w[0].start() <= w[0].end());
-            assert!(w[1].start() <= w[1].end());
+        if self.configuration.parallelization() {
+            spans.par_sort_by(|a, b| {
 
-            w[0].start() <= w[1].start()        // TODO: assert!(w[0].start() <= w[1].start())
-        }) {
-            
-            blocks.par_sort_by(|a, b| a.start().cmp(&b.start()));       // TODO: remove
+                assert!(a.start() <= a.end());
+                assert!(b.start() <= b.end());
+
+                a.start().cmp(&b.start())
+            });
+
+        } else {
+            spans.sort_by(|a, b| {
+
+                assert!(a.start() <= a.end());
+                assert!(b.start() <= b.end());
+
+                a.start().cmp(&b.start())
+            });
         }
 
         let mut preamble: Vec<Box<dyn ContentBlock>> = Vec::new();
@@ -237,22 +294,22 @@ impl<'a> From<Vec<Span<RawSpanContent<'a>>>> for Text {
         let mut chapters: Vec<Chapter> = Vec::new();
         let mut last_heading_level: u32 = 0;
 
-        for block in blocks {
+        for span in spans {
 
-            match Into::<TextSection>::into(block) {
-                TextSection::ContentBlock(paragraph) => {
+            match span {
+                LoadedSpanContent::ContentBlock(content_block) => {
 
                     if let Some(ref mut cc) = current_chapter {
 
-                        cc.paragraphs_mut().push(paragraph);
+                        cc.paragraphs_mut().push(content_block);
       
                     } else {
 
-                        preamble.push(paragraph);
+                        preamble.push(content_block);
                     }
 
                 },
-                TextSection::ChapterHeader(mut header) => {
+                LoadedSpanContent::ChapterHeader(mut header) => {
 
                     if let Some(cc) = current_chapter.take() {
                         chapters.push(cc);
@@ -328,5 +385,36 @@ impl<'a> From<Vec<Span<RawSpanContent<'a>>>> for Text {
         }
 
         Self::new(preamble, chapters)
+    }
+
+}
+
+
+
+
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+
+    #[test]
+    fn paragraphs_from_str() {
+
+        todo!()
+
+        // let content = concat!(
+        //     "paragraph1",
+        //     "\n\n",
+        //     "paragraph2a\nparagraph2b",
+        //     "\n\n",
+        //     "paragraph3",
+        // );
+
+        // let codex = Codex::of_html();
+
+        // let paragraphs = LoadBlock::load_from_str(content, &codex, LoadConfiguration::default()).unwrap();
+
+        // assert_eq!(paragraphs.len(), 3)
     }
 }

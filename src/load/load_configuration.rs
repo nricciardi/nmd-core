@@ -18,7 +18,7 @@ pub struct LoadConfiguration {
     strict_paragraphs_loading_rules_check: bool,
 
     #[getset(get_copy = "pub", set = "pub")]
-    parallelization: bool,
+    parallelization: bool,      // TODO: add "auto" to infer when use parallelism in oder to improve efficiency
 
     // #[getset(get = "pub", set = "pub")]
     // dossier_name: Option<String>,       // TODO: remove it, place it as method parameter

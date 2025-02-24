@@ -1,0 +1,13 @@
+
+/* LIST */
+
+.list-item-bullet {
+    display: inline-block;
+    margin-right: 1.5vw;
+    font-size: medium;
+    width: 0.5em;
+}
+
+.list-item-bullet > .checkbox {
+    margin-right: 2vw;
+}

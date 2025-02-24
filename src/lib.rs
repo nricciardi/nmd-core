@@ -1,5 +1,6 @@
 pub mod codex;
 pub mod load;
+pub mod assembler;
 pub mod text;
 pub mod dossier;
 pub mod compilation;

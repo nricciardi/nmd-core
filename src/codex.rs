@@ -19,6 +19,8 @@ use crate::compilation::compilation_rule::replacement_rule::replacement_rule_par
 use crate::compilation::compilation_rule::replacement_rule::replacement_rule_part::fixed_replacement_rule_part::FixedReplacementRuleReplacerPart;
 use crate::compilation::compilation_rule::replacement_rule::replacement_rule_part::single_capture_group_replacement_rule_part::SingleCaptureGroupReplacementRuleReplacerPart;
 use crate::compilation::compilation_rule::replacement_rule::ReplacementRule;
+use crate::dossier::document::chapter::chapter_header::ChapterHeader;
+use crate::load::loading_rule::LoadingRule;
 use crate::mmo::uri::NUri;
 use crate::output_format::OutputFormat;
 use crate::text::content_block_loading_rule::ContentBlockLoadingRule;
@@ -31,15 +33,19 @@ use super::compilation::compilation_rule::CompilationRule;
 
 
 // TODO: remove Box<dyn Modifier>?
+// TODO: change names
 pub type TextModifierOrderedMap = IndexMap<ModifierIdentifier, (Box<dyn Modifier>, Box<dyn CompilationRule>)>;
-pub type ParagraphModifierOrderedMap = IndexMap<ModifierIdentifier, (Box<dyn Modifier>, Box<dyn ContentBlockLoadingRule>)>;
-pub type FallbackParagraph = (ModifierIdentifier, Box<dyn ContentBlockLoadingRule>);
-
+pub type ParagraphModifierOrderedMap = IndexMap<ModifierIdentifier, (Box<dyn Modifier>, Box<ContentBlockLoadingRule>)>;
+pub type FallbackContentBlockLoadingRule = (ModifierIdentifier, Box<ContentBlockLoadingRule>);
+pub type HeaderModifierOrderedMap = IndexMap<ModifierIdentifier, Box<dyn LoadingRule<ChapterHeader>>>;
 
 /// Ordered collection of rules
 /// A **rule** is defined as the actual text transformation
 #[derive(Debug, Getters, Setters)]
 pub struct Codex {
+
+    #[getset(get = "pub", set = "pub")]
+    header_modifiers: HeaderModifierOrderedMap,
 
     #[getset(get = "pub", set = "pub")]
     text_modifiers: TextModifierOrderedMap,
@@ -48,7 +54,7 @@ pub struct Codex {
     paragraph_modifiers: ParagraphModifierOrderedMap,
 
     #[getset(get = "pub", set = "pub")]
-    fallback_paragraph: Option<FallbackParagraph>,
+    fallback_paragraph: Option<FallbackContentBlockLoadingRule>,
     
     #[getset(get = "pub", set = "pub")]
     assembler: Box<dyn Assembler>
@@ -63,13 +69,14 @@ impl Codex {
     }
 
     /// Create a new `Codex`
-    pub fn new(text_modifiers: TextModifierOrderedMap, paragraph_modifiers: ParagraphModifierOrderedMap,
-                fallback_paragraph_modifier: Option<FallbackParagraph>,
+    pub fn new(text_modifiers: TextModifierOrderedMap, header_modifiers: HeaderModifierOrderedMap, paragraph_modifiers: ParagraphModifierOrderedMap,
+                fallback_paragraph_modifier: Option<FallbackContentBlockLoadingRule>,
                 assembler: Box<dyn Assembler>,) -> Self {
 
         Self {
             text_modifiers,
             paragraph_modifiers,
+            header_modifiers,
             fallback_paragraph: fallback_paragraph_modifier,
             assembler
         }
@@ -95,7 +102,9 @@ impl Codex {
     /// Standard HTML `Codex`
     pub fn of_html() -> Self {
 
-        let text_rules: TextModifierOrderedMap = TextModifierOrderedMap::from([
+        todo!()
+
+        /*let text_rules: TextModifierOrderedMap = TextModifierOrderedMap::from([
             (
                 StandardTextModifier::InlineCode.identifier().clone(),
                 (
@@ -879,7 +888,7 @@ impl Codex {
                 ),
             ),
             Box::new(HtmlAssembler::new())
-        )
+        )*/
     }
 }
 
@@ -888,13 +897,15 @@ mod test {
 
     use indexmap::IndexMap;
     use modifier::base_modifier::BaseModifier;
+
     use super::*;
 
 
     #[test]
     fn correct_order() {
 
-        let codex = Codex::new(
+        todo!()
+        /*let codex = Codex::new(
             IndexMap::new(),
             IndexMap::from([
                 (
@@ -970,6 +981,6 @@ mod test {
 
         let ids: Vec<String> = codex.paragraph_modifiers.into_iter().map(|tm| tm.0).collect();
 
-        assert_eq!(ids.join(""), "abeci");
+        assert_eq!(ids.join(""), "abeci");*/
     }
 }

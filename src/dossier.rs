@@ -11,7 +11,7 @@ use document::Document;
 use getset::{Getters, MutGetters, Setters};
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, IntoParallelRefMutIterator, ParallelIterator};
 use table_of_contents::TableOfContents;
-use crate::{codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, load::{LoadConfiguration, LoadError}, mmo::MultiMediaObjectError, output_format::OutputFormat};
+use crate::{codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, load::{load_configuration::LoadConfiguration, load_error::LoadError}, mmo::MultiMediaObjectError, output_format::OutputFormat};
 
 use self::dossier_configuration::DossierConfiguration;
 use serde::Serialize;
@@ -58,14 +58,14 @@ impl Dossier {
     }
 
     /// Load dossier from its (filesystem) path
-    pub fn load_dossier_from_path_buf(path_buf: &PathBuf, codex: &Codex, configuration: LoadConfiguration) -> Result<Self, LoadError> {
+    pub fn load_dossier_from_path_buf(path_buf: &PathBuf, codex: &Codex, configuration: &LoadConfiguration) -> Result<Self, LoadError> {
         let dossier_configuration = DossierConfiguration::try_from(path_buf)?;
 
         Self::load_dossier_from_dossier_configuration(&dossier_configuration, codex, configuration)
     }
 
     /// Load dossier from its (filesystem) path considering only a subset of documents
-    pub fn load_dossier_from_path_buf_only_documents(path_buf: &PathBuf, only_documents: &HashSet<String>, codex: &Codex, configuration: LoadConfiguration) -> Result<Self, LoadError> {
+    pub fn load_dossier_from_path_buf_only_documents(path_buf: &PathBuf, only_documents: &HashSet<String>, codex: &Codex, configuration: &LoadConfiguration) -> Result<Self, LoadError> {
         let mut dossier_configuration = DossierConfiguration::try_from(path_buf)?;
 
         let d: Vec<String> = dossier_configuration.raw_documents_paths()
@@ -81,13 +81,13 @@ impl Dossier {
 
         dossier_configuration.set_raw_documents_paths(d);
 
-        configuration.set_dossier_name(Some(dossier_configuration.name().clone()));
+        // configuration.set_dossier_name(Some(dossier_configuration.name().clone()));      // TODO
 
         Self::load_dossier_from_dossier_configuration(&dossier_configuration, codex, configuration)
     }
 
     /// Load dossier from its dossier configuration
-    pub fn load_dossier_from_dossier_configuration(dossier_configuration: &DossierConfiguration, codex: &Codex, configuration: LoadConfiguration) -> Result<Self, LoadError> {
+    pub fn load_dossier_from_dossier_configuration(dossier_configuration: &DossierConfiguration, codex: &Codex, configuration: &LoadConfiguration) -> Result<Self, LoadError> {
 
         if configuration.strict_dossier_configuration_check() {
             if dossier_configuration.documents_paths().is_empty() {
@@ -109,12 +109,12 @@ impl Dossier {
         }
     }
 
-    fn par_document_loading(dossier_configuration: &DossierConfiguration, codex: &Codex, configuration: LoadConfiguration) -> Result<Self, LoadError> {
+    fn par_document_loading(dossier_configuration: &DossierConfiguration, codex: &Codex, configuration: &LoadConfiguration) -> Result<Self, LoadError> {
         let mut documents_res: Vec<Result<Document, LoadError>> = Vec::new();
 
         dossier_configuration.documents_paths().par_iter()
         .map(|document_path| {
-            Document::load_document_from_path(&PathBuf::from(document_path), codex, configuration.clone())
+            Document::load_document_from_path(&PathBuf::from(document_path), codex, configuration)
         }).collect_into_vec(&mut documents_res);
         
         let error = documents_res.par_iter().find_any(|result| result.is_err());
@@ -135,7 +135,7 @@ impl Dossier {
 
         for document_path in dossier_configuration.documents_paths() {
 
-            let document = Document::load_document_from_path(&PathBuf::from(document_path), codex, configuration.clone())?;
+            let document = Document::load_document_from_path(&PathBuf::from(document_path), codex, &configuration)?;
 
             documents.push(document)
         }
