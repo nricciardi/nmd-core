@@ -1,8 +1,9 @@
-use std::str::FromStr;
+use std::collections::HashSet;
+
 use once_cell::sync::Lazy;
 use regex::Regex;
-use super::ParagraphLoadingRule;
-use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, dossier::document::chapter::paragraph::{image_paragraph::{ImageParagraph, ImageParagraphContent, MultiImage}, Paragraph}, load::{LoadConfiguration, LoadConfigurationOverLay, LoadError}, resource::{image_resource::ImageResource, resource_reference::ResourceReference, source::Source, ResourceError}};
+
+use crate::{codex::Codex, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::LoadingRule}, text::content_block::ContentBlock, utility::datastruct::span::Span};
 
 
 static FIND_SINGLE_IMAGE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&StandardParagraphModifier::Image.modifier_pattern()).unwrap());
@@ -25,7 +26,7 @@ pub enum ImageBlockLoadingRule {
 
 impl ImageBlockLoadingRule {
 
-    fn load_single_image(raw_content: &str, _codex: &Codex, configuration: &LoadConfiguration, configuration_overlay: LoadConfigurationOverLay) -> Result<ImageResource, LoadError> {
+    fn load_single_image(raw_content: &str, _codex: &Codex, configuration: &LoadConfiguration) -> Result<ImageResource, LoadError> {
         
         let captures = FIND_SINGLE_IMAGE_REGEX.captures(raw_content);
 
@@ -201,20 +202,26 @@ impl ImageBlockLoadingRule {
 }
 
 
-impl ParagraphLoadingRule for ImageBlockLoadingRule {
-    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoadConfiguration, configuration_overlay: LoadConfigurationOverLay) -> Result<Box<dyn Paragraph>, LoadError> {
+impl LoadingRule<Box<dyn ContentBlock>> for ImageBlockLoadingRule {
+
+
+    fn find(&self, raw_str: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<HashSet<Span<&str>>, LoadError> {
+        todo!()
+    }
+
+    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<Box<dyn ContentBlock>, LoadError> {
         match *self {
             Self::SingleImage => Ok(Box::new(ImageParagraph::new(
                 raw_content.to_string(),
-                ImageParagraphContent::SingleImage(Self::load_single_image(raw_content, codex, configuration, configuration_overlay.clone())?)
+                ImageParagraphContent::SingleImage(Self::load_single_image(raw_content, codex, configuration)?)
             ))),
             Self::AbridgedImage => Ok(Box::new(ImageParagraph::new(
                 raw_content.to_string(),
-                ImageParagraphContent::AbridgedImage(Self::load_abridged_image(raw_content, codex, configuration, configuration_overlay.clone())?)
+                ImageParagraphContent::AbridgedImage(Self::load_abridged_image(raw_content, codex, configuration)?)
             ))),
             Self::MultiImage => Ok(Box::new(ImageParagraph::new(
                 raw_content.to_string(),
-                ImageParagraphContent::MultiImage(Self::load_multi_image(raw_content, codex, configuration, configuration_overlay.clone())?)
+                ImageParagraphContent::MultiImage(Self::load_multi_image(raw_content, codex, configuration)?)
             ))),
         }
     }

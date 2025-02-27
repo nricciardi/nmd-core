@@ -1,11 +1,11 @@
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
-use crate::{codex::Codex, dossier::document::chapter::{chapter_header::{chapter_header_loading_rule::ChapterHeaderLoadingRule, ChapterHeader}, heading::HeadingLevel, Chapter}, load::{load_configuration::LoadConfiguration, load_error::LoadError}, utility::datastruct::span::Span};
-use super::{content_block::ContentBlock, content_block_loading_rule::ContentBlockLoadingRule, Text};
+use crate::{codex::Codex, dossier::document::chapter::{chapter_header::ChapterHeader, heading::HeadingLevel, Chapter}, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::LoadingRule}, utility::datastruct::span::Span};
+use super::{content_block::ContentBlock, Text};
 
 enum RawSpanContent<'a> {
-    RawContentBlock(&'a str, &'a ContentBlockLoadingRule),
-    RawHeader(&'a str, &'a ChapterHeaderLoadingRule),
+    RawContentBlock(&'a str, &'a dyn LoadingRule<Box<dyn ContentBlock>>),
+    RawHeader(&'a str, &'a dyn LoadingRule<ChapterHeader>),
     Unmatched(&'a str)
 }
 
@@ -60,7 +60,7 @@ impl<'a> TextLoader<'a> {
 
     fn process_using_loading_rule(&self, current_str_slice: &str, offset: usize, loading_rule_index: usize) -> Result<Vec<Span<RawSpanContent<'_>>>, LoadError> {
 
-        let loading_rule: &ContentBlockLoadingRule = self.codex.paragraph_modifiers().get_index(loading_rule_index).unwrap();
+        let (identifier, loading_rule) = self.codex.paragraph_modifiers().get_index(loading_rule_index).unwrap();
         
         let current_content_block_spans = loading_rule.find(
             current_str_slice,

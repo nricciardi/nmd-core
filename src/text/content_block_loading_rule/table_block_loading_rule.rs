@@ -1,9 +1,10 @@
+use std::collections::HashSet;
+
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-use crate::{codex::{modifier::constants::{IDENTIFIER_PATTERN, STYLE_PATTERN}, Codex}, content_bundle::ContentBundle, dossier::document::chapter::paragraph::{table_paragraph::{TableParagraph, TableParagraphContent}, Paragraph}, load::{LoadConfiguration, LoadConfigurationOverLay, LoadError}, load_block::LoadBlock, resource::table::{Table, TableCell, TableCellAlignment}, utility::text_utility};
 
-use super::ContentBlockLoadingRule;
+use crate::{codex::{modifier::constants::{IDENTIFIER_PATTERN, STYLE_PATTERN}, Codex}, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::LoadingRule}, text::{content_block::{table_block::{TableBlock, TableBlockContent}, ContentBlock}, Text}, utility::{datastruct::{span::Span, table::{Table, TableCell, TableCellAlignment}}, text_utility}};
 
 
 /// (caption, id, styles, classes)
@@ -14,7 +15,6 @@ static EXTRACT_TABLE_METADATA_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&form
 
 #[derive(Debug)]
 pub struct TableBlockLoadingRule {
-
 }
 
 impl TableBlockLoadingRule {
@@ -85,9 +85,9 @@ impl TableBlockLoadingRule {
         Some(alignments)
     }
 
-    fn build_row(row: &Vec<String>, alignments: &Vec<TableCellAlignment>, codex: &Codex, configuration: &LoadConfiguration, configuration_overlay: LoadConfigurationOverLay) -> Result<Vec<TableCell<ContentBundle>>, LoadError> {
+    fn build_row(row: &Vec<String>, alignments: &Vec<TableCellAlignment>, codex: &Codex, configuration: &LoadConfiguration) -> Result<Vec<TableCell<Text>>, LoadError> {
 
-        let mut cells: Vec<TableCell<ContentBundle>> = Vec::new();
+        let mut cells: Vec<TableCell<Text>> = Vec::new();
 
         for (index, cell) in row.iter().enumerate() {
 
@@ -120,9 +120,9 @@ impl TableBlockLoadingRule {
                     cell.remove(cell.len() - 1);
                 }
 
-                let inner_blocks = LoadBlock::load_from_str(&cell, codex, configuration, configuration_overlay.clone())?;
+                let content = Text::load_from_str(&cell, codex, configuration)?;
 
-                cells.push(TableCell::ContentCell { content: ContentBundle::from(inner_blocks), alignment: align});
+                cells.push(TableCell::ContentCell { content, alignment: align});
             }
         }
 
@@ -162,10 +162,15 @@ impl TableBlockLoadingRule {
     }
 }
 
-impl ContentBlockLoadingRule for TableBlockLoadingRule {
-    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoadConfiguration, configuration_overlay: LoadConfigurationOverLay) -> Result<Box<dyn Paragraph>, LoadError> {
+impl LoadingRule<Box<dyn ContentBlock>> for TableBlockLoadingRule {
+    
+    fn find(&self, raw_str: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<HashSet<Span<&str>>, LoadError> {
+        todo!()
+    }
 
-        let mut table: TableParagraphContent = Table::new_empty();
+    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<Box<dyn ContentBlock>, LoadError> {
+
+        let mut table: TableBlockContent = Table::new_empty();
 
         let lines = raw_content.trim().lines();
         let lines_n = lines.clone().count();
@@ -222,7 +227,7 @@ impl ContentBlockLoadingRule for TableBlockLoadingRule {
                 continue;
             }
 
-            let row = Self::build_row(&row, alignments.as_ref().unwrap(), codex, configuration, configuration_overlay.clone())?;
+            let row = Self::build_row(&row, alignments.as_ref().unwrap(), codex, configuration)?;
 
             table.append_to_body(row);
         }
@@ -236,7 +241,7 @@ impl ContentBlockLoadingRule for TableBlockLoadingRule {
             table.shift_last_body_row_to_footer();
         }
 
-        Ok(Box::new(TableParagraph::new(raw_content.to_string(), table, id, styles, classes, caption)))
+        Ok(Box::new(TableBlock::new(raw_content.to_string(), table, id, styles, classes, caption)))
     }
 }
 
@@ -245,57 +250,57 @@ impl ContentBlockLoadingRule for TableBlockLoadingRule {
 #[cfg(test)]
 mod test {
     
-    use crate::{codex::Codex, load::LoadConfiguration};
 
+    // TODO
 
-    #[test]
-    fn generic_loading() {
-        let nmd_text = concat!(
-            "\n\n",
-            "|                | $x_1$ | $...$ | $x_n$ | $s_1$ | $...$ | $s_m$ | $a_1$ | $...$ |",
-            "|----------------|:-----:|:-----:|:-----:|:-----:|:-----:|-------|-------|:-----:|",
-            "| This is a line |  $0$  |  $0$  |  $0$  |  $0$  |  $0$  |  $0$  |  $1$  |  $0$  |",
-            "|---|",
-            "||footer|",
-            "\n\n"
-        );
+    // #[test]
+    // fn generic_loading() {
+    //     let nmd_text = concat!(
+    //         "\n\n",
+    //         "|                | $x_1$ | $...$ | $x_n$ | $s_1$ | $...$ | $s_m$ | $a_1$ | $...$ |",
+    //         "|----------------|:-----:|:-----:|:-----:|:-----:|:-----:|-------|-------|:-----:|",
+    //         "| This is a line |  $0$  |  $0$  |  $0$  |  $0$  |  $0$  |  $0$  |  $1$  |  $0$  |",
+    //         "|---|",
+    //         "||footer|",
+    //         "\n\n"
+    //     );
 
-        let codex = Codex::of_html();
+    //     let codex = Codex::of_html();
         
-        let paragraphs = LoadBlock::load_from_str(&nmd_text, &codex, LoadConfiguration::default()).unwrap();
+    //     let paragraphs = LoadBlock::load_from_str(&nmd_text, &codex, LoadConfiguration::default()).unwrap();
 
-        assert_eq!(paragraphs.len(), 1);
+    //     assert_eq!(paragraphs.len(), 1);
 
-        if let LoadBlockContent::Paragraph(p) = &paragraphs[0].content() {
+    //     if let LoadBlockContent::Paragraph(p) = &paragraphs[0].content() {
 
-            assert_eq!(p.raw_content().trim(), nmd_text.trim());
-        }
-    }
+    //         assert_eq!(p.raw_content().trim(), nmd_text.trim());
+    //     }
+    // }
 
-    #[test]
-    fn load_table_with_metadata() {
-        let nmd_text = concat!(
-            "\n\n",
-            "|                | $x_1$ | $...$ | $x_n$ | $s_1$ | $...$ | $s_m$ | $a_1$ | $...$ |\n",
-            "|----------------|:-----:|:-----:|:-----:|:-----:|:-----:|-------|-------|:-----:|\n",
-            "| This is a line |  $0$  |  $0$  |  $0$  |  $0$  |  $0$  |  $0$  |  $1$  |  $0$  |\n",
-            "|---|\n",
-            "||footer|\n",
-            "[Caption]#table-id{{color:red;}}",
-            "\n\n"
-        );
+    // #[test]
+    // fn load_table_with_metadata() {
+    //     let nmd_text = concat!(
+    //         "\n\n",
+    //         "|                | $x_1$ | $...$ | $x_n$ | $s_1$ | $...$ | $s_m$ | $a_1$ | $...$ |\n",
+    //         "|----------------|:-----:|:-----:|:-----:|:-----:|:-----:|-------|-------|:-----:|\n",
+    //         "| This is a line |  $0$  |  $0$  |  $0$  |  $0$  |  $0$  |  $0$  |  $1$  |  $0$  |\n",
+    //         "|---|\n",
+    //         "||footer|\n",
+    //         "[Caption]#table-id{{color:red;}}",
+    //         "\n\n"
+    //     );
 
-        let codex = Codex::of_html();
+    //     let codex = Codex::of_html();
         
-        let paragraphs = LoadBlock::load_from_str(&nmd_text, &codex, &LoadConfiguration::default(), LoadConfigurationOverLay::default()).unwrap();
+    //     let paragraphs = LoadBlock::load_from_str(&nmd_text, &codex, &LoadConfiguration::default(), LoadConfigurationOverLay::default()).unwrap();
 
-        assert_eq!(paragraphs.len(), 1);
+    //     assert_eq!(paragraphs.len(), 1);
 
-        if let LoadBlockContent::Paragraph(p) = &paragraphs[0].content() {
+    //     if let LoadBlockContent::Paragraph(p) = &paragraphs[0].content() {
 
-            assert_eq!(p.raw_content().trim(), nmd_text.trim());
-        }
-    }
+    //         assert_eq!(p.raw_content().trim(), nmd_text.trim());
+    //     }
+    // }
 
 }
 

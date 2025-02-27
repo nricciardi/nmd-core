@@ -18,7 +18,7 @@ use crate::{codex::Codex, compilation::{compilation_configuration::{compilation_
 use super::ContentBlock;
 
 
-pub type TableParagraphContent = Table<Text, Text, Text>;
+pub type TableBlockContent = Table<Text, Text, Text>;
 
 
 #[derive(Debug, Getters, Setters)]
@@ -31,7 +31,7 @@ pub struct TableBlock {
     raw_content: String,        // TODO: remove
 
     #[getset(get = "pub", set = "pub")]
-    content: TableParagraphContent,
+    content: TableBlockContent,
 
     #[getset(get = "pub", set = "pub")]
     raw_id: Option<String>,
@@ -48,7 +48,7 @@ pub struct TableBlock {
 
 impl TableBlock {
 
-    pub fn new(raw_content: String, content: TableParagraphContent, raw_id: Option<String>, styles: Option<String>, classes: Option<String>, raw_caption: Option<String>,) -> Self {
+    pub fn new(raw_content: String, content: TableBlockContent, raw_id: Option<String>, styles: Option<String>, classes: Option<String>, raw_caption: Option<String>,) -> Self {
         Self {
             raw_content,
             content,
@@ -254,7 +254,7 @@ impl ContentBlock for TableBlock {
 #[cfg(test)]
 mod test {
 
-    use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, load::LoadConfiguration, output_format::OutputFormat, text::{content_block::ContentBlock, content_block_loading_rule::table_block_loading_rule::TableBlockLoadingRule}};
+    use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, load::load_configuration::LoadConfiguration, output_format::OutputFormat, text::{content_block::ContentBlock, content_block_loading_rule::table_block_loading_rule::TableBlockLoadingRule}};
 
     fn load_table(nmd_text: &str, codex: &Codex) -> Box<dyn ContentBlock> {
 

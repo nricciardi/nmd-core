@@ -1,6 +1,8 @@
+use std::collections::HashSet;
+
 use once_cell::sync::Lazy;
 use regex::Regex;
-use crate::{codex::Codex, load::{LoadConfiguration, LoadError}, text::content_block::{paragraph::Paragraph, ContentBlock}};
+use crate::{codex::Codex, load::{loading_rule::LoadingRule, LoadConfiguration, LoadError}, text::content_block::{paragraph::Paragraph, ContentBlock}, utility::datastruct::span::Span};
 
 use super::MultiContentBlockLoadingRule;
 
@@ -40,7 +42,13 @@ impl ParagraphLoadingRule {
 }
 
 
-impl MultiContentBlockLoadingRule for ParagraphLoadingRule {
+impl LoadingRule<Box<dyn ContentBlock>> for ParagraphLoadingRule {
+
+    fn find(&self, raw_str: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<HashSet<Span<&str>>, LoadError> {
+        todo!()
+    }
+
+    // TODO
     fn load(&self, raw_content: &str, codex: &Codex, configuration: LoadConfiguration) -> Result<Vec<Box<dyn ContentBlock>>, LoadError> {
         
         Ok(self.inner_load(raw_content, codex, configuration).into_iter().map(|p| {

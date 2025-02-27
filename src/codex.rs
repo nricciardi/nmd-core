@@ -23,7 +23,7 @@ use crate::dossier::document::chapter::chapter_header::ChapterHeader;
 use crate::load::loading_rule::LoadingRule;
 use crate::mmo::uri::NUri;
 use crate::output_format::OutputFormat;
-use crate::text::content_block_loading_rule::ContentBlockLoadingRule;
+use crate::text::content_block::ContentBlock;
 use crate::utility::text_utility;
 use super::compilation::compilation_rule::constants::ESCAPE_HTML;
 use super::compilation::compilation_rule::html_cite_rule::HtmlCiteRule;
@@ -35,8 +35,8 @@ use super::compilation::compilation_rule::CompilationRule;
 // TODO: remove Box<dyn Modifier>?
 // TODO: change names
 pub type TextModifierOrderedMap = IndexMap<ModifierIdentifier, (Box<dyn Modifier>, Box<dyn CompilationRule>)>;
-pub type ParagraphModifierOrderedMap = IndexMap<ModifierIdentifier, (Box<dyn Modifier>, Box<ContentBlockLoadingRule>)>;
-pub type FallbackContentBlockLoadingRule = (ModifierIdentifier, Box<ContentBlockLoadingRule>);
+pub type ParagraphModifierOrderedMap = IndexMap<ModifierIdentifier, (Box<dyn Modifier>, Box<dyn LoadingRule<Box<dyn ContentBlock>>>)>;
+pub type FallbackContentBlockLoadingRule = (ModifierIdentifier, Box<dyn LoadingRule<Box<dyn ContentBlock>>>);
 pub type HeaderModifierOrderedMap = IndexMap<ModifierIdentifier, Box<dyn LoadingRule<ChapterHeader>>>;
 
 /// Ordered collection of rules

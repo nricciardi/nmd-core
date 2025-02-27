@@ -1,7 +1,9 @@
+use std::collections::HashSet;
+
 use regex::Regex;
 use getset::{Getters, Setters};
-use super::ParagraphLoadingRule;
-use crate::{codex::Codex, content_bundle::ContentBundle, dossier::document::chapter::paragraph::{focus_block_paragraph::FocusBlockParagraph, Paragraph}, load::{LoadConfiguration, LoadConfigurationOverLay, LoadError}, load_block::LoadBlock};
+
+use crate::{codex::Codex, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::LoadingRule}, text::{content_block::{focus_block::FocusBlock, ContentBlock}, Text}, utility::datastruct::span::Span};
 
 
 const DEFAULT_TYPE: &str = "quote";
@@ -23,7 +25,7 @@ impl FocusBlockLoadingRule {
         }
     }
 
-    fn inner_load(&self, raw_content: &str, codex: &Codex, configuration: &LoadConfiguration, configuration_overlay: LoadConfigurationOverLay) -> Result<FocusBlockParagraph, LoadError> {
+    fn inner_load(&self, raw_content: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<FocusBlock, LoadError> {
 
         if let Some(captures) = self.loading_regex.captures(raw_content) {
 
@@ -39,12 +41,10 @@ impl FocusBlockLoadingRule {
 
             if let Some(body) = captures.get(2) {
 
-                let blocks = LoadBlock::load_from_str(body.as_str(), codex, configuration, configuration_overlay.clone())?;
-
-                Ok(FocusBlockParagraph::new(
+                Ok(FocusBlock::new(
                     raw_content.to_string(),
                     focus_block_type,
-                    ContentBundle::from(blocks),
+                    Text::load_from_str(body.as_str(), codex, configuration)?,
                 ))
 
             } else {
@@ -61,10 +61,15 @@ impl FocusBlockLoadingRule {
 }
 
 
-impl ParagraphLoadingRule for FocusBlockParagraphLoadingRule {
-    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoadConfiguration, configuration_overlay: LoadConfigurationOverLay) -> Result<Box<dyn Paragraph>, LoadError> {
+impl LoadingRule<Box<dyn ContentBlock>> for FocusBlockLoadingRule {
+
+    fn find(&self, raw_str: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<HashSet<Span<&str>>, LoadError> {
+        todo!()
+    }
+
+    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<Box<dyn ContentBlock>, LoadError> {
         
-        Ok(Box::new(self.inner_load(raw_content, codex, configuration, configuration_overlay.clone())?))
+        Ok(Box::new(self.inner_load(raw_content, codex, configuration)?))
     }
 }
 

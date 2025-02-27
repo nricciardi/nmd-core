@@ -1,7 +1,9 @@
+use std::collections::HashSet;
+
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-use crate::{codex::Codex, load::{LoadConfiguration, LoadError}, text::{content_block::ContentBlock, Text}};
+use crate::{codex::Codex, load::{loading_rule::LoadingRule, LoadConfiguration, LoadError}, text::{content_block::ContentBlock, Text}, utility::datastruct::span::Span};
 
 use super::ContentBlockLoadingRule;
 
@@ -70,7 +72,12 @@ impl QuoteBlockLoadingRule {
 }
 
 
-impl ContentBlockLoadingRule for QuoteBlockLoadingRule {
+impl LoadingRule<Box<dyn ContentBlock>> for QuoteBlockLoadingRule {
+
+    fn find(&self, raw_str: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<HashSet<Span<&str>>, LoadError> {
+        todo!()
+    }
+
     fn load(&self, raw_content: &str, codex: &Codex, configuration: LoadConfiguration) -> Result<Box<dyn ContentBlock>, LoadError> {
         
         Ok(Box::new(self.inner_load(raw_content, codex, configuration)?))

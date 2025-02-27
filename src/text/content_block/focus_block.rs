@@ -70,17 +70,15 @@ impl ContentBlock for FocusBlock {
 #[cfg(test)]
 mod test {
 
-    use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, load::{load_block::LoadBlock, LoadConfiguration}, output_format::OutputFormat, text::Text};
+    use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, load::load_configuration::LoadConfiguration, output_format::OutputFormat, text::Text};
 
     fn load_and_compile_html(content: &str, expected_n: usize) -> String {
         
         let codex = Codex::of_html();
     
-        let blocks = LoadBlock::load_from_str(content, &codex, LoadConfiguration::default()).unwrap();
+        let mut text = Text::load_from_str(content, &codex, &LoadConfiguration::default()).unwrap();
 
-        let mut bundle = Text::from(blocks);
-
-        assert_eq!(bundle.preamble().len(), expected_n);
+        assert_eq!(text.preamble().len(), expected_n);
 
         let mut compiled_content = String::new();
 
@@ -89,7 +87,7 @@ mod test {
 
         cco.set_document_name(Some(String::from("test")));
 
-        for paragraph in bundle.preamble_mut() {
+        for paragraph in text.preamble_mut() {
 
             let outcome = paragraph.compile(&OutputFormat::Html, &codex, &cc, cco.clone()).unwrap();
         
