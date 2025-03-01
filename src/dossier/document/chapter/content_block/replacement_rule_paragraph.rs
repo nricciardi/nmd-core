@@ -1,5 +1,7 @@
 use getset::{Getters, Setters};
 
+use crate::compilable_string::{compilation_rule::replacement_rule::ReplacementRule, CompilableString};
+
 
 
 /// This paragraph uses a `ReplacementRule` to pre-compile the inner-text, after that, it will compile
@@ -13,7 +15,7 @@ pub struct ReplacementRuleParagraph {
     #[getset(get = "pub", set = "pub")]
     replacement_rule: ReplacementRule,
 
-    compilable_text: CompilableText,
+    compilable_text: CompilableString,
 
 }
 

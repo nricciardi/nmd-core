@@ -8,6 +8,9 @@ pub mod constants;
 use std::fmt::Debug;
 use regex::{Match, Regex};
 
+use crate::{compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError}, output_format::OutputFormat};
+use super::CompilableString;
+
 
 pub trait CompilationRule: Send + Sync + Debug {
 

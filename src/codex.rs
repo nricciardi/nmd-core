@@ -15,21 +15,13 @@ use self::modifier::standard_paragraph_modifier::StandardParagraphModifier;
 use self::modifier::standard_text_modifier::StandardTextModifier;
 use crate::assembler::html_assembler::HtmlAssembler;
 use crate::assembler::Assembler;
-use crate::compilation::compilation_rule::replacement_rule::replacement_rule_part::closure_replacement_rule_part::ClosureReplacementRuleReplacerPart;
-use crate::compilation::compilation_rule::replacement_rule::replacement_rule_part::fixed_replacement_rule_part::FixedReplacementRuleReplacerPart;
-use crate::compilation::compilation_rule::replacement_rule::replacement_rule_part::single_capture_group_replacement_rule_part::SingleCaptureGroupReplacementRuleReplacerPart;
-use crate::compilation::compilation_rule::replacement_rule::ReplacementRule;
+use crate::compilable_string::compilation_rule::CompilationRule;
 use crate::dossier::document::chapter::chapter_header::ChapterHeader;
+use crate::dossier::document::chapter::content_block::ContentBlock;
 use crate::load::loading_rule::LoadingRule;
 use crate::mmo::uri::NUri;
 use crate::output_format::OutputFormat;
-use crate::text::content_block::ContentBlock;
 use crate::utility::text_utility;
-use super::compilation::compilation_rule::constants::ESCAPE_HTML;
-use super::compilation::compilation_rule::html_cite_rule::HtmlCiteRule;
-use super::compilation::compilation_rule::html_greek_letter_rule::HtmlGreekLettersRule;
-use super::compilation::compilation_rule::reference_rule::ReferenceRule;
-use super::compilation::compilation_rule::CompilationRule;
 
 
 // TODO: remove Box<dyn Modifier>?

@@ -1,8 +1,6 @@
 use std::fmt::Debug;
 use regex::Regex;
-use crate::compilable_text::compilable_text_part::{CompilableTextPart, CompilableTextPartType};
-use crate::compilable_text::CompilableText;
-use crate::{codex::modifier::standard_text_modifier::StandardTextModifier, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, output_format::OutputFormat};
+use crate::{codex::modifier::standard_text_modifier::StandardTextModifier, compilable_string::{compilable_string_part::CompilableStringPart, CompilableString}, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, output_format::OutputFormat};
 use super::CompilationRule;
 use crate::compilation::compilation_error::CompilationError;
 
@@ -33,7 +31,7 @@ impl CompilationRule for ReferenceRule {
         &self.search_pattern
     }
 
-    fn standard_compile(&self, compilable: &CompilableText, _format: &OutputFormat, compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError> {
+    fn standard_compile(&self, compilable: &CompilableString, _format: &OutputFormat, compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableString, CompilationError> {
 
         let mut compiled_parts = Vec::new();
 
@@ -43,10 +41,9 @@ impl CompilationRule for ReferenceRule {
 
             if let Some(reference) = compilation_configuration.references().get(reference_key) {
 
-                let reference_part = CompilableTextPart::new(
-                    reference.clone(),
-                    CompilableTextPartType::Fixed
-                );
+                let reference_part = CompilableStringPart::Fixed {
+                    content: reference.clone(),
+                };
 
                 compiled_parts.push(reference_part);
 
@@ -61,7 +58,7 @@ impl CompilationRule for ReferenceRule {
 
         }
 
-        Ok(CompilableText::new(compiled_parts))
+        Ok(CompilableString::new(compiled_parts))
     }
     
     fn search_pattern_regex(&self) -> &Regex {

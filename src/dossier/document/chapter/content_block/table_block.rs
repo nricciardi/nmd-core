@@ -5,11 +5,11 @@ use build_html::HtmlContainer;
 use build_html::TableCell as HtmlTableCell;
 use build_html::TableRow as HtmlTableRow;
 use getset::{Getters, Setters};
+use crate::compilable_string::CompilableString;
 use crate::compilation::compilation_outcome::CompilationOutcome;
+use crate::mmo::nmd_unique_identifier::NmdUniqueIdentifier;
 use crate::mmo::uri::NUri;
-use crate::text::compilable_string::CompilableString;
 use crate::text::Text;
-use crate::utility::datastruct::nmd_unique_identifier::NmdUniqueIdentifier;
 use crate::utility::datastruct::table::Table;
 use crate::utility::datastruct::table::TableCell;
 use crate::utility::datastruct::table::TableCellAlignment;
@@ -254,7 +254,7 @@ impl ContentBlock for TableBlock {
 #[cfg(test)]
 mod test {
 
-    use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, load::load_configuration::LoadConfiguration, output_format::OutputFormat, text::{content_block::ContentBlock, content_block_loading_rule::table_block_loading_rule::TableBlockLoadingRule}};
+    use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, dossier::document::chapter::content_block::ContentBlock, load::{load_configuration::LoadConfiguration, loading_rule::content_block_loading_rule::table_block_loading_rule::TableBlockLoadingRule}, output_format::OutputFormat};
 
     fn load_table(nmd_text: &str, codex: &Codex) -> Box<dyn ContentBlock> {
 

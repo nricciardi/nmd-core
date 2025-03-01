@@ -1,6 +1,6 @@
 use once_cell::sync::Lazy;
 use regex::Regex;
-use crate::{codex::{modifier::{constants::{MULTI_LINES_CONTENT_EXCLUDING_HEADINGS_PATTERN, NEW_LINE_PATTERN}, standard_paragraph_modifier::StandardParagraphModifier}, Codex}, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::{Finder, Loader, LoadingRule}}, text::content_block::{paragraph::Paragraph, ContentBlock}, utility::datastruct::span::Span};
+use crate::{codex::{modifier::{constants::{MULTI_LINES_CONTENT_EXCLUDING_HEADINGS_PATTERN, NEW_LINE_PATTERN}, standard_paragraph_modifier::StandardParagraphModifier}, Codex}, dossier::document::chapter::content_block::{paragraph::Paragraph, ContentBlock}, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::LoadingRule}, utility::datastruct::span::Span};
 
 
 static EXTRACT_PARAGRAPH_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&format!("{}{}{}", MULTI_LINES_CONTENT_EXCLUDING_HEADINGS_PATTERN, NEW_LINE_PATTERN, NEW_LINE_PATTERN)).unwrap());

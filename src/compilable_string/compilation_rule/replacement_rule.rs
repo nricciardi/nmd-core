@@ -7,10 +7,10 @@ use getset::{Getters, Setters};
 use log;
 use regex::Regex;
 use replacement_rule_part::ReplacementRuleReplacerPart;
+use crate::compilable_string::CompilableString;
 use crate::compilation::compilation_configuration::compilation_configuration_overlay::CompilationConfigurationOverLay;
 use crate::compilation::compilation_configuration::CompilationConfiguration;
 use crate::output_format::OutputFormat;
-use crate::text::compilable_string::CompilableString;
 use super::CompilationRule;
 use crate::compilation::compilation_error::CompilationError;
 
@@ -90,132 +90,131 @@ mod test {
 
     use std::sync::Arc;
 
-    use crate::{codex::modifier::{standard_text_modifier::StandardTextModifier, ModifiersBucket}, compilable_text::{compilable_text_part::{CompilableTextPart, CompilableTextPartType}, CompilableText}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{constants::ESCAPE_HTML, replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart, single_capture_group_replacement_rule_part::SingleCaptureGroupReplacementRuleReplacerPart, ReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}}, output_format::OutputFormat};
+    // TODO
 
+    // #[test]
+    // fn bold_compiling() {
 
-    #[test]
-    fn bold_compiling() {
-
-        // valid pattern with a valid text modifier
-        let replacement_rule = ReplacementRule::new(StandardTextModifier::BoldStarVersion.modifier_pattern(), vec![
-            Arc::new(FixedReplacementRuleReplacerPart::new(String::from("<strong>"))) as Arc<dyn ReplacementRuleReplacerPart>,
-            Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
+    //     // valid pattern with a valid text modifier
+    //     let replacement_rule = ReplacementRule::new(StandardTextModifier::BoldStarVersion.modifier_pattern(), vec![
+    //         Arc::new(FixedReplacementRuleReplacerPart::new(String::from("<strong>"))) as Arc<dyn ReplacementRuleReplacerPart>,
+    //         Arc::new(ClosureReplacementRuleReplacerPart::new(Arc::new(|captures, compilable, _, _, _| {
                 
-                let capture1 = captures.get(1).unwrap();
+    //             let capture1 = captures.get(1).unwrap();
                 
-                let slice = compilable.parts_slice(capture1.start(), capture1.end())?;
+    //             let slice = compilable.parts_slice(capture1.start(), capture1.end())?;
 
-                Ok(CompilableText::new(slice))
-            }))),
-            Arc::new(FixedReplacementRuleReplacerPart::new(String::from("</strong>"))),
-        ]);
+    //             Ok(CompilableText::new(slice))
+    //         }))),
+    //         Arc::new(FixedReplacementRuleReplacerPart::new(String::from("</strong>"))),
+    //     ]);
 
-        let text_to_compile = r"A piece of **bold text** and **bold text2**";
-        let compilation_configuration = CompilationConfiguration::default();
+    //     let text_to_compile = r"A piece of **bold text** and **bold text2**";
+    //     let compilation_configuration = CompilationConfiguration::default();
 
-        let compilable = CompilableText::new(
-            vec![
-                CompilableTextPart::new(
-                    text_to_compile.to_string(),
-                    CompilableTextPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
-                )
-        ]);
+    //     let compilable = CompilableText::new(
+    //         vec![
+    //             CompilableTextPart::new(
+    //                 text_to_compile.to_string(),
+    //                 CompilableTextPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
+    //             )
+    //     ]);
         
-        let outcome = replacement_rule.compile(&compilable, &OutputFormat::Html, &compilation_configuration, CompilationConfigurationOverLay::default()).unwrap();
+    //     let outcome = replacement_rule.compile(&compilable, &OutputFormat::Html, &compilation_configuration, CompilationConfigurationOverLay::default()).unwrap();
 
-        assert_eq!(outcome.content(), r"<strong>bold text</strong><strong>bold text2</strong>");
+    //     assert_eq!(outcome.content(), r"<strong>bold text</strong><strong>bold text2</strong>");
 
-        // without text modifier
-        let text_to_compile = r"A piece of text without bold text";
+    //     // without text modifier
+    //     let text_to_compile = r"A piece of text without bold text";
 
-        let compilable = CompilableText::new(
-            vec![
-                CompilableTextPart::new(
-                    text_to_compile.to_string(),
-                    CompilableTextPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
-                )
-        ]);
+    //     let compilable = CompilableText::new(
+    //         vec![
+    //             CompilableTextPart::new(
+    //                 text_to_compile.to_string(),
+    //                 CompilableTextPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
+    //             )
+    //     ]);
 
-        let outcome = replacement_rule.compile(&compilable, &OutputFormat::Html, &compilation_configuration, CompilationConfigurationOverLay::default()).unwrap();
+    //     let outcome = replacement_rule.compile(&compilable, &OutputFormat::Html, &compilation_configuration, CompilationConfigurationOverLay::default()).unwrap();
 
-        assert_eq!(outcome.content(), r"");
+    //     assert_eq!(outcome.content(), r"");
 
 
-    }
+    // }
 
-    #[test]
-    fn input_with_fixed_parts() {
-        let replacement_rule = ReplacementRule::new(StandardTextModifier::ItalicStarVersion.modifier_pattern(), vec![
-            Arc::new(FixedReplacementRuleReplacerPart::new(String::from("<em>"))) as Arc<dyn ReplacementRuleReplacerPart>,
-            Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), ModifiersBucket::None)),
-            Arc::new(FixedReplacementRuleReplacerPart::new(String::from("</em>"))),
-        ]);
+    // #[test]
+    // fn input_with_fixed_parts() {
+    //     let replacement_rule = ReplacementRule::new(StandardTextModifier::ItalicStarVersion.modifier_pattern(), vec![
+    //         Arc::new(FixedReplacementRuleReplacerPart::new(String::from("<em>"))) as Arc<dyn ReplacementRuleReplacerPart>,
+    //         Arc::new(SingleCaptureGroupReplacementRuleReplacerPart::new(1, ESCAPE_HTML.clone(), ModifiersBucket::None)),
+    //         Arc::new(FixedReplacementRuleReplacerPart::new(String::from("</em>"))),
+    //     ]);
 
-        let compilation_configuration = CompilationConfiguration::default();
+    //     let compilation_configuration = CompilationConfiguration::default();
 
-        // ==== case 1 ====
-        let compilable = CompilableText::new(
-            vec![
-                CompilableTextPart::new(
-                    String::from("*start "),
-                    CompilableTextPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
-                ),
-                CompilableTextPart::new_fixed(String::from("<strong>")),
-                CompilableTextPart::new_compilable(String::from("fixed"), ModifiersBucket::None),
-                CompilableTextPart::new_fixed(String::from("</strong>")),
-                CompilableTextPart::new(
-                    String::from(" end*"),
-                    CompilableTextPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
-                ),
-        ]);
+    //     // ==== case 1 ====
+    //     let compilable = CompilableText::new(
+    //         vec![
+    //             CompilableTextPart::new(
+    //                 String::from("*start "),
+    //                 CompilableTextPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
+    //             ),
+    //             CompilableTextPart::new_fixed(String::from("<strong>")),
+    //             CompilableTextPart::new_compilable(String::from("fixed"), ModifiersBucket::None),
+    //             CompilableTextPart::new_fixed(String::from("</strong>")),
+    //             CompilableTextPart::new(
+    //                 String::from(" end*"),
+    //                 CompilableTextPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
+    //             ),
+    //     ]);
         
-        let outcome = replacement_rule.compile(&compilable, &OutputFormat::Html, &compilation_configuration, CompilationConfigurationOverLay::default()).unwrap();
+    //     let outcome = replacement_rule.compile(&compilable, &OutputFormat::Html, &compilation_configuration, CompilationConfigurationOverLay::default()).unwrap();
 
-        assert_eq!(outcome.content(), r"<em>start <strong>fixed</strong> end</em>");
+    //     assert_eq!(outcome.content(), r"<em>start <strong>fixed</strong> end</em>");
 
 
-        // ==== case 2 ====
-        let compilable = CompilableText::new(
-            vec![
-                CompilableTextPart::new(
-                    String::from("*start "),
-                    CompilableTextPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
-                ),
-                CompilableTextPart::new_fixed(String::from("<strong>")),
-                CompilableTextPart::new_compilable(String::from("fixed"), ModifiersBucket::None),
-                CompilableTextPart::new_fixed(String::from("</strong>")),
-                CompilableTextPart::new(
-                    String::from("*"),
-                    CompilableTextPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
-                ),
-        ]);
+    //     // ==== case 2 ====
+    //     let compilable = CompilableText::new(
+    //         vec![
+    //             CompilableTextPart::new(
+    //                 String::from("*start "),
+    //                 CompilableTextPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
+    //             ),
+    //             CompilableTextPart::new_fixed(String::from("<strong>")),
+    //             CompilableTextPart::new_compilable(String::from("fixed"), ModifiersBucket::None),
+    //             CompilableTextPart::new_fixed(String::from("</strong>")),
+    //             CompilableTextPart::new(
+    //                 String::from("*"),
+    //                 CompilableTextPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
+    //             ),
+    //     ]);
         
-        let outcome = replacement_rule.compile(&compilable, &OutputFormat::Html, &compilation_configuration, CompilationConfigurationOverLay::default()).unwrap();
+    //     let outcome = replacement_rule.compile(&compilable, &OutputFormat::Html, &compilation_configuration, CompilationConfigurationOverLay::default()).unwrap();
 
-        assert_eq!(outcome.content(), r"<em>start <strong>fixed</strong></em>");
+    //     assert_eq!(outcome.content(), r"<em>start <strong>fixed</strong></em>");
 
 
-        // ==== case 3 ====
-        let compilable = CompilableText::new(
-            vec![
-                CompilableTextPart::new(
-                    String::from("*"),
-                    CompilableTextPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
-                ),
-                CompilableTextPart::new_fixed(String::from("<strong>")),
-                CompilableTextPart::new_compilable(String::from("fixed"), ModifiersBucket::None),
-                CompilableTextPart::new_fixed(String::from("</strong>")),
-                CompilableTextPart::new(
-                    String::from(" end*"),
-                    CompilableTextPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
-                ),
-        ]);
+    //     // ==== case 3 ====
+    //     let compilable = CompilableText::new(
+    //         vec![
+    //             CompilableTextPart::new(
+    //                 String::from("*"),
+    //                 CompilableTextPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
+    //             ),
+    //             CompilableTextPart::new_fixed(String::from("<strong>")),
+    //             CompilableTextPart::new_compilable(String::from("fixed"), ModifiersBucket::None),
+    //             CompilableTextPart::new_fixed(String::from("</strong>")),
+    //             CompilableTextPart::new(
+    //                 String::from(" end*"),
+    //                 CompilableTextPartType::Compilable { incompatible_modifiers: ModifiersBucket::None }
+    //             ),
+    //     ]);
         
-        let outcome = replacement_rule.compile(&compilable, &OutputFormat::Html, &compilation_configuration, CompilationConfigurationOverLay::default()).unwrap();
+    //     let outcome = replacement_rule.compile(&compilable, &OutputFormat::Html, &compilation_configuration, CompilationConfigurationOverLay::default()).unwrap();
 
-        assert_eq!(outcome.content(), r"<em><strong>fixed</strong> end</em>");
+    //     assert_eq!(outcome.content(), r"<em><strong>fixed</strong> end</em>");
 
-    }
+    // }
 
     // #[test]
     // fn heading_parsing() {

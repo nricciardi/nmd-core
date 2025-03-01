@@ -1,5 +1,5 @@
 use getset::{Getters, Setters};
-use crate::{codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome, compilation_rule::constants::ESCAPE_HTML}, output_format::OutputFormat, text::compilable_string::CompilableString, utility::{datastruct::nmd_unique_identifier::NmdUniqueIdentifier, text_utility}};
+use crate::{codex::Codex, compilable_string::{compilation_rule::constants::ESCAPE_HTML, CompilableString}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, mmo::nmd_unique_identifier::NmdUniqueIdentifier, output_format::OutputFormat, utility::text_utility};
 
 use super::ContentBlock;
 
@@ -66,7 +66,7 @@ impl ContentBlock for Paragraph {
 #[cfg(test)]
 mod test {
 
-    use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, load::load_configuration::LoadConfiguration, output_format::OutputFormat, text::content_block_loading_rule::paragraph_loading_rule::ParagraphLoadingRule};
+    use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, load::{load_configuration::LoadConfiguration, loading_rule::content_block_loading_rule::paragraph_loading_rule::ParagraphLoadingRule}, output_format::OutputFormat};
 
     #[test]
     fn compile() {

@@ -1,4 +1,4 @@
-use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::{Finder, Loader, LoadingRule}}, text::content_block::{list_block::ListBlock, ContentBlock}, utility::datastruct::span::Span};
+use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, dossier::document::chapter::content_block::{list_block::ListBlock, ContentBlock}, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::LoadingRule}, utility::datastruct::span::Span};
 
 
 #[derive(Debug)]
@@ -16,23 +16,15 @@ impl ListBlockLoadingRule {
     }
 }
 
-impl Finder for ListBlockLoadingRule {
+
+impl LoadingRule<Box<dyn ContentBlock>> for ListBlockLoadingRule {
 
     fn find<'a>(&self, raw_str: &'a str, codex: &Codex, configuration: &LoadConfiguration) -> Result<impl Iterator<Item = Span<&'a str>>, LoadError> {
         Ok(StandardParagraphModifier::List.find_spans_iter(raw_str))
     }
-    
-}
-
-impl Loader<Box<dyn ContentBlock>> for ListBlockLoadingRule {
 
     fn load(&self, raw_content: &str, _codex: &Codex, _configuration: &LoadConfiguration) -> Result<Box<dyn ContentBlock>, LoadError> {
         Ok(Box::new(ListBlock::new(raw_content.to_string())))       // TODO: move logic of loading
     }
-
-}
-
-
-impl LoadingRule<Box<dyn ContentBlock>> for ListBlockLoadingRule {
 
 }

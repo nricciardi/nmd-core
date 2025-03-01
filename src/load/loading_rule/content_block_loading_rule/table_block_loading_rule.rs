@@ -2,7 +2,7 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 
 
-use crate::{codex::{modifier::{constants::{IDENTIFIER_PATTERN, STYLE_PATTERN}, standard_paragraph_modifier::StandardParagraphModifier}, Codex}, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::{Finder, Loader, LoadingRule}}, text::{content_block::{table_block::{TableBlock, TableBlockContent}, ContentBlock}, Text}, utility::{datastruct::{span::Span, table::{Table, TableCell, TableCellAlignment}}, text_utility}};
+use crate::{codex::{modifier::{constants::{IDENTIFIER_PATTERN, STYLE_PATTERN}, standard_paragraph_modifier::StandardParagraphModifier}, Codex}, dossier::document::chapter::content_block::{table_block::{TableBlock, TableBlockContent}, ContentBlock}, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::LoadingRule}, text::Text, utility::{datastruct::{span::Span, table::{Table, TableCell, TableCellAlignment}}, text_utility}};
 
 
 /// (caption, id, styles, classes)
@@ -160,13 +160,13 @@ impl TableBlockLoadingRule {
     }
 }
 
-impl Finder for TableBlockLoadingRule {
+
+impl LoadingRule<Box<dyn ContentBlock>> for TableBlockLoadingRule {
+
     fn find<'a>(&self, raw_str: &'a str, codex: &Codex, configuration: &LoadConfiguration) -> Result<impl Iterator<Item = Span<&'a str>>, LoadError> {
         Ok(StandardParagraphModifier::Table.find_spans_iter(raw_str))
     }
-}
 
-impl Loader<Box<dyn ContentBlock>> for TableBlockLoadingRule {
     fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<Box<dyn ContentBlock>, LoadError> {
 
         let mut table: TableBlockContent = Table::new_empty();
@@ -243,10 +243,6 @@ impl Loader<Box<dyn ContentBlock>> for TableBlockLoadingRule {
         Ok(Box::new(TableBlock::new(raw_content.to_string(), table, id, styles, classes, caption)))
     }
 }
-
-impl LoadingRule<Box<dyn ContentBlock>> for TableBlockLoadingRule {
-}
-
 
 
 #[cfg(test)]

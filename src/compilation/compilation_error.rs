@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::{mmo::{uri::UriError, MultiMediaObjectError}, text::compilable_string::CompilableStringError};
+use crate::{assembler::AssemblerError, compilable_string::compilable_string_error::CompilableStringError, mmo::{uri::UriError, MultiMediaObjectError}};
 
 
 #[derive(Error, Debug)]

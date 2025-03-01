@@ -1,7 +1,7 @@
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::{Finder, Loader, LoadingRule}}, text::{content_block::{quote_block::ExtendedQuoteBlock, ContentBlock}, Text}, utility::datastruct::span::Span};
+use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, dossier::document::chapter::content_block::{quote_block::ExtendedQuoteBlock, ContentBlock}, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::LoadingRule}, text::Text, utility::datastruct::span::Span};
 
 
 static CHECK_EXTENDED_BLOCK_QUOTE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?m:> \[!(\w*)\])").unwrap());
@@ -66,25 +66,17 @@ impl QuoteBlockLoadingRule {
     }
 }
 
-impl Finder for QuoteBlockLoadingRule {
+
+impl LoadingRule<Box<dyn ContentBlock>> for QuoteBlockLoadingRule {
 
     fn find<'a>(&self, raw_str: &'a str, codex: &Codex, configuration: &LoadConfiguration) -> Result<impl Iterator<Item = Span<&'a str>>, LoadError> {
         Ok(StandardParagraphModifier::ExtendedBlockQuote.find_spans_iter(raw_str))
     }
-    
-}
-
-impl Loader<Box<dyn ContentBlock>> for QuoteBlockLoadingRule {
 
     fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<Box<dyn ContentBlock>, LoadError> {
         
         Ok(Box::new(self.inner_load(raw_content, codex, configuration)?))
     }
-
-}
-
-impl LoadingRule<Box<dyn ContentBlock>> for QuoteBlockLoadingRule {
-    
 }
 
 

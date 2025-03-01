@@ -6,9 +6,10 @@ pub mod compilable_string_error;
 
 use compilable_string_error::CompilableStringError;
 use compilable_string_part::CompilableStringPart;
+use compilation_rule::CompilationRule;
 use getset::{Getters, MutGetters, Setters};
 use serde::Serialize;
-use crate::{codex::{modifier::{ModifierIdentifier, ModifiersBucket}, Codex}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome, compilation_rule::CompilationRule}, output_format::OutputFormat, utility::datastruct::{bucket::Bucket, nmd_unique_identifier::NmdUniqueIdentifier}};
+use crate::{codex::{modifier::{ModifierIdentifier, ModifiersBucket}, Codex}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, output_format::OutputFormat, utility::datastruct::bucket::Bucket};
 
 
 #[derive(Debug, Clone)]
