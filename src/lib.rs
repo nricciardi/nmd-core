@@ -9,3 +9,4 @@ pub mod theme;
 pub(crate) mod mmo;
 pub(crate) mod utility;
 pub mod constants;
+pub mod compilable_string;

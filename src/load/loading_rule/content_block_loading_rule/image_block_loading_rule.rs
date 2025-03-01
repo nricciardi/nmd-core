@@ -199,15 +199,11 @@ impl ImageBlockLoadingRule {
     }
 }
 
-impl Finder for ImageBlockLoadingRule {
+impl LoadingRule<Box<dyn ContentBlock>> for ImageBlockLoadingRule {
 
-    fn find<'a>(&self, raw_str: &'a str, codex: &Codex, configuration: &LoadConfiguration) -> Result<impl Iterator<Item = Span<&'a str>>, LoadError> {
+    fn find<'a>(&self, raw_str: &'a str, codex: &Codex, configuration: &LoadConfiguration) -> Result<dyn Iterator<Item = Span<&'a str>>, LoadError> {
         todo!()
     }
-    
-}
-
-impl Loader<Box<dyn ContentBlock>> for ImageBlockLoadingRule {
 
     fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<Box<dyn ContentBlock>, LoadError> {
         match *self {
@@ -225,11 +221,6 @@ impl Loader<Box<dyn ContentBlock>> for ImageBlockLoadingRule {
             ))),
         }
     }
-
-}
-
-
-impl LoadingRule<Box<dyn ContentBlock>> for ImageBlockLoadingRule {
 
 }
 

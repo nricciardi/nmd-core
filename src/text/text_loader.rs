@@ -1,11 +1,12 @@
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
-use crate::{codex::Codex, dossier::document::chapter::{chapter_header::ChapterHeader, heading::HeadingLevel, Chapter}, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::{Loader, LoadingRule}}, utility::datastruct::span::Span};
-use super::{content_block::ContentBlock, Text};
+use crate::{codex::Codex, dossier::document::chapter::{chapter_header::ChapterHeader, content_block::ContentBlock, heading::HeadingLevel, Chapter}, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::LoadingRule}, utility::datastruct::span::Span};
+use super::Text;
+
 
 enum RawSpanContent<'a> {
-    RawContentBlock(&'a str, &'a dyn Loader<Box<dyn ContentBlock>>),
-    RawHeader(&'a str, &'a dyn Loader<ChapterHeader>),
+    RawContentBlock(&'a str, &'a dyn LoadingRule<Box<dyn ContentBlock>>),
+    RawHeader(&'a str, &'a dyn LoadingRule<ChapterHeader>),
     Unmatched(&'a str)
 }
 

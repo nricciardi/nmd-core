@@ -1,5 +1,6 @@
 use regex::Regex;
-use super::datastruct::nmd_unique_identifier::NmdUniqueIdentifier;
+
+use crate::mmo::nmd_unique_identifier::NmdUniqueIdentifier;
 
 
 pub fn normalize_newlines(input: &str) -> String {

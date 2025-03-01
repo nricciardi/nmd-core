@@ -7,8 +7,6 @@ pub mod constants;
 
 use std::fmt::Debug;
 use regex::{Match, Regex};
-use crate::{compilable_text::CompilableText, output_format::OutputFormat};
-use super::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError};
 
 
 pub trait CompilationRule: Send + Sync + Debug {
@@ -27,15 +25,15 @@ pub trait CompilationRule: Send + Sync + Debug {
     }
 
     /// Compile string
-    fn standard_compile(&self, compilable: &CompilableText, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError>;
+    fn standard_compile(&self, compilable: &CompilableString, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableString, CompilationError>;
 
     /// Compile string avoid time consuming operations (incomplete compilation)
-    fn fast_compile(&self, compilable: &CompilableText, format: &OutputFormat,  compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError> {
+    fn fast_compile(&self, compilable: &CompilableString, format: &OutputFormat,  compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableString, CompilationError> {
         self.standard_compile(compilable, format, compilation_configuration, compilation_configuration_overlay)
     }
 
     /// Standard or fast compilation based on `CompilationConfiguration` `fast_draft()`
-    fn compile(&self, compilable: &CompilableText, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError> {
+    fn compile(&self, compilable: &CompilableString, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableString, CompilationError> {
 
         if compilation_configuration.fast_draft() {
             return self.fast_compile(compilable, format, compilation_configuration, compilation_configuration_overlay)

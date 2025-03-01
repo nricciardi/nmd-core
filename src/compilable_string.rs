@@ -1,5 +1,7 @@
+pub mod compilation_rule;
 pub mod compilable_string_part;
-pub mod compilable_string_error; 
+pub mod compilable_string_error;
+
 
 
 use compilable_string_error::CompilableStringError;

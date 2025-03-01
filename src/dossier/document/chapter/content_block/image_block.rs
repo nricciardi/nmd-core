@@ -1,7 +1,9 @@
 use build_html::{Container, Html, HtmlContainer};
 use getset::{Getters, Setters};
 
-use crate::{codex::Codex, compilation::{compilable::Compilable, compilation_configuration::CompilationConfiguration, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, output_format::OutputFormat, utility::datastruct::nmd_unique_identifier::NmdUniqueIdentifier};
+use crate::{codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, mmo::{source::Source, MultiMediaObjectError}, output_format::OutputFormat, utility::{datastruct::{image::Image, nmd_unique_identifier::NmdUniqueIdentifier}, image_utility}};
+
+use super::ContentBlock;
 
 
 const SINGLE_IMAGE_CLASSES: [&str; 1] = ["image"];
@@ -21,8 +23,8 @@ pub struct MultiImage {
 
 #[derive(Debug)]
 pub enum ImageBlockContent {
-    SingleImage(ImageResource),
-    AbridgedImage(ImageResource),
+    SingleImage(Image),
+    AbridgedImage(Image),
     MultiImage(MultiImage)
 }
 
@@ -81,7 +83,7 @@ impl ImageBlock {
 
                             let path = match std::fs::canonicalize(path) {
                                 Ok(p) => p,
-                                Err(_) => return Err(CompilationError::ResourceError(ResourceError::ResourceNotFound(path.to_string_lossy().to_string()))),
+                                Err(_) => return Err(CompilationError::ResourceError(MultiMediaObjectError::ResourceNotFound(path.to_string_lossy().to_string()))),
                             };
 
                             image.set_src(Source::Local { path });
@@ -176,17 +178,10 @@ impl Compilable for ImageBlock {
     }
 }
 
-impl Paragraph for ImageBlock {
-    fn raw_content(&self) -> &String {
-        &self.raw_content
-    }
+impl ContentBlock for ImageBlock {
 
     fn nuid(&self) -> Option<&NmdUniqueIdentifier> {
         self.nuid.as_ref()
-    }
-    
-    fn set_raw_content(&mut self, raw_content: String) {
-        self.raw_content = raw_content;
     }
     
     fn set_nuid(&mut self, nuid: Option<NmdUniqueIdentifier>) {

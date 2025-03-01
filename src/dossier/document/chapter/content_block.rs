@@ -9,7 +9,8 @@ pub mod quote_block;
 
 
 use thiserror::Error;
-use crate::{compilation::compilable::Compilable, utility::datastruct::nmd_unique_identifier::NmdUniqueIdentifier};
+
+use crate::{compilation::compilable::Compilable, mmo::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 #[derive(Error, Debug)]

@@ -1,15 +1,11 @@
 pub(self) mod text_loader;
-pub mod compilable_string;
-pub mod content_block;
-pub mod content_block_loading_rule;
 
-use content_block::ContentBlock;
 use getset::{Getters, MutGetters, Setters};
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use serde::Serialize;
 use text_loader::TextLoader;
 
-use crate::{codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, dossier::document::chapter::Chapter, load::{load_configuration::LoadConfiguration, load_error::LoadError}, output_format::OutputFormat};
+use crate::{codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, dossier::document::chapter::{content_block::ContentBlock, Chapter}, load::{load_configuration::LoadConfiguration, load_error::LoadError}, output_format::OutputFormat};
 
 
 /// Structured text which represents the base of loaded text. It has a `preamble` which contains the first content blocks and a list of chapters.
@@ -121,9 +117,6 @@ impl Compilable for Text {
 #[cfg(test)]
 mod test {
     use std::sync::Arc;
-
-    use crate::{assembler::html_assembler::HtmlAssembler, codex::{modifier::{base_modifier::BaseModifier, standard_text_modifier::StandardTextModifier, Modifier, ModifiersBucket}, Codex, TextModifierOrderedMap}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_rule::{replacement_rule::{replacement_rule_part::{closure_replacement_rule_part::ClosureReplacementRuleReplacerPart, fixed_replacement_rule_part::FixedReplacementRuleReplacerPart}, ReplacementRule}, CompilationRule}}, output_format::OutputFormat};
-
 
     #[test]
     fn compile_fake_paragraph_with_bold_text() {

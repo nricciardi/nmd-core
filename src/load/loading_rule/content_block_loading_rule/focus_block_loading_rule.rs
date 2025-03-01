@@ -1,7 +1,7 @@
 use regex::Regex;
 use getset::{Getters, Setters};
 
-use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::{Finder, Loader, LoadingRule}}, text::{content_block::{focus_block::FocusBlock, ContentBlock}, Text}, utility::datastruct::span::Span};
+use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::LoadingRule}, text::{content_block::{focus_block::FocusBlock, ContentBlock}, Text}, utility::datastruct::span::Span};
 
 
 const DEFAULT_TYPE: &str = "quote";
@@ -58,15 +58,11 @@ impl FocusBlockLoadingRule {
     }
 }
 
-impl Finder for FocusBlockLoadingRule {
+impl LoadingRule<Box<dyn ContentBlock>> for FocusBlockLoadingRule {
 
-    fn find<'a>(&self, raw_str: &'a str, codex: &Codex, configuration: &LoadConfiguration) -> Result<impl Iterator<Item = Span<&'a str>>, LoadError> {
+    fn find<'a>(&self, raw_str: &'a str, codex: &Codex, configuration: &LoadConfiguration) -> Result<dyn Iterator<Item = Span<&'a str>>, LoadError> {
         Ok(StandardParagraphModifier::FocusBlock.find_spans_iter(raw_str))
     }
-
-}
-
-impl Loader<Box<dyn ContentBlock>> for FocusBlockLoadingRule {
 
     fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<Box<dyn ContentBlock>, LoadError> {
         

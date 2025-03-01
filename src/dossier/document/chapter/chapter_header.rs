@@ -1,5 +1,3 @@
-pub mod chapter_header_loading_rule;
-
 use getset::{Getters, MutGetters, Setters};
 use serde::Serialize;
 use super::{chapter_tag::ChapterTag, heading::Heading};

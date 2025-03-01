@@ -1,8 +1,6 @@
 use std::collections::HashSet;
 
-use crate::{codex::Codex, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::LoadingRule}, utility::datastruct::span::Span};
-
-use super::ChapterHeader;
+use crate::{codex::Codex, dossier::document::chapter::chapter_header::ChapterHeader, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::LoadingRule}, utility::datastruct::span::Span};
 
 pub type ChapterHeaderLoadingRule = dyn LoadingRule<ChapterHeader>;
 
@@ -12,7 +10,7 @@ pub struct StandardChapterHeaderLoadingRule {
 
 }
 
-impl ChapterHeader {
+impl LoadingRule<ChapterHeader> for StandardChapterHeaderLoadingRule {
     /// Load headings and chapter tags from `&str`
     pub fn load(content: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<Vec<LoadBlock>, LoadError> {
 

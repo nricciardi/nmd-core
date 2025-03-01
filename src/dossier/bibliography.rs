@@ -5,7 +5,7 @@ use bibliography_record::BibliographyRecord;
 use getset::{Getters, Setters};
 use serde::Serialize;
 
-use crate::{codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, mmo::uri::{NUri, UriError}, output_format::OutputFormat, text::compilable_string::{compilable_string_part::CompilableStringPart, CompilableString}};
+use crate::{codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, mmo::uri::{NUri, UriError}, output_format::OutputFormat, compilable_string::{compilable_string_part::CompilableStringPart, CompilableString}};
 
 use super::dossier_configuration::dossier_configuration_bibliography::DossierConfigurationBibliography;
 

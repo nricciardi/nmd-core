@@ -1,5 +1,7 @@
 pub(crate) mod source;
 pub(crate) mod uri;
+pub(crate) mod image;
+pub mod nmd_unique_identifier;
 
 
 use std::io;
