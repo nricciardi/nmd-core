@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::{codex::Codex, dossier::document::chapter::chapter_header::ChapterHeader, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::LoadingRule}, utility::datastruct::span::Span};
+use crate::{codex::{modifier::{base_modifier::BaseModifier, standard_heading_modifier::StandardHeading}, Codex}, dossier::document::chapter::{chapter_header::ChapterHeader, chapter_tag::ChapterTag, heading::{Heading, HeadingLevel}}, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::LoadingRule}, utility::datastruct::span::Span};
 
 pub type ChapterHeaderLoadingRule = dyn LoadingRule<ChapterHeader>;
 
@@ -10,41 +10,7 @@ pub struct StandardChapterHeaderLoadingRule {
 
 }
 
-impl LoadingRule<ChapterHeader> for StandardChapterHeaderLoadingRule {
-    /// Load headings and chapter tags from `&str`
-    pub fn load(content: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<Vec<LoadBlock>, LoadError> {
-
-        let mut headers: Vec<LoadBlock> = Vec::new();
-
-        for heading in StandardHeading::ordered() {     // TODO: include `StandardHeading::ordered()` in `Codex`
-
-            let heading_modifier = Into::<BaseModifier>::into(heading);
-
-            for m in heading_modifier.modifier_pattern_regex().find_iter(content) {
-
-                let matched_str = m.as_str().to_string();
-
-                let m_start = m.start();
-                let m_end = m.end();
-
-                log::debug!("header found (between {} and {}): {:?}", m_start, m_end, &matched_str);
-
-                if let Some((heading, tags)) = Self::parse_chapter_heading_and_tags_from_str(&matched_str, codex, configuration)? {
-
-                    headers.push(LoadBlock::new(
-                        m_start,
-                        m_end,
-                        LoadBlockContent::ChapterHeader(ChapterHeader::new(heading, tags))
-                    ));
-                }
-
-            };
-        }
-
-        log::debug!("found headers:\n{:#?}", headers);
-
-        Ok(headers)
-    }
+impl StandardChapterHeaderLoadingRule {
 
     /// Load the chapter heading and metadata from `&str`. This method returns a tuple with optional heading and a chapter tags vector.
     fn parse_chapter_heading_and_tags_from_str(content: &str, _codex: &Codex, _configuration: &LoadConfiguration) -> Result<Option<(Heading, Vec<ChapterTag>)>, LoadError> {
@@ -146,11 +112,40 @@ impl LoadingRule<ChapterHeader> for StandardChapterHeaderLoadingRule {
 
 
 impl LoadingRule<ChapterHeader> for StandardChapterHeaderLoadingRule {
-    fn find(&self, raw_str: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<HashSet<Span<&str>>, LoadError> {
+    fn find<'a>(&self, raw_str: &'a str, codex: &Codex, configuration: &LoadConfiguration) -> Result<dyn Iterator<Item = Span<&'a str>>, LoadError> {
         todo!()     // TODO
     }
 
     fn load(&self, raw_str: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<ChapterHeader, LoadError> {
-        todo!()     // TODO
+        let mut headers: Vec<LoadBlock> = Vec::new();
+
+        for heading in StandardHeading::ordered() {     // TODO: include `StandardHeading::ordered()` in `Codex`
+
+            let heading_modifier = Into::<BaseModifier>::into(heading);
+
+            for m in heading_modifier.modifier_pattern_regex().find_iter(content) {
+
+                let matched_str = m.as_str().to_string();
+
+                let m_start = m.start();
+                let m_end = m.end();
+
+                log::debug!("header found (between {} and {}): {:?}", m_start, m_end, &matched_str);
+
+                if let Some((heading, tags)) = Self::parse_chapter_heading_and_tags_from_str(&matched_str, codex, configuration)? {
+
+                    headers.push(LoadBlock::new(
+                        m_start,
+                        m_end,
+                        LoadBlockContent::ChapterHeader(ChapterHeader::new(heading, tags))
+                    ));
+                }
+
+            };
+        }
+
+        log::debug!("found headers:\n{:#?}", headers);
+
+        Ok(headers)
     }
 }

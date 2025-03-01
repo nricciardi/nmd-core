@@ -163,7 +163,7 @@ impl TableBlockLoadingRule {
 
 impl LoadingRule<Box<dyn ContentBlock>> for TableBlockLoadingRule {
 
-    fn find<'a>(&self, raw_str: &'a str, codex: &Codex, configuration: &LoadConfiguration) -> Result<impl Iterator<Item = Span<&'a str>>, LoadError> {
+    fn find<'a>(&self, raw_str: &'a str, codex: &Codex, configuration: &LoadConfiguration) -> Result<dyn Iterator<Item = Span<&'a str>>, LoadError> {
         Ok(StandardParagraphModifier::Table.find_spans_iter(raw_str))
     }
 

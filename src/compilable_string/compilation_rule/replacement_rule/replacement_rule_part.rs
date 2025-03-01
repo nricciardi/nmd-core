@@ -5,7 +5,7 @@ pub mod single_capture_group_replacement_rule_part;
 
 
 use regex::Captures;
-use crate::{compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError}, output_format::OutputFormat, text::compilable_string::CompilableString};
+use crate::{compilable_string::CompilableString, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError}, output_format::OutputFormat};
 
 pub trait ReplacementRuleReplacerPart: std::fmt::Debug + Sync + Send {
 
