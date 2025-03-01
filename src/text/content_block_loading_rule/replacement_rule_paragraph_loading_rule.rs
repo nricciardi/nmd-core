@@ -1,6 +1,4 @@
-use std::collections::HashSet;
-
-use crate::{codex::{modifier::ModifiersBucket, Codex}, compilation::compilation_rule::replacement_rule::ReplacementRule, load::{loading_rule::LoadingRule, LoadConfiguration, LoadError}, text::{compilable_string::{compilable_string_part::CompilableStringPart, CompilableString}, content_block::ContentBlock}, utility::datastruct::span::Span};
+use crate::{codex::{modifier::ModifiersBucket, Codex}, compilation::compilation_rule::replacement_rule::ReplacementRule, load::{loading_rule::{Finder, LoadingRule}, LoadConfiguration, LoadError}, text::{compilable_string::{compilable_string_part::CompilableStringPart, CompilableString}, content_block::ContentBlock}, utility::datastruct::span::Span};
 
 
 #[derive(Debug)]
@@ -17,9 +15,21 @@ impl ReplacementRuleParagraphLoadingRule {
     } 
 }
 
+impl Finder for FocusBlockLoadingRule {
+    
+
+    
+}
+
+impl Loader<Box<dyn ContentBlock>> for FocusBlockLoadingRule {
+
+
+
+}
+
 impl LoadingRule<Box<dyn ContentBlock>> for ReplacementRuleParagraphLoadingRule {
 
-    fn find(&self, raw_str: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<HashSet<Span<&str>>, LoadError> {
+    fn find<'a>(&self, raw_str: &'a str, codex: &Codex, configuration: &LoadConfiguration) -> Result<impl Iterator<Item = Span<&'a str>>, LoadError> {
         todo!()
     }
 

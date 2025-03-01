@@ -105,12 +105,12 @@ impl CompilableString {
     // }
 
     /// content usable in regex. It's the string obtained concatenating compilable parts
-    fn compilable_content(&self) -> String {
+    pub fn compilable_content(&self) -> String {
 
         self.compilable_content_with_ends_positions().0
     }
 
-    fn compilable_content_with_ends_positions(&self) -> (String, Vec<usize>) {
+    pub fn compilable_content_with_ends_positions(&self) -> (String, Vec<usize>) {
         let mut compilable_content = String::new();
         let mut ends: Vec<usize> = Vec::new();
         let mut last_end: usize = 0;

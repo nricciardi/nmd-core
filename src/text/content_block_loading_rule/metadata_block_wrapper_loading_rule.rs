@@ -1,12 +1,14 @@
-use std::{collections::HashSet, sync::Arc};
+use std::sync::Arc;
 use getset::{Getters, Setters};
 use regex::Regex;
 
-use crate::{codex::Codex, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::LoadingRule}, text::{content_block::{metadata_block_wrapper::MetadataBlockWrapper, ContentBlock}, Text}, utility::datastruct::span::Span};
+use crate::{codex::Codex, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::{Finder, Loader, LoadingRule}}, text::{content_block::{metadata_block_wrapper::MetadataBlockWrapper, ContentBlock}, Text}, utility::datastruct::span::Span};
 
 
 pub type StyleElaborationFn = Arc<dyn Sync + Send + Fn(&str, bool) -> (Option<String>, Option<String>)>;
 
+
+// TODO: maybe more general, this allows only style and id
 
 #[derive(Getters, Setters, Clone)]
 pub struct MetadataBlockWrapperLoadingRule {
@@ -97,17 +99,25 @@ impl MetadataBlockWrapperLoadingRule {
     }
 }
 
+impl Finder for MetadataBlockWrapperLoadingRule {
 
-impl LoadingRule<Box<dyn ContentBlock>> for MetadataBlockWrapperLoadingRule {
-
-    fn find(&self, raw_str: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<HashSet<Span<&str>>, LoadError> {
-        todo!()
+    fn find<'a>(&self, raw_str: &'a str, codex: &Codex, configuration: &LoadConfiguration) -> Result<impl Iterator<Item = Span<&'a str>>, LoadError> {
+        Ok(self.loading_regex.find_iter(raw_str).map(|m| Span::from(m)))
     }
+    
+}
+
+impl Loader<Box<dyn ContentBlock>> for MetadataBlockWrapperLoadingRule {
 
     fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<Box<dyn ContentBlock>, LoadError> {
         
         Ok(Box::new(self.inner_load(raw_content, codex, configuration)?))
     }
+
+}
+
+impl LoadingRule<Box<dyn ContentBlock>> for MetadataBlockWrapperLoadingRule {
+    
 }
 
 

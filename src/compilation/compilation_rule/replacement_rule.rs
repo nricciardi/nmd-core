@@ -7,10 +7,10 @@ use getset::{Getters, Setters};
 use log;
 use regex::Regex;
 use replacement_rule_part::ReplacementRuleReplacerPart;
-use crate::compilable_text::CompilableText;
 use crate::compilation::compilation_configuration::compilation_configuration_overlay::CompilationConfigurationOverLay;
 use crate::compilation::compilation_configuration::CompilationConfiguration;
 use crate::output_format::OutputFormat;
+use crate::text::compilable_string::CompilableString;
 use super::CompilationRule;
 use crate::compilation::compilation_error::CompilationError;
 
@@ -20,7 +20,7 @@ pub type ReplacementRuleParts = Vec<Arc<dyn ReplacementRuleReplacerPart>>;
 
 // TODO: refactor it
 
-/// Rule to replace a NMD text based on a specific pattern matching rule
+/// Rule to replace text based on a specific pattern matching rule
 #[derive(Debug, Clone, Getters, Setters)]
 pub struct ReplacementRule {
 
@@ -53,7 +53,7 @@ impl ReplacementRule {
 impl CompilationRule for ReplacementRule {
 
     /// Compile the content using internal search and replacement pattern
-    fn standard_compile(&self, compilable: &CompilableText, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError> {
+    fn standard_compile(&self, compilable: &CompilableString, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableString, CompilationError> {
 
         log::debug!("compile:\n{:#?}\nusing '{}'->'{:?}'", compilable, self.search_pattern(), self.replacer_parts);
 
@@ -71,7 +71,7 @@ impl CompilationRule for ReplacementRule {
             }   
         }
 
-        Ok(CompilableText::new(compiled_parts))
+        Ok(CompilableString::new(compiled_parts))
     }
     
     fn search_pattern(&self) -> &String {

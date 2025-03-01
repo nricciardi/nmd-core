@@ -1,10 +1,6 @@
-use std::collections::HashSet;
-
 use once_cell::sync::Lazy;
 use regex::Regex;
-use crate::{codex::Codex, load::{loading_rule::LoadingRule, LoadConfiguration, LoadError}, text::content_block::{paragraph::Paragraph, ContentBlock}, utility::datastruct::span::Span};
-
-use super::MultiContentBlockLoadingRule;
+use crate::{codex::{modifier::{constants::{MULTI_LINES_CONTENT_EXCLUDING_HEADINGS_PATTERN, NEW_LINE_PATTERN}, standard_paragraph_modifier::StandardParagraphModifier}, Codex}, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::{Finder, Loader, LoadingRule}}, text::content_block::{paragraph::Paragraph, ContentBlock}, utility::datastruct::span::Span};
 
 
 static EXTRACT_PARAGRAPH_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&format!("{}{}{}", MULTI_LINES_CONTENT_EXCLUDING_HEADINGS_PATTERN, NEW_LINE_PATTERN, NEW_LINE_PATTERN)).unwrap());
@@ -41,47 +37,59 @@ impl ParagraphLoadingRule {
     }
 }
 
+impl Finder for ParagraphLoadingRule {
 
-impl LoadingRule<Box<dyn ContentBlock>> for ParagraphLoadingRule {
+    fn find<'a>(&self, raw_str: &'a str, codex: &Codex, configuration: &LoadConfiguration) -> Result<impl Iterator<Item = Span<&'a str>>, LoadError> {
+        Ok(StandardParagraphModifier::CommonParagraph.find_spans_iter(raw_str))
+    }
+    
+}
 
-    fn find(&self, raw_str: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<HashSet<Span<&str>>, LoadError> {
+impl Loader<Box<dyn ContentBlock>> for ParagraphLoadingRule {
+
+    // TODO
+    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<Box<dyn ContentBlock>, LoadError> {
+            
+        // Ok(self.inner_load(raw_content, codex, configuration).into_iter().map(|p| {
+        //     Box::new(p) as Box<dyn ContentBlock>
+        // }).collect())
+        
         todo!()
     }
 
-    // TODO
-    fn load(&self, raw_content: &str, codex: &Codex, configuration: LoadConfiguration) -> Result<Vec<Box<dyn ContentBlock>>, LoadError> {
-        
-        Ok(self.inner_load(raw_content, codex, configuration).into_iter().map(|p| {
-            Box::new(p) as Box<dyn ContentBlock>
-        }).collect())
-    }
+}
+
+impl LoadingRule<Box<dyn ContentBlock>> for ParagraphLoadingRule {
+    
 }
 
 
 #[cfg(test)]
 mod test {
 
-    use crate::{codex::Codex, load::{LoadConfiguration, LoadConfigurationOverLay}};
-    use super::CommonParagraphLoadingRule;
+    // TODO
+
+    // use crate::{codex::Codex, load::{LoadConfiguration, LoadConfigurationOverLay}};
+    // use super::CommonParagraphLoadingRule;
 
 
-    #[test]
-    fn load_common_paragraph() {
-        let nmd_text = concat!(
-            "a\n",
-            "b\n",
-            "\n",
-            "c\n",
-            "\n\n\n\n",
-            "d",
-        );
+    // #[test]
+    // fn load_common_paragraph() {
+    //     let nmd_text = concat!(
+    //         "a\n",
+    //         "b\n",
+    //         "\n",
+    //         "c\n",
+    //         "\n\n\n\n",
+    //         "d",
+    //     );
 
-        let rule = CommonParagraphLoadingRule::new();
+    //     let rule = CommonParagraphLoadingRule::new();
 
-        let paragraphs = rule.inner_load(&nmd_text, &Codex::of_html(), &LoadConfiguration::default(), LoadConfigurationOverLay::default());    
+    //     let paragraphs = rule.inner_load(&nmd_text, &Codex::of_html(), &LoadConfiguration::default(), LoadConfigurationOverLay::default());    
     
-        assert_eq!(paragraphs.len(), 3);
-    }
+    //     assert_eq!(paragraphs.len(), 3);
+    // }
 
 
 }

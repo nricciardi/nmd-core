@@ -92,7 +92,7 @@ impl ContentBlock for MetadataBlockWrapper {
 
 #[cfg(test)]
 mod test {
-    use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, load::LoadConfiguration, output_format::OutputFormat, text::content_block_loading_rule::quote_block_loading_rule::QuoteBlockLoadingRule};
+    use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, load::load_configuration::LoadConfiguration, output_format::OutputFormat, text::content_block_loading_rule::quote_block_loading_rule::QuoteBlockLoadingRule};
 
 
 

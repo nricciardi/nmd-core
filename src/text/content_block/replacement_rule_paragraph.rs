@@ -1,5 +1,4 @@
 use getset::{Getters, Setters};
-use crate::{codex::Codex, compilable_text::CompilableText, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome, compilation_rule::{replacement_rule::ReplacementRule, CompilationRule}}, dossier::document::chapter::paragraph::Paragraph, output_format::OutputFormat, utility::datastruct::nmd_unique_identifier::NmdUniqueIdentifier};
 
 
 

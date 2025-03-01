@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
+use crate::utility::datastruct::span::Span;
+
 use super::{base_modifier::BaseModifier, constants::{build_strict_reserved_line_pattern, IDENTIFIER_PATTERN, MULTI_LINES_CONTENT_PATTERN, MULTI_LINES_CONTENT_EXCLUDING_HEADINGS_PATTERN, NEW_LINE_PATTERN, STYLE_PATTERN}, ModifierIdentifier, ModifierPattern, ModifiersBucket};
 
 
@@ -21,6 +23,7 @@ static MODIFIER_PATTERNS_REGEX: Lazy<HashMap<ModifierIdentifier, Regex>> = Lazy:
 });
 
 
+// TODO: remove if not needed
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum StandardParagraphModifier {
@@ -39,7 +42,7 @@ pub enum StandardParagraphModifier {
     LineBreakDash,
     LineBreakStar,
     LineBreakPlus,
-    CommonParagraph,
+    CommonParagraph,        // TODO: rename in Paragraph
     EmbeddedParagraphStyle,
     ParagraphIdentifier,
     PageBreak,
@@ -146,6 +149,10 @@ impl StandardParagraphModifier {
 
     pub fn modifier_pattern_regex(&self) -> &Regex {
         MODIFIER_PATTERNS_REGEX.get(&self.identifier()).unwrap()
+    }
+
+    pub fn find_spans_iter(&self, haystack: &str) -> impl Iterator<Item = Span<&str>> {
+        self.modifier_pattern_regex().find_iter(haystack).map(|m| Span::from(m))
     }
 }
 

@@ -1,11 +1,11 @@
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
-use crate::{codex::Codex, dossier::document::chapter::{chapter_header::ChapterHeader, heading::HeadingLevel, Chapter}, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::LoadingRule}, utility::datastruct::span::Span};
+use crate::{codex::Codex, dossier::document::chapter::{chapter_header::ChapterHeader, heading::HeadingLevel, Chapter}, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::{Loader, LoadingRule}}, utility::datastruct::span::Span};
 use super::{content_block::ContentBlock, Text};
 
 enum RawSpanContent<'a> {
-    RawContentBlock(&'a str, &'a dyn LoadingRule<Box<dyn ContentBlock>>),
-    RawHeader(&'a str, &'a dyn LoadingRule<ChapterHeader>),
+    RawContentBlock(&'a str, &'a dyn Loader<Box<dyn ContentBlock>>),
+    RawHeader(&'a str, &'a dyn Loader<ChapterHeader>),
     Unmatched(&'a str)
 }
 
@@ -219,10 +219,14 @@ impl<'a> TextLoader<'a> {
 
         // TODO: backlog: ad hoc method can be created to prevent double iterations
         // TODO: parallelization?
+        // TODO: when there is not a fallback paragraph?
         unmatched_spans.into_iter().map(|span| {
             match span.content() {
                 RawSpanContent::RawContentBlock(_, _) | RawSpanContent::RawHeader(_, _) => unreachable!("unexpected matched span"),
-                RawSpanContent::Unmatched(raw_str) => RawSpanContent::RawContentBlock(&raw_str, self.codex.fallback_paragraph()),
+                RawSpanContent::Unmatched(raw_str) => RawSpanContent::RawContentBlock(
+                    &raw_str,
+                    self.codex.fallback_paragraph()
+                ),
             }
         })
         .collect()

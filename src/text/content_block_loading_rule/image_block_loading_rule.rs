@@ -1,9 +1,7 @@
-use std::collections::HashSet;
-
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-use crate::{codex::Codex, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::LoadingRule}, text::content_block::ContentBlock, utility::datastruct::span::Span};
+use crate::{codex::Codex, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::{Finder, Loader, LoadingRule}}, text::content_block::ContentBlock, utility::datastruct::span::Span};
 
 
 static FIND_SINGLE_IMAGE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&StandardParagraphModifier::Image.modifier_pattern()).unwrap());
@@ -201,13 +199,15 @@ impl ImageBlockLoadingRule {
     }
 }
 
+impl Finder for ImageBlockLoadingRule {
 
-impl LoadingRule<Box<dyn ContentBlock>> for ImageBlockLoadingRule {
-
-
-    fn find(&self, raw_str: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<HashSet<Span<&str>>, LoadError> {
+    fn find<'a>(&self, raw_str: &'a str, codex: &Codex, configuration: &LoadConfiguration) -> Result<impl Iterator<Item = Span<&'a str>>, LoadError> {
         todo!()
     }
+    
+}
+
+impl Loader<Box<dyn ContentBlock>> for ImageBlockLoadingRule {
 
     fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<Box<dyn ContentBlock>, LoadError> {
         match *self {
@@ -225,6 +225,12 @@ impl LoadingRule<Box<dyn ContentBlock>> for ImageBlockLoadingRule {
             ))),
         }
     }
+
+}
+
+
+impl LoadingRule<Box<dyn ContentBlock>> for ImageBlockLoadingRule {
+
 }
 
 

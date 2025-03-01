@@ -1,4 +1,5 @@
 use getset::{CopyGetters, Getters, MutGetters, Setters};
+use regex::Match;
 
 
 /// Content with start and end
@@ -28,5 +29,12 @@ impl<T> Span<T> {
     pub fn add_offset(&mut self, offset: usize) {
         self.start += offset;
         self.end += offset;
+    }
+}
+
+
+impl<'a> From<Match<'a>> for Span<&'a str> {
+    fn from(m: Match) -> Self {
+        Self::new(m.start(), m.end(), m.as_str())
     }
 }
