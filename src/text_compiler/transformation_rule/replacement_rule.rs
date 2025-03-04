@@ -9,7 +9,6 @@ use regex::Regex;
 use replacement_rule_part::ReplacementRuleReplacerPart;
 use crate::compilation::compilation_configuration::compilation_configuration_overlay::CompilationConfigurationOverLay;
 use crate::compilation::compilation_configuration::CompilationConfiguration;
-use crate::output_format::OutputFormat;
 use super::TextTransformationRule;
 use crate::compilation::compilation_error::CompilationError;
 

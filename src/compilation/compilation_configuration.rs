@@ -5,7 +5,7 @@ use std::{collections::HashMap, path::PathBuf};
 use getset::{CopyGetters, Getters, MutGetters, Setters};
 use list_bullet_configuration_record::ListBulletConfigurationRecord;
 
-use crate::{dossier::bibliography::Bibliography, theme::Theme, utility::datastruct::text_reference::TextReferenceMap};
+use crate::{base_parameter::theme::Theme, dossier::bibliography::Bibliography, utility::datastruct::text_reference::TextReferenceMap};
 
 
 

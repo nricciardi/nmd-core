@@ -1,6 +1,6 @@
 use getset::{Getters, Setters};
 use serde::Serialize;
-use crate::{codex::{modifier::ModifiersBucket, Codex}, text::{text_part::CompilableStringPart, CompilableString}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, mmo::{nmd_unique_identifier::NmdUniqueIdentifier, uri::NUri}, output_format::OutputFormat};
+use crate::{codex::{modifier::ModifiersBucket, Codex}, text_compiler::{text_part::CompilableStringPart, CompilableString}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, mmo::{nmd_unique_identifier::NmdUniqueIdentifier, uri::NUri}, output_format::OutputFormat};
 
 
 #[derive(Debug, Clone, Serialize)]

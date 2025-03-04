@@ -1,14 +1,6 @@
-pub mod transformation_rule;
-pub mod text_part;
-pub mod text_error;
-
-
 use getset::{Getters, MutGetters, Setters};
 use serde::Serialize;
-use text_error::TextError;
-use text_part::TextPart;
-use transformation_rule::TextTransformationRule;
-use crate::{codex::{modifier::{ModifierIdentifier, ModifiersBucket}, Codex}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, output_format::OutputFormat, utility::datastruct::bucket::Bucket};
+use crate::{codex::{modifier::{ModifierIdentifier, ModifiersBucket}, Codex}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, utility::datastruct::bucket::Bucket};
 
 
 #[derive(Debug, Clone)]
@@ -24,6 +16,22 @@ enum ElaborationPosition {
     BeforeRange,
     InRange,
     AfterRange,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub enum TextPart {
+    Fixed{ content: String },
+    Compilable{ content: String, incompatible_modifiers: ModifiersBucket },
+}
+
+impl TextPart {
+    
+    pub fn content(&self) -> &String {
+        match &self {
+            Self::Fixed { content } => content,
+            Self::Compilable { content, incompatible_modifiers: _ } => content,
+        }
+    }
 }
 
 
@@ -541,36 +549,6 @@ impl Text {
         Ok(())
     }
 }
-
-impl Compilable for Text {
-
-    fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationOutcome, CompilationError> {
-        
-        let excluded_modifiers = compilation_configuration_overlay.excluded_modifiers().clone();
-
-        log::debug!("start to compile content:\n{:?}\nexcluding: {:?}", self, excluded_modifiers);
-
-        if excluded_modifiers == Bucket::All {
-            log::debug!("compilation of content:\n{:?} is skipped because are excluded all modifiers", self);
-            
-            return Ok(CompilationOutcome::from(self.content()))
-        }
-
-        for (codex_identifier, (text_modifier, text_rule)) in codex.text_modifiers() {
-
-            if excluded_modifiers.contains(codex_identifier) {
-
-                log::debug!("{:?} is skipped", text_modifier);
-                continue;
-            }
-
-            self.compile_with_compilation_rule((codex_identifier, text_rule), format, compilation_configuration, compilation_configuration_overlay.clone())?;
-        }
-
-        Ok(CompilationOutcome::from(self.content()))
-    }
-}
-
 
 #[cfg(test)]
 mod test {

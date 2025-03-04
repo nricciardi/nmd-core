@@ -15,12 +15,12 @@ use self::modifier::standard_paragraph_modifier::StandardParagraphModifier;
 use self::modifier::standard_text_modifier::StandardTextModifier;
 use crate::assembler::html_assembler::HtmlAssembler;
 use crate::assembler::Assembler;
-use crate::text::compilation_rule::TextTransformationRule;
+use crate::base_parameter::output_format::OutputFormat;
 use crate::dossier::document::chapter::chapter_header::ChapterHeader;
 use crate::dossier::document::chapter::content_block::ContentBlock;
 use crate::load::loading_rule::LoadingRule;
 use crate::mmo::uri::NUri;
-use crate::output_format::OutputFormat;
+use crate::text_compiler::transformation_rule::TextTransformationRule;
 use crate::utility::text_utility;
 
 

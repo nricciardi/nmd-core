@@ -7,5 +7,5 @@ pub mod compilation;
 pub(crate) mod mmo;
 pub(crate) mod utility;
 pub mod constants;
-pub mod text;
+pub mod text_compiler;
 pub mod base_parameter;

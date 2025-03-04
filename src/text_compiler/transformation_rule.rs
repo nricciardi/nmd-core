@@ -11,13 +11,15 @@ use std::fmt::Debug;
 use regex::{Match, Regex};
 use transformation_configuration::TransformationConfiguration;
 use transformation_error::TransformationError;
-
-use crate::output_format::OutputFormat;
-
 use super::Text;
 
 
+pub type TextTransformationRuleIdentifier = String;
+
+
 pub trait TextTransformationRule: Send + Sync + Debug {
+
+    fn identifier(&self) -> &TextTransformationRuleIdentifier;
 
     // TODO: abstract and remove these
 

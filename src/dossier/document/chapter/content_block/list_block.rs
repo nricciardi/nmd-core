@@ -1,7 +1,7 @@
 use getset::{Getters, Setters};
 use once_cell::sync::Lazy;
 use regex::Regex;
-use crate::{codex::{modifier::{standard_paragraph_modifier::StandardParagraphModifier, ModifiersBucket}, Codex}, text::{text_part::CompilableStringPart, compilation_rule::constants::{ESCAPE_HTML, SPACE_TAB_EQUIVALENCE}, CompilableString}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, list_bullet_configuration_record::{self, ListBulletConfigurationRecord}, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, mmo::nmd_unique_identifier::NmdUniqueIdentifier, output_format::OutputFormat, utility::text_utility};
+use crate::{codex::{modifier::{standard_paragraph_modifier::StandardParagraphModifier, ModifiersBucket}, Codex}, text_compiler::{text_part::CompilableStringPart, compilation_rule::constants::{ESCAPE_HTML, SPACE_TAB_EQUIVALENCE}, CompilableString}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, list_bullet_configuration_record::{self, ListBulletConfigurationRecord}, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, mmo::nmd_unique_identifier::NmdUniqueIdentifier, output_format::OutputFormat, utility::text_utility};
 
 use super::ContentBlock;
 

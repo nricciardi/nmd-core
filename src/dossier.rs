@@ -11,7 +11,7 @@ use document::Document;
 use getset::{Getters, MutGetters, Setters};
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, IntoParallelRefMutIterator, ParallelIterator};
 use table_of_contents::TableOfContents;
-use crate::{codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, load::{load_configuration::LoadConfiguration, load_error::LoadError}, mmo::MultiMediaObjectError, output_format::OutputFormat};
+use crate::{base_parameter::output_format::OutputFormat, codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, load::{load_configuration::LoadConfiguration, load_error::LoadError}, mmo::MultiMediaObjectError};
 
 use self::dossier_configuration::DossierConfiguration;
 use serde::Serialize;

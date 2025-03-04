@@ -6,7 +6,7 @@ use build_html::TableCell as HtmlTableCell;
 use build_html::TableRow as HtmlTableRow;
 use getset::{Getters, Setters};
 use crate::dossier::document::content::Content;
-use crate::text::CompilableString;
+use crate::text_compiler::CompilableString;
 use crate::compilation::compilation_outcome::CompilationOutcome;
 use crate::mmo::nmd_unique_identifier::NmdUniqueIdentifier;
 use crate::mmo::uri::NUri;

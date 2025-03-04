@@ -4,7 +4,7 @@ use super::transformation_rule::transformation_error::TransformationError;
 
 
 #[derive(Error, Debug)]
-pub enum TextError {
+pub enum TextCompilationError {
     #[error(transparent)]
     TransformationError(#[from] TransformationError),
 }
