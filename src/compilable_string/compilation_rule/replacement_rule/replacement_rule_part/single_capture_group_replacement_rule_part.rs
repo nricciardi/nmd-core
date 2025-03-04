@@ -1,7 +1,7 @@
 use getset::{Getters, Setters};
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use regex::{Captures, Regex};
-use crate::{codex::modifier::ModifiersBucket, compilable_text::{compilable_text_part::CompilableTextPartType, CompilableText}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError}, output_format::OutputFormat, utility::text_utility};
+use crate::{codex::modifier::ModifiersBucket, compilable_string::{compilable_string_part::CompilableStringPart, CompilableString}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError}, output_format::OutputFormat, utility::text_utility};
 use super::ReplacementRuleReplacerPart;
 
 
@@ -34,7 +34,7 @@ impl SingleCaptureGroupReplacementRuleReplacerPart {
 }
 
 impl ReplacementRuleReplacerPart for SingleCaptureGroupReplacementRuleReplacerPart {
-    fn compile(&self, captures: &Captures, compilable: &CompilableText, _format: &OutputFormat, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError> {
+    fn compile(&self, captures: &Captures, compilable: &CompilableString, _format: &OutputFormat, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableString, CompilationError> {
         
         if let Some(capture) = captures.get(self.capture_group) {
 
@@ -42,11 +42,11 @@ impl ReplacementRuleReplacerPart for SingleCaptureGroupReplacementRuleReplacerPa
 
             slice.par_iter_mut().for_each(|part| {
     
-                if let CompilableTextPartType::Compilable{ incompatible_modifiers } = part.part_type() {
+                if let CompilableStringPart::Compilable{ content, incompatible_modifiers } = part.part_type() {
     
                     let incompatible_modifiers = incompatible_modifiers.clone().extend(&self.incompatible_modifiers);
     
-                    part.set_part_type(CompilableTextPartType::Compilable { incompatible_modifiers });
+                    part.set_part_type(CompilableStringPart::Compilable { incompatible_modifiers });
     
                     let new_content = text_utility::replace(part.content(), &self.post_replacing);
         
@@ -56,7 +56,7 @@ impl ReplacementRuleReplacerPart for SingleCaptureGroupReplacementRuleReplacerPa
     
             });
     
-            return Ok(CompilableText::new(slice))
+            return Ok(CompilableString::new(slice))
         
         } else {
 

@@ -3,6 +3,9 @@ use super::{compilation_error::CompilationError, compilation_outcome::Compilatio
 
 
 pub trait Compilable {
+
+    // TODO: given that compiled output is return, use &self instead of &mut self
+
     /// Compile string
     fn standard_compile(&mut self, format: &OutputFormat, codex: &Codex, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilationOutcome, CompilationError>;
 

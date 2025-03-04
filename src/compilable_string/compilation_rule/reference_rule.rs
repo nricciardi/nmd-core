@@ -48,7 +48,7 @@ impl CompilationRule for ReferenceRule {
                 compiled_parts.push(reference_part);
 
             } else {
-
+                
                 log::error!("reference '{}' ('{}') not found: no replacement will be applied", reference_key, matc.get(0).unwrap().as_str());
 
                 if compilation_configuration.strict_reference_check() {

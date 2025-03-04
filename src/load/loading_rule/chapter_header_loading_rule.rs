@@ -113,17 +113,13 @@ impl StandardChapterHeaderLoadingRule {
 
 impl LoadingRule<ChapterHeader> for StandardChapterHeaderLoadingRule {
     fn find<'a>(&self, raw_str: &'a str, codex: &Codex, configuration: &LoadConfiguration) -> Result<dyn Iterator<Item = Span<&'a str>>, LoadError> {
-        todo!()     // TODO
-    }
-
-    fn load(&self, raw_str: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<ChapterHeader, LoadError> {
-        let mut headers: Vec<LoadBlock> = Vec::new();
+        let mut headers: Vec<Span<&'a str>> = Vec::new();
 
         for heading in StandardHeading::ordered() {     // TODO: include `StandardHeading::ordered()` in `Codex`
 
             let heading_modifier = Into::<BaseModifier>::into(heading);
 
-            for m in heading_modifier.modifier_pattern_regex().find_iter(content) {
+            for m in heading_modifier.modifier_pattern_regex().find_iter(raw_str) {
 
                 let matched_str = m.as_str().to_string();
 
@@ -134,10 +130,10 @@ impl LoadingRule<ChapterHeader> for StandardChapterHeaderLoadingRule {
 
                 if let Some((heading, tags)) = Self::parse_chapter_heading_and_tags_from_str(&matched_str, codex, configuration)? {
 
-                    headers.push(LoadBlock::new(
+                    headers.push(Span::new(
                         m_start,
                         m_end,
-                        LoadBlockContent::ChapterHeader(ChapterHeader::new(heading, tags))
+                        &matched_str
                     ));
                 }
 
@@ -147,5 +143,40 @@ impl LoadingRule<ChapterHeader> for StandardChapterHeaderLoadingRule {
         log::debug!("found headers:\n{:#?}", headers);
 
         Ok(headers)
+    }
+
+    fn load(&self, raw_str: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<ChapterHeader, LoadError> {
+        // let mut headers: Vec<LoadBlock> = Vec::new();
+
+        // for heading in StandardHeading::ordered() {     // TODO: include `StandardHeading::ordered()` in `Codex`
+
+        //     let heading_modifier = Into::<BaseModifier>::into(heading);
+
+        //     for m in heading_modifier.modifier_pattern_regex().find_iter(content) {
+
+        //         let matched_str = m.as_str().to_string();
+
+        //         let m_start = m.start();
+        //         let m_end = m.end();
+
+        //         log::debug!("header found (between {} and {}): {:?}", m_start, m_end, &matched_str);
+
+        //         if let Some((heading, tags)) = Self::parse_chapter_heading_and_tags_from_str(&matched_str, codex, configuration)? {
+
+        //             headers.push(LoadBlock::new(
+        //                 m_start,
+        //                 m_end,
+        //                 LoadBlockContent::ChapterHeader(ChapterHeader::new(heading, tags))
+        //             ));
+        //         }
+
+        //     };
+        // }
+
+        // log::debug!("found headers:\n{:#?}", headers);
+
+        // Ok(headers)
+
+        todo!()
     }
 }
