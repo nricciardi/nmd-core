@@ -1,7 +1,7 @@
 use regex::Regex;
 use getset::{Getters, Setters};
 
-use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, dossier::document::chapter::content_block::{focus_block::FocusBlock, ContentBlock}, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::LoadingRule}, text::Text, utility::datastruct::span::Span};
+use crate::{codex::{modifier::standard_paragraph_modifier::StandardParagraphModifier, Codex}, dossier::document::chapter::content_block::{focus_block::FocusBlock, ContentBlock}, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::LoadingRule}, content::Text, utility::datastruct::span::Span};
 
 
 const DEFAULT_TYPE: &str = "quote";

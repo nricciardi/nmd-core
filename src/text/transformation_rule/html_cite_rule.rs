@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 use regex::Regex;
 use crate::{codex::modifier::standard_text_modifier::StandardTextModifier, compilable_string::{compilable_string_part::CompilableStringPart, CompilableString}, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, output_format::OutputFormat};
-use super::CompilationRule;
+use super::TextTransformationRule;
 use crate::compilation::compilation_error::CompilationError;
 
 
@@ -25,7 +25,7 @@ impl Debug for HtmlCiteRule {
     }
 }
 
-impl CompilationRule for HtmlCiteRule {
+impl TextTransformationRule for HtmlCiteRule {
 
     fn search_pattern(&self) -> &String {
         &self.search_pattern

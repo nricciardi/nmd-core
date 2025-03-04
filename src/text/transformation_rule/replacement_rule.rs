@@ -7,11 +7,10 @@ use getset::{Getters, Setters};
 use log;
 use regex::Regex;
 use replacement_rule_part::ReplacementRuleReplacerPart;
-use crate::compilable_string::CompilableString;
 use crate::compilation::compilation_configuration::compilation_configuration_overlay::CompilationConfigurationOverLay;
 use crate::compilation::compilation_configuration::CompilationConfiguration;
 use crate::output_format::OutputFormat;
-use super::CompilationRule;
+use super::TextTransformationRule;
 use crate::compilation::compilation_error::CompilationError;
 
 
@@ -50,7 +49,7 @@ impl ReplacementRule {
 
 }
 
-impl CompilationRule for ReplacementRule {
+impl TextTransformationRule for ReplacementRule {
 
     /// Compile the content using internal search and replacement pattern
     fn standard_compile(&self, compilable: &CompilableString, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableString, CompilationError> {

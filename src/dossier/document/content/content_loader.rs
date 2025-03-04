@@ -1,7 +1,7 @@
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
 use crate::{codex::Codex, dossier::document::chapter::{chapter_header::ChapterHeader, content_block::ContentBlock, heading::HeadingLevel, Chapter}, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::LoadingRule}, utility::datastruct::span::Span};
-use super::Text;
+use super::Content;
 
 
 enum RawSpanContent<'a> {
@@ -17,14 +17,14 @@ enum LoadedSpanContent {
 
 
 #[derive(Debug)]
-pub struct TextLoader<'a> {
+pub struct ContentLoader<'a> {
     codex: &'a Codex,
 
     configuration: &'a LoadConfiguration
 }
 
 
-impl<'a> TextLoader<'a> {
+impl<'a> ContentLoader<'a> {
 
     pub fn new(codex: &'a Codex, configuration: &'a LoadConfiguration) -> Self {
         Self {
@@ -33,7 +33,7 @@ impl<'a> TextLoader<'a> {
         }
     }
 
-    pub fn load(&self, raw_str: &str) -> Result<Text, LoadError> {
+    pub fn load(&self, raw_str: &str) -> Result<Content, LoadError> {
         let mut loaded_raw_spans = self.load_raw_spans_from_str_recursively(raw_str, 0, 0)?;
 
         self.build_text(loaded_raw_spans)
@@ -273,7 +273,7 @@ impl<'a> TextLoader<'a> {
         Ok(loaded_spans)
     }
 
-    fn build_text(&self, spans: Vec<Span<RawSpanContent<'a>>>) -> Result<Text, LoadError> {
+    fn build_text(&self, spans: Vec<Span<RawSpanContent<'a>>>) -> Result<Content, LoadError> {
 
         if self.configuration.parallelization() {
             spans.par_sort_by(|a, b| {

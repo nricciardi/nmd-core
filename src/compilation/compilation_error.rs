@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::{assembler::AssemblerError, compilable_string::compilable_string_error::CompilableStringError, mmo::{uri::UriError, MultiMediaObjectError}};
+use crate::{assembler::AssemblerError, mmo::{uri::UriError, MultiMediaObjectError}, text::text_error::TextError};
 
 
 #[derive(Error, Debug)]
@@ -37,7 +37,7 @@ pub enum CompilationError {
     MmoError(#[from] MultiMediaObjectError),
 
     #[error(transparent)]
-    CompilableStringError(#[from] CompilableStringError),
+    TextError(#[from] TextError),
 
     #[error("heading level not inferable: {0}")]
     HeadingLevelNotInferable(String),

@@ -1,12 +1,11 @@
 pub mod codex;
 pub mod load;
 pub mod assembler;
-pub mod text;
+pub mod content;
 pub mod dossier;
 pub mod compilation;
-pub mod output_format;
-pub mod theme;
 pub(crate) mod mmo;
 pub(crate) mod utility;
 pub mod constants;
-pub mod compilable_string;
+pub mod text;
+pub mod base_parameter;

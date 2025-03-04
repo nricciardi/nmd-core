@@ -1,4 +1,4 @@
-use crate::{codex::{modifier::ModifiersBucket, Codex}, compilation::compilation_rule::replacement_rule::ReplacementRule, load::{loading_rule::{Finder, LoadingRule}, LoadConfiguration, LoadError}, text::{compilable_string::{compilable_string_part::CompilableStringPart, CompilableString}, content_block::ContentBlock}, utility::datastruct::span::Span};
+use crate::{codex::{modifier::ModifiersBucket, Codex}, compilation::compilation_rule::replacement_rule::ReplacementRule, load::{loading_rule::{Finder, LoadingRule}, LoadConfiguration, LoadError}, content::{compilable_string::{compilable_string_part::CompilableStringPart, CompilableString}, content_block::ContentBlock}, utility::datastruct::span::Span};
 
 
 #[derive(Debug)]

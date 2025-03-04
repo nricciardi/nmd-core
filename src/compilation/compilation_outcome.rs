@@ -1,7 +1,7 @@
 use getset::{Getters, MutGetters, Setters};
 use serde::{Deserialize, Serialize};
 
-use crate::compilable_string::CompilableString;
+use crate::text::Text;
 
 
 
@@ -35,8 +35,8 @@ impl From<&str> for CompilationOutcome {
     }
 }
 
-impl From<&CompilableString> for CompilationOutcome {
-    fn from(value: &CompilableString) -> Self {
+impl From<&Text> for CompilationOutcome {
+    fn from(value: &Text) -> Self {
         Self::from(value.content())
     }
 }

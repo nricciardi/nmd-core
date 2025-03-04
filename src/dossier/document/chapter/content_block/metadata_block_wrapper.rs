@@ -1,5 +1,5 @@
 use getset::{Getters, Setters};
-use crate::{codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, mmo::{nmd_unique_identifier::NmdUniqueIdentifier, uri::NUri}, output_format::OutputFormat, text::Text, utility::text_utility};
+use crate::{codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, dossier::document::content::Content, mmo::{nmd_unique_identifier::NmdUniqueIdentifier, uri::NUri}, output_format::OutputFormat, utility::text_utility};
 
 use super::ContentBlock;
 
@@ -13,7 +13,7 @@ pub struct MetadataBlockWrapper {
     raw_content: String,
 
     #[getset(get = "pub", set = "pub")]
-    content: Text,
+    content: Content,
 
     #[getset(set = "pub")]
     nuid: Option<NmdUniqueIdentifier>,
@@ -30,7 +30,7 @@ pub struct MetadataBlockWrapper {
 
 impl MetadataBlockWrapper {
     
-    pub fn new(raw_content: String, content: Text, raw_id: Option<String>, styles: Option<String>, classes: Option<String>,) -> Self {
+    pub fn new(raw_content: String, content: Content, raw_id: Option<String>, styles: Option<String>, classes: Option<String>,) -> Self {
         Self {
             raw_content,
             content,

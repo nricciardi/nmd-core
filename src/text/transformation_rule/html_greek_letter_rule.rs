@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt::Debug};
 use regex::Regex;
-use super::CompilationRule;
+use super::TextTransformationRule;
 use crate::{codex::modifier::standard_text_modifier::StandardTextModifier, compilable_string::{compilable_string_part::CompilableStringPart, CompilableString}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError}, output_format::OutputFormat};
 
 
@@ -106,7 +106,7 @@ impl Debug for HtmlGreekLettersRule {
     }
 }
 
-impl CompilationRule for HtmlGreekLettersRule {
+impl TextTransformationRule for HtmlGreekLettersRule {
     fn search_pattern(&self) -> &String {
         &self.search_pattern
     }

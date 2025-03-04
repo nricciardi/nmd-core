@@ -15,7 +15,7 @@ use self::modifier::standard_paragraph_modifier::StandardParagraphModifier;
 use self::modifier::standard_text_modifier::StandardTextModifier;
 use crate::assembler::html_assembler::HtmlAssembler;
 use crate::assembler::Assembler;
-use crate::compilable_string::compilation_rule::CompilationRule;
+use crate::text::compilation_rule::TextTransformationRule;
 use crate::dossier::document::chapter::chapter_header::ChapterHeader;
 use crate::dossier::document::chapter::content_block::ContentBlock;
 use crate::load::loading_rule::LoadingRule;
@@ -26,7 +26,7 @@ use crate::utility::text_utility;
 
 // TODO: remove Box<dyn Modifier>?
 // TODO: change names
-pub type TextModifierOrderedMap = IndexMap<ModifierIdentifier, (Box<dyn Modifier>, Box<dyn CompilationRule>)>;
+pub type TextModifierOrderedMap = IndexMap<ModifierIdentifier, (Box<dyn Modifier>, Box<dyn TextTransformationRule>)>;
 pub type ParagraphModifierOrderedMap = IndexMap<ModifierIdentifier, (Box<dyn Modifier>, Box<dyn LoadingRule<Box<dyn ContentBlock>>>)>;
 pub type FallbackContentBlockLoadingRule = (ModifierIdentifier, Box<dyn LoadingRule<Box<dyn ContentBlock>>>);
 pub type HeaderModifierOrderedMap = IndexMap<ModifierIdentifier, Box<dyn LoadingRule<ChapterHeader>>>;

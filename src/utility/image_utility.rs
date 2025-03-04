@@ -1,6 +1,6 @@
 use oxipng::Options;
 
-use crate::{codex::{modifier::ModifiersBucket, Codex}, compilable_string::{compilable_string_part::CompilableStringPart, CompilableString}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, mmo::{image::Image, nmd_unique_identifier::NmdUniqueIdentifier, source::Source, MultiMediaObjectError}, output_format::OutputFormat};
+use crate::{codex::{modifier::ModifiersBucket, Codex}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, mmo::{image::Image, nmd_unique_identifier::NmdUniqueIdentifier, source::Source, MultiMediaObjectError}, output_format::OutputFormat, text::{text_part::TextPart, Text}};
 
 use super::text_utility;
 
@@ -102,7 +102,7 @@ pub fn compile_image_resource_in_html(image: &Image, img_classes: Vec<&str>, nui
 
         outcome.push_str(r#"<figcaption class="image-caption">"#);
 
-        let mut compilable_text = CompilableString::from(CompilableStringPart::Compilable{ content: caption.clone(), incompatible_modifiers: ModifiersBucket::None });
+        let mut compilable_text = Text::from(TextPart::Compilable{ content: caption.clone(), incompatible_modifiers: ModifiersBucket::None });
 
         outcome.push_str(&compilable_text.compile(&OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone())?.content());
         

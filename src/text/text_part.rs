@@ -3,12 +3,12 @@ use crate::codex::modifier::ModifiersBucket;
 
 
 #[derive(Debug, Clone, Serialize)]
-pub enum CompilableStringPart {
+pub enum TextPart {
     Fixed{ content: String },
     Compilable{ content: String, incompatible_modifiers: ModifiersBucket },
 }
 
-impl CompilableStringPart {
+impl TextPart {
     
     pub fn content(&self) -> &String {
         match &self {

@@ -2,7 +2,7 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 
 
-use crate::{codex::{modifier::{constants::{IDENTIFIER_PATTERN, STYLE_PATTERN}, standard_paragraph_modifier::StandardParagraphModifier}, Codex}, dossier::document::chapter::content_block::{table_block::{TableBlock, TableBlockContent}, ContentBlock}, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::LoadingRule}, text::Text, utility::{datastruct::{span::Span, table::{Table, TableCell, TableCellAlignment}}, text_utility}};
+use crate::{codex::{modifier::{constants::{IDENTIFIER_PATTERN, STYLE_PATTERN}, standard_paragraph_modifier::StandardParagraphModifier}, Codex}, dossier::document::chapter::content_block::{table_block::{TableBlock, TableBlockContent}, ContentBlock}, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::LoadingRule}, content::Text, utility::{datastruct::{span::Span, table::{Table, TableCell, TableCellAlignment}}, text_utility}};
 
 
 /// (caption, id, styles, classes)

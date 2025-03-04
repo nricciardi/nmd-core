@@ -1,7 +1,9 @@
 pub mod chapter;
+pub mod content;
 
 use std::path::PathBuf;
 use std::time::Instant;
+use content::Content;
 use getset::{Getters, MutGetters, Setters};
 use serde::Serialize;
 use thiserror::Error;
@@ -15,7 +17,6 @@ use crate::load::load_configuration::LoadConfiguration;
 use crate::load::load_error::LoadError;
 use crate::mmo::MultiMediaObjectError;
 use crate::output_format::OutputFormat;
-use crate::text::Text;
 use crate::utility::datastruct::resource::disk_resource::DiskResource;
 
 
@@ -36,13 +37,13 @@ pub struct Document {
     name: String,
 
     #[getset(get = "pub", get_mut = "pub", set = "pub")]
-    content: Text
+    content: Content
 }
 
 
 impl Document {
 
-    pub fn new(name: String, content: Text) -> Self {
+    pub fn new(name: String, content: Content) -> Self {
         
         Self {
             name,
@@ -58,7 +59,7 @@ impl Document {
 
         // configuration.set_document_name(Some(document_name.to_string()));       // TODO: remove from configuration
         
-        let content = Text::load_from_str(raw_str, codex, configuration)?;
+        let content = Content::load_from_str(raw_str, codex, configuration)?;
 
         let document = Document::new(document_name.to_string(), content);
 

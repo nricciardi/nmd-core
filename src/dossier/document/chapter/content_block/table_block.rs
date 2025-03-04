@@ -5,11 +5,11 @@ use build_html::HtmlContainer;
 use build_html::TableCell as HtmlTableCell;
 use build_html::TableRow as HtmlTableRow;
 use getset::{Getters, Setters};
-use crate::compilable_string::CompilableString;
+use crate::dossier::document::content::Content;
+use crate::text::CompilableString;
 use crate::compilation::compilation_outcome::CompilationOutcome;
 use crate::mmo::nmd_unique_identifier::NmdUniqueIdentifier;
 use crate::mmo::uri::NUri;
-use crate::text::Text;
 use crate::utility::datastruct::table::Table;
 use crate::utility::datastruct::table::TableCell;
 use crate::utility::datastruct::table::TableCellAlignment;
@@ -18,7 +18,7 @@ use crate::{codex::Codex, compilation::{compilation_configuration::{compilation_
 use super::ContentBlock;
 
 
-pub type TableBlockContent = Table<Text, Text, Text>;
+pub type TableBlockContent = Table<Content, Content, Content>;
 
 
 #[derive(Debug, Getters, Setters)]
@@ -123,7 +123,7 @@ impl TableBlock {
 
         let mut html_table = build_html::Table::new().with_attributes(html_table_attrs);
 
-        let compile_cells_fn = |cells: &mut Vec<TableCell<Text>>| -> Result<Vec<TableCell<String>>, CompilationError> {
+        let compile_cells_fn = |cells: &mut Vec<TableCell<Content>>| -> Result<Vec<TableCell<String>>, CompilationError> {
             let mut result: Vec<TableCell<String>> = Vec::new();
 
             for cell in cells.iter_mut() {
