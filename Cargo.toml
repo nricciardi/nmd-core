@@ -21,6 +21,7 @@ ahash = "0.8.11"
 anyhow = "1.0.75"
 base64 = "0.21.5"
 build_html = "2.5.0"
+delegate = "0.13.2"
 env_logger = "0.10.1"
 getset = "0.1.2"
 indexmap = { version = "2.4.0", features = ["rayon"]}
