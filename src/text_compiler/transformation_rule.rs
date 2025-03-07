@@ -23,20 +23,20 @@ pub trait TextTransformationRule: Send + Sync + Debug {
 
     // TODO: abstract and remove these
 
-    fn search_pattern(&self) -> &String;
+    // fn search_pattern(&self) -> &String;
 
-    fn search_pattern_regex(&self) -> &Regex;
+    // fn search_pattern_regex(&self) -> &Regex;
 
-    fn is_match(&self, content: &str) -> bool {
+    // fn is_match(&self, content: &str) -> bool {
 
-        self.search_pattern_regex().is_match(content)
-    }
+    //     self.search_pattern_regex().is_match(content)
+    // }
 
-    fn find_iter<'r, 'h>(&'r self, content: &'h str) -> Vec<Match<'h>> {
-        self.search_pattern_regex().find_iter(content).collect()
-    }
+    // fn find_iter<'r, 'h>(&'r self, content: &'h str) -> Vec<Match<'h>> {
+    //     self.search_pattern_regex().find_iter(content).collect()
+    // }
 
-    fn apply(&self, text: &mut Text, configuration: TransformationConfiguration) -> Result<(), TransformationError>;
+    fn apply(&self, text: &mut Text, configuration: &impl TransformationConfiguration) -> Result<(), TransformationError>;
 
     // /// Compile string
     // fn standard_compile(&self, compilable: &CompilableString, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableString, CompilationError>;

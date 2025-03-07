@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fmt::Debug};
 use regex::Regex;
-use super::TextTransformationRule;
-use crate::{codex::modifier::standard_text_modifier::StandardTextModifier, compilable_string::{compilable_string_part::CompilableStringPart, CompilableString}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError}, output_format::OutputFormat};
+use super::{transformation_configuration::TransformationConfiguration, transformation_error::TransformationError, TextTransformationRule, TextTransformationRuleIdentifier};
+use crate::{codex::modifier::standard_text_modifier::StandardTextModifier, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError}, text_compiler::{compilable_text::TextPart, Text}};
 
 
 pub struct HtmlGreekLettersRule {
@@ -107,19 +107,24 @@ impl Debug for HtmlGreekLettersRule {
 }
 
 impl TextTransformationRule for HtmlGreekLettersRule {
-    fn search_pattern(&self) -> &String {
-        &self.search_pattern
+
+    fn identifier(&self) -> &TextTransformationRuleIdentifier {
+        &StandardTextModifier::GreekLetter.identifier()
     }
 
-    fn standard_compile(&self, compilable: &CompilableString, _format: &OutputFormat, compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableString, CompilationError> {
+    // fn search_pattern(&self) -> &String {
+    //     &self.search_pattern
+    // }
+
+    fn apply(&self, text: &mut Text, configuration: &impl TransformationConfiguration) -> Result<(), TransformationError> {
 
         let mut compiled_parts = Vec::new();
 
-        for matc in self.search_pattern_regex.captures_iter(&compilable.compilable_content()) {
+        for matc in self.search_pattern_regex.captures_iter(&text.compilable_content()) {
 
             if let Some(greek_ref) = matc.get(1) {
                 
-                let reference_part = CompilableStringPart::Fixed {
+                let reference_part = TextPart::Fixed {
                     content: format!(r#"<span class="greek">${}$</span>"#, self.replace_with_greek_letters(greek_ref.as_str()))
                 };
 
@@ -127,10 +132,10 @@ impl TextTransformationRule for HtmlGreekLettersRule {
             
             } else {
 
-                log::error!("no greek letters found in '{}' ({})", compilable.compilable_content(), matc.get(0).unwrap().as_str());
+                log::error!("no greek letters found in '{}' ({})", text.compilable_content(), matc.get(0).unwrap().as_str());
                 
-                if compilation_configuration.strict_greek_letters_check() {
-                    return Err(CompilationError::ElaborationErrorVerbose(format!("no greek letters found in '{}' ({})", compilable.compilable_content(), matc.get(0).unwrap().as_str())))
+                if configuration.others().get("strict_greek_letters_check").strict_greek_letters_check() {
+                    return Err(CompilationError::ElaborationErrorVerbose(format!("no greek letters found in '{}' ({})", text.compilable_content(), matc.get(0).unwrap().as_str())))
                 }
             }
         }
@@ -138,9 +143,9 @@ impl TextTransformationRule for HtmlGreekLettersRule {
         Ok(CompilableString::new(compiled_parts))
     }
     
-    fn search_pattern_regex(&self) -> &Regex {
-        &self.search_pattern_regex
-    }
+    // fn search_pattern_regex(&self) -> &Regex {
+    //     &self.search_pattern_regex
+    // }
 }
 
 #[cfg(test)]

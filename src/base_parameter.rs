@@ -5,6 +5,7 @@ pub mod theme;
 
 
 use core::fmt;
+use std::any::Any;
 
 use delegate::delegate;
 use effort::Effort;
@@ -13,7 +14,9 @@ use output_format::OutputFormat;
 use parallelization::Parallelization;
 use theme::Theme;
 
-pub trait HasBaseConfiguration: fmt::Debug + Default {
+use crate::utility::datastruct::HashMap;
+
+pub trait BaseConfiguration: fmt::Debug + Default {
 
     fn output_format(&self) -> &OutputFormat;
 
@@ -33,8 +36,16 @@ pub trait HasBaseConfiguration: fmt::Debug + Default {
 }
 
 
+pub trait CustomableConfiguration {
+    
+    fn others(&self) -> &HashMap<String, Box<dyn Any>>;
+
+    fn others_mut(&mut self) -> &mut HashMap<String, Box<dyn Any>>;
+}
+
+
 #[derive(Debug, Default, Getters, Setters)]
-pub struct BaseConfiguration {
+pub struct BaseConfigurationParameters {
 
     #[getset(get="pub", set="pub")]
     output_format: OutputFormat,
@@ -50,7 +61,7 @@ pub struct BaseConfiguration {
 }
 
 
-impl HasBaseConfiguration for BaseConfiguration {
+impl BaseConfiguration for BaseConfigurationParameters {
     
     delegate! {
         to self.output_format {
