@@ -36,7 +36,7 @@ pub trait TextTransformationRule: Send + Sync + Debug {
     //     self.search_pattern_regex().find_iter(content).collect()
     // }
 
-    fn apply(&self, text: &mut Text, configuration: &impl TransformationConfiguration) -> Result<(), TransformationError>;
+    fn apply(&self, text: &mut Text, configuration: &dyn TransformationConfiguration) -> Result<(), TransformationError>;
 
     // /// Compile string
     // fn standard_compile(&self, compilable: &CompilableString, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableString, CompilationError>;

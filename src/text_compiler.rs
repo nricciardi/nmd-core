@@ -14,7 +14,6 @@ pub type Text = str;
 
 
 pub struct TextCompiler {
-
 }
 
 
@@ -263,12 +262,12 @@ impl TextCompiler {
     pub fn compile(text: &Text, configuration: &TextCompilationConfiguration) -> Result<CompilationOutcome, TextCompilationError> {
         let excluded_rules = configuration.excluded_rules().clone();
 
-        log::debug!("start to compile content:\n{:?}\nexcluding: {:?}", self, excluded_rules);
+        log::debug!("start to compile content:\n{:?}\nexcluding: {:?}", text, excluded_rules);
 
         if excluded_rules == Bucket::All {
-            log::debug!("compilation of content:\n{:?} is skipped because are excluded all transformation rules", self);
+            log::debug!("compilation of content:\n{:?} is skipped because are excluded all transformation rules", text);
             
-            return Ok(CompilationOutcome::from(self.content()))
+            return Ok(CompilationOutcome::from(text))
         }
 
         for rule in configuration.transformation_rules() {
