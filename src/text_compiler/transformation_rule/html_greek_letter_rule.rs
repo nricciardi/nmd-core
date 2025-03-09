@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fmt::Debug};
 use regex::Regex;
 use super::{transformation_configuration::TransformationConfiguration, transformation_error::TransformationError, TextTransformationRule, TextTransformationRuleIdentifier};
-use crate::{codex::modifier::standard_text_modifier::StandardTextModifier, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError}, text_compiler::{compilable_text::TextPart, Text}};
+use crate::{codex::modifier::standard_text_modifier::StandardTextModifier, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError}, text_compiler::{text::TextPart, Text}, utility::datastruct::bucket::Bucket};
 
 
 pub struct HtmlGreekLettersRule {
@@ -112,11 +112,15 @@ impl TextTransformationRule for HtmlGreekLettersRule {
         &StandardTextModifier::GreekLetter.identifier()
     }
 
+    fn incompatible_rules(&self) -> &Bucket<TextTransformationRuleIdentifier> {
+        &StandardTextModifier::GreekLetter.incompatible_modifiers()
+    }
+
     // fn search_pattern(&self) -> &String {
     //     &self.search_pattern
     // }
 
-    fn apply(&self, text: &mut Text, configuration: &impl TransformationConfiguration) -> Result<(), TransformationError> {
+    fn apply(&self, text: &mut Text, configuration: &dyn TransformationConfiguration) -> Result<(), TransformationError> {
 
         let mut compiled_parts = Vec::new();
 

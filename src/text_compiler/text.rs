@@ -1,5 +1,8 @@
+pub mod text_part;
+
 use getset::{Getters, MutGetters, Setters};
 use serde::Serialize;
+use text_part::TextPart;
 use crate::{codex::{modifier::{ModifierIdentifier, ModifiersBucket}, Codex}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, utility::datastruct::bucket::Bucket};
 
 
@@ -18,21 +21,7 @@ enum ElaborationPosition {
     AfterRange,
 }
 
-#[derive(Debug, Clone, Serialize)]
-pub enum TextPart {
-    Fixed{ content: String },
-    Compilable{ content: String, incompatible_modifiers: ModifiersBucket },
-}
 
-impl TextPart {
-    
-    pub fn content(&self) -> &String {
-        match &self {
-            Self::Fixed { content } => content,
-            Self::Compilable { content, incompatible_modifiers: _ } => content,
-        }
-    }
-}
 
 
 #[derive(Debug, Clone, Getters, MutGetters, Setters, Serialize)]

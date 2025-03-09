@@ -11,6 +11,8 @@ use std::fmt::Debug;
 use regex::{Match, Regex};
 use transformation_configuration::TransformationConfiguration;
 use transformation_error::TransformationError;
+use crate::utility::datastruct::bucket::Bucket;
+
 use super::Text;
 
 
@@ -35,6 +37,8 @@ pub trait TextTransformationRule: Send + Sync + Debug {
     // fn find_iter<'r, 'h>(&'r self, content: &'h str) -> Vec<Match<'h>> {
     //     self.search_pattern_regex().find_iter(content).collect()
     // }
+
+    fn incompatible_rules(&self) -> &Bucket<TextTransformationRuleIdentifier>;
 
     fn apply(&self, text: &mut Text, configuration: &dyn TransformationConfiguration) -> Result<(), TransformationError>;
 

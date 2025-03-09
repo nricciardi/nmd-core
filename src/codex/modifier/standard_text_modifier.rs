@@ -145,6 +145,7 @@ impl StandardTextModifier {
         }
     }
 
+    // TODO: rename in incompatible_rules
     pub fn incompatible_modifiers(&self) -> ModifiersBucket {
         match self {
 

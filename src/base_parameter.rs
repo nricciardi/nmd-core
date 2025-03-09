@@ -16,7 +16,7 @@ use theme::Theme;
 
 use crate::utility::datastruct::HashMap;
 
-pub trait BaseConfiguration: fmt::Debug + Default + Sized {
+pub trait BaseConfiguration: Sized + fmt::Debug + Default {
 
     fn output_format(&self) -> &OutputFormat;
 
@@ -36,7 +36,7 @@ pub trait BaseConfiguration: fmt::Debug + Default + Sized {
 }
 
 
-pub trait CustomableConfiguration: fmt::Debug + Default + Sized {
+pub trait CustomableConfiguration: Sized + fmt::Debug + Default {
     
     fn others(&self) -> &HashMap<String, Box<dyn Any>>;
 

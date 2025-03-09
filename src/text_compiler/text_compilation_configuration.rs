@@ -14,11 +14,13 @@ pub trait TextCompilationConfiguration {
     fn document_name(&self) -> &Option<String>;
     fn set_document_name(&mut self, value: Option<String>) -> &Option<String>;
 
+    /// Bucket of rules which will not be tested
     fn excluded_rules(&self) -> &Bucket<TextTransformationRuleIdentifier>;
     fn set_excluded_rules(&mut self, value: Bucket<TextTransformationRuleIdentifier>);
 
-    fn transformation_rules(&self) -> impl Iterator<Item = &Box<dyn TextTransformationRule>>;
-    fn set_transformation_rules(&mut self, value: impl Iterator<Item = Box<dyn TextTransformationRule>>);
+    // TODO: move Vec to Iterator
+    fn transformation_rules(&self) -> &Vec<Box<dyn TextTransformationRule>>;
+    fn set_transformation_rules(&mut self, value: Vec<Box<dyn TextTransformationRule>>);
 }
 
 #[derive(Debug, Getters, CopyGetters, Setters, Clone)]
@@ -111,14 +113,13 @@ impl TextCompilationConfiguration for TextCompilationConfigurationParameters {
         }
     }
     
-    fn transformation_rules(&self) -> impl Iterator<Item = &Box<dyn TextTransformationRule>> {
-        self.transformation_rules.iter()
-    }
-    
-    fn set_transformation_rules(&mut self, value: impl Iterator<Item = Box<dyn TextTransformationRule>>) {
-        self.transformation_rules = Vec::from(value);
-    }
+    delegate! {
+        to self.transformation_rules {
 
+            fn transformation_rules(&self) -> &Vec<Box<dyn TextTransformationRule>>;
+            fn set_transformation_rules(&mut self, value: Vec<Box<dyn TextTransformationRule>>);
+        }
+    }
     
 }
 

@@ -1,17 +1,13 @@
-use text::text_part::TextPart;
+pub mod transformation_rule;
+pub mod text;
+pub mod text_compilation_error;
+pub mod text_compilation_configuration;
+
+use text::Text;
 use text_compilation_configuration::TextCompilationConfiguration;
 use text_compilation_error::TextCompilationError;
 
 use crate::{compilation::{compilation_configuration::CompilationConfiguration, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, utility::datastruct::bucket::Bucket};
-
-pub mod transformation_rule;
-pub mod compilable_text;
-pub mod text_compilation_error;
-pub mod text_compilation_configuration;
-
-
-pub type Text = str;
-
 
 pub struct TextCompiler {
 }
@@ -259,16 +255,19 @@ impl TextCompiler {
         Ok(())
     }
 
-    pub fn compile(text: &Text, configuration: &TextCompilationConfiguration) -> Result<CompilationOutcome, TextCompilationError> {
-        let excluded_rules = configuration.excluded_rules().clone();
+    pub fn compile_str(str: &str, configuration: &dyn TextCompilationConfiguration) -> Result<CompilationOutcome, TextCompilationError> {
 
-        log::debug!("start to compile content:\n{:?}\nexcluding: {:?}", text, excluded_rules);
+        let excluded_rules = configuration.excluded_rules().clone();        // TODO: remove .clone()? 
+
+        log::debug!("start to compile content:\n{:?}\nexcluding: {:?}", str, excluded_rules);
 
         if excluded_rules == Bucket::All {
-            log::debug!("compilation of content:\n{:?} is skipped because are excluded all transformation rules", text);
+            log::debug!("compilation of content:\n{:?} is skipped because are excluded all transformation rules", str);
             
-            return Ok(CompilationOutcome::from(text))
+            return Ok(CompilationOutcome::from(str))
         }
+
+        let mut text = Text::from(str);
 
         for rule in configuration.transformation_rules() {
 
@@ -278,10 +277,9 @@ impl TextCompiler {
                 continue;
             }
 
-            // TODO
-            // self.compile_with_compilation_rule((codex_identifier, text_rule), format, compilation_configuration, compilation_configuration_overlay.clone())?;
+            rule.apply(&mut text, configuration)?;
         }
 
-        Ok(CompilationOutcome::from(self.content()))
+        Ok(CompilationOutcome::from(text.into()))
     }
 }
