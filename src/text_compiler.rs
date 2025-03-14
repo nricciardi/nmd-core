@@ -3,7 +3,7 @@ pub mod text;
 pub mod text_compilation_error;
 pub mod text_compilation_configuration;
 
-use text::Text;
+use text::{text_part::TextPart, Text};
 use text_compilation_configuration::TextCompilationConfiguration;
 use text_compilation_error::TextCompilationError;
 
@@ -17,7 +17,7 @@ impl TextCompiler {
 
     /// Compile parts and return the new compiled parts or `None` if there are not matches using
     /// provided rule
-    fn compile_with_compilation_rule() -> Result<(), CompilationError> {
+    /*fn compile_with_compilation_rule() -> Result<(), CompilationError> {
     
         let parts = self.parts();
 
@@ -253,21 +253,19 @@ impl TextCompiler {
         self.set_parts(compiled_parts);
         
         Ok(())
-    }
+    }*/
 
-    pub fn compile_str(str: &str, configuration: &dyn TextCompilationConfiguration) -> Result<CompilationOutcome, TextCompilationError> {
+    pub fn compile(text: Text, configuration: &dyn TextCompilationConfiguration) -> Result<CompilationOutcome, TextCompilationError> {
 
         let excluded_rules = configuration.excluded_rules().clone();        // TODO: remove .clone()? 
 
-        log::debug!("start to compile content:\n{:?}\nexcluding: {:?}", str, excluded_rules);
+        log::debug!("start to compile content:\n{:?}\nexcluding: {:?}", text, excluded_rules);
 
         if excluded_rules == Bucket::All {
-            log::debug!("compilation of content:\n{:?} is skipped because are excluded all transformation rules", str);
+            log::debug!("compilation of content:\n{:?} is skipped because are excluded all transformation rules", text);
             
-            return Ok(CompilationOutcome::from(str))
+            return Ok(CompilationOutcome::from(text))
         }
-
-        let mut text = Text::from(str);
 
         for rule in configuration.transformation_rules() {
 
@@ -281,5 +279,10 @@ impl TextCompiler {
         }
 
         Ok(CompilationOutcome::from(text.into()))
+    }
+
+    pub fn compile_str(str: &str, configuration: &dyn TextCompilationConfiguration) -> Result<CompilationOutcome, TextCompilationError> {
+
+        Self::compile(Text::from(str), configuration)      
     }
 }

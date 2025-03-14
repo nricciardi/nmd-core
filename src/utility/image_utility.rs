@@ -1,6 +1,6 @@
 use oxipng::Options;
 
-use crate::{base_parameter::output_format::OutputFormat, codex::{modifier::ModifiersBucket, Codex}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, mmo::{image::Image, nmd_unique_identifier::NmdUniqueIdentifier, source::Source, MultiMediaObjectError}};
+use crate::{base_parameter::output_format::OutputFormat, codex::{modifier::ModifiersBucket, Codex}, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, mmo::{image::Image, nmd_unique_identifier::NmdUniqueIdentifier, source::Source, MultiMediaObjectError}, text_compiler::text::{text_part::TextPart, Text}};
 
 use super::text_utility;
 

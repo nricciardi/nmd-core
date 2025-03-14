@@ -1,4 +1,4 @@
-use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, output_format::OutputFormat};
+use crate::{base_parameter::output_format::OutputFormat, codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}};
 use super::{compilation_error::CompilationError, compilation_outcome::CompilationOutcome};
 
 

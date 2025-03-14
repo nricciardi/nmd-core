@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 use getset::{CopyGetters, Getters, MutGetters, Setters};
-use crate::{dossier::dossier_configuration::DossierConfiguration, theme::Theme};
+use crate::{base_parameter::theme::Theme, dossier::dossier_configuration::DossierConfiguration};
 
 
 #[derive(Debug, Clone, Getters, CopyGetters, MutGetters, Setters)]

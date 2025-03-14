@@ -48,38 +48,39 @@ impl ReplacementRule {
 
 }
 
-impl TextTransformationRule for ReplacementRule {
+// TODO
+// impl TextTransformationRule for ReplacementRule {
 
-    /// Compile the content using internal search and replacement pattern
-    fn standard_compile(&self, compilable: &CompilableString, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableString, CompilationError> {
+//     /// Compile the content using internal search and replacement pattern
+//     fn standard_compile(&self, compilable: &CompilableString, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableString, CompilationError> {
 
-        log::debug!("compile:\n{:#?}\nusing '{}'->'{:?}'", compilable, self.search_pattern(), self.replacer_parts);
+//         log::debug!("compile:\n{:#?}\nusing '{}'->'{:?}'", compilable, self.search_pattern(), self.replacer_parts);
 
-        let mut compiled_parts = Vec::new();
+//         let mut compiled_parts = Vec::new();
 
-        let compilable_content = compilable.compilable_content();
+//         let compilable_content = compilable.compilable_content();
 
-        let captures_matches = self.search_pattern_regex.captures_iter(&compilable_content);
+//         let captures_matches = self.search_pattern_regex.captures_iter(&compilable_content);
 
-        for captures in captures_matches {
+//         for captures in captures_matches {
 
-            for replacer_part in &self.replacer_parts {
+//             for replacer_part in &self.replacer_parts {
 
-                compiled_parts.append(&mut replacer_part.compile(&captures, compilable, format, compilation_configuration, compilation_configuration_overlay.clone())?.into())
-            }   
-        }
+//                 compiled_parts.append(&mut replacer_part.compile(&captures, compilable, format, compilation_configuration, compilation_configuration_overlay.clone())?.into())
+//             }   
+//         }
 
-        Ok(CompilableString::new(compiled_parts))
-    }
+//         Ok(CompilableString::new(compiled_parts))
+//     }
     
-    fn search_pattern(&self) -> &String {
-        &self.search_pattern
-    }
+//     fn search_pattern(&self) -> &String {
+//         &self.search_pattern
+//     }
     
-    fn search_pattern_regex(&self) -> &Regex {
-        &self.search_pattern_regex
-    }
-}
+//     fn search_pattern_regex(&self) -> &Regex {
+//         &self.search_pattern_regex
+//     }
+// }
 
 
 

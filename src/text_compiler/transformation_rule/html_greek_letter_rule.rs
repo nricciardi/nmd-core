@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fmt::Debug};
 use regex::Regex;
 use super::{transformation_configuration::TransformationConfiguration, transformation_error::TransformationError, TextTransformationRule, TextTransformationRuleIdentifier};
-use crate::{codex::modifier::standard_text_modifier::StandardTextModifier, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError}, text_compiler::{text::TextPart, Text}, utility::datastruct::bucket::Bucket};
+use crate::{codex::modifier::standard_text_modifier::StandardTextModifier, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError}, text_compiler::{text::text_part::TextPart, Text}, utility::datastruct::bucket::Bucket};
 
 
 pub struct HtmlGreekLettersRule {
@@ -122,29 +122,30 @@ impl TextTransformationRule for HtmlGreekLettersRule {
 
     fn apply(&self, text: &mut Text, configuration: &dyn TransformationConfiguration) -> Result<(), TransformationError> {
 
-        let mut compiled_parts = Vec::new();
+        // TODO
+        // let mut compiled_parts = Vec::new();
 
-        for matc in self.search_pattern_regex.captures_iter(&text.compilable_content()) {
+        // for matc in self.search_pattern_regex.captures_iter(&text.compilable_content()) {
 
-            if let Some(greek_ref) = matc.get(1) {
+        //     if let Some(greek_ref) = matc.get(1) {
                 
-                let reference_part = TextPart::Fixed {
-                    content: format!(r#"<span class="greek">${}$</span>"#, self.replace_with_greek_letters(greek_ref.as_str()))
-                };
+        //         let reference_part = TextPart::Fixed {
+        //             content: format!(r#"<span class="greek">${}$</span>"#, self.replace_with_greek_letters(greek_ref.as_str()))
+        //         };
 
-                compiled_parts.push(reference_part);
+        //         compiled_parts.push(reference_part);
             
-            } else {
+        //     } else {
 
-                log::error!("no greek letters found in '{}' ({})", text.compilable_content(), matc.get(0).unwrap().as_str());
+        //         log::error!("no greek letters found in '{}' ({})", text.compilable_content(), matc.get(0).unwrap().as_str());
                 
-                if configuration.others().get("strict_greek_letters_check").strict_greek_letters_check() {
-                    return Err(CompilationError::ElaborationErrorVerbose(format!("no greek letters found in '{}' ({})", text.compilable_content(), matc.get(0).unwrap().as_str())))
-                }
-            }
-        }
+        //         if configuration.others().get("strict_greek_letters_check").strict_greek_letters_check() {
+        //             return Err(CompilationError::ElaborationErrorVerbose(format!("no greek letters found in '{}' ({})", text.compilable_content(), matc.get(0).unwrap().as_str())))
+        //         }
+        //     }
+        // }
 
-        Ok(CompilableString::new(compiled_parts))
+        // Ok(CompilableString::new(compiled_parts))
     }
     
     // fn search_pattern_regex(&self) -> &Regex {

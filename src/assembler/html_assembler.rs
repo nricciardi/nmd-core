@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use build_html::{HtmlPage, HtmlContainer, Html, Container};
 use getset::{Getters, Setters};
-use crate::{compilation::compilation_outcome::CompilationOutcome, dossier::{document::chapter::chapter_tag::{ChapterTag, ChapterTagKey}, dossier_configuration::DossierConfiguration}, resource::{disk_resource::DiskResource, Resource}, theme::Theme};
+use crate::{base_parameter::theme::Theme, compilation::compilation_outcome::CompilationOutcome, dossier::{document::chapter::chapter_tag::{ChapterTag, ChapterTagKey}, dossier_configuration::DossierConfiguration}, utility::datastruct::resource::disk_resource::DiskResource};
 
 use super::{assembler_configuration::AssemblerConfiguration, Assembler, AssemblerError};
 
