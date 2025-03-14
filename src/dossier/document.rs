@@ -7,6 +7,7 @@ use content::Content;
 use getset::{Getters, MutGetters, Setters};
 use serde::Serialize;
 use thiserror::Error;
+use crate::base_parameter::output_format::OutputFormat;
 use crate::codex::Codex;
 use crate::compilation::compilation_configuration::compilation_configuration_overlay::CompilationConfigurationOverLay;
 use crate::compilation::compilation_configuration::CompilationConfiguration;
@@ -16,7 +17,6 @@ use crate::compilation::compilation_outcome::CompilationOutcome;
 use crate::load::load_configuration::LoadConfiguration;
 use crate::load::load_error::LoadError;
 use crate::mmo::MultiMediaObjectError;
-use crate::output_format::OutputFormat;
 use crate::utility::datastruct::resource::disk_resource::DiskResource;
 
 

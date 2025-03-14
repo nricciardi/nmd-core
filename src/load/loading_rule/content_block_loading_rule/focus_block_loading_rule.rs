@@ -58,18 +58,19 @@ impl FocusBlockLoadingRule {
     }
 }
 
-impl LoadingRule<Box<dyn ContentBlock>> for FocusBlockLoadingRule {
+// TODO
+// impl LoadingRule<Box<dyn ContentBlock>> for FocusBlockLoadingRule {
 
-    fn find<'a>(&self, raw_str: &'a str, codex: &Codex, configuration: &LoadConfiguration) -> Result<dyn Iterator<Item = Span<&'a str>>, LoadError> {
-        Ok(StandardParagraphModifier::FocusBlock.find_spans_iter(raw_str))
-    }
+//     fn find<'a>(&self, raw_str: &'a str, codex: &Codex, configuration: &LoadConfiguration) -> Result<dyn Iterator<Item = Span<&'a str>>, LoadError> {
+//         Ok(StandardParagraphModifier::FocusBlock.find_spans_iter(raw_str))
+//     }
 
-    fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<Box<dyn ContentBlock>, LoadError> {
+//     fn load(&self, raw_content: &str, codex: &Codex, configuration: &LoadConfiguration) -> Result<Box<dyn ContentBlock>, LoadError> {
         
-        Ok(Box::new(self.inner_load(raw_content, codex, configuration)?))
-    }
+//         Ok(Box::new(self.inner_load(raw_content, codex, configuration)?))
+//     }
 
-}
+// }
 
 
 #[cfg(test)]

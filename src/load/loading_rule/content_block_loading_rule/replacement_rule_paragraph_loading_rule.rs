@@ -1,4 +1,5 @@
-use crate::{codex::{modifier::ModifiersBucket, Codex}, compilation::compilation_rule::replacement_rule::ReplacementRule, load::{loading_rule::{Finder, LoadingRule}, LoadConfiguration, LoadError}, content::{compilable_string::{compilable_string_part::CompilableStringPart, CompilableString}, content_block::ContentBlock}, utility::datastruct::span::Span};
+use crate::text_compiler::transformation_rule::replacement_rule::ReplacementRule;
+
 
 
 #[derive(Debug)]
@@ -15,35 +16,24 @@ impl ReplacementRuleParagraphLoadingRule {
     } 
 }
 
-impl Finder for FocusBlockLoadingRule {
-    
+// TODO
+// impl LoadingRule<Box<dyn ContentBlock>> for ReplacementRuleParagraphLoadingRule {
 
-    
-}
+//     fn find<'a>(&self, raw_str: &'a str, codex: &Codex, configuration: &LoadConfiguration) -> Result<impl Iterator<Item = Span<&'a str>>, LoadError> {
+//         todo!()
+//     }
 
-impl Loader<Box<dyn ContentBlock>> for FocusBlockLoadingRule {
-
-
-
-}
-
-impl LoadingRule<Box<dyn ContentBlock>> for ReplacementRuleParagraphLoadingRule {
-
-    fn find<'a>(&self, raw_str: &'a str, codex: &Codex, configuration: &LoadConfiguration) -> Result<impl Iterator<Item = Span<&'a str>>, LoadError> {
-        todo!()
-    }
-
-    fn load(&self, raw_content: &str, _codex: &Codex, _configuration: LoadConfiguration) -> Result<Box<dyn ContentBlock>, LoadError> {
+//     fn load(&self, raw_content: &str, _codex: &Codex, _configuration: LoadConfiguration) -> Result<Box<dyn ContentBlock>, LoadError> {
         
-        let compilable_text = CompilableString::from(CompilableStringPart::new_compilable(
-            raw_content.to_string(),
-            ModifiersBucket::None
-        ));
+//         let compilable_text = CompilableString::from(CompilableStringPart::new_compilable(
+//             raw_content.to_string(),
+//             ModifiersBucket::None
+//         ));
 
-        Ok(Box::new(ReplacementRuleParagraph::new(
-            raw_content.to_string(),
-            compilable_text,
-            self.replacement_rule.clone()
-        )))
-    }
-}
+//         Ok(Box::new(ReplacementRuleParagraph::new(
+//             raw_content.to_string(),
+//             compilable_text,
+//             self.replacement_rule.clone()
+//         )))
+//     }
+// }

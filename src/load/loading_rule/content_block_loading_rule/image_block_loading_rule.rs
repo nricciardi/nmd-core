@@ -1,17 +1,18 @@
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-use crate::{codex::Codex, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::{Finder, Loader, LoadingRule}}, content::content_block::ContentBlock, utility::datastruct::span::Span};
+use crate::{codex::Codex, load::{load_configuration::LoadConfiguration, load_error::LoadError}, utility::datastruct::span::Span};
 
 
-static FIND_SINGLE_IMAGE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&StandardParagraphModifier::Image.modifier_pattern()).unwrap());
-static FIND_ABRIDGED_IMAGE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&StandardParagraphModifier::AbridgedImage.modifier_pattern()).unwrap());
-static FIND_MULTI_IMAGE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&StandardParagraphModifier::MultiImage.modifier_pattern()).unwrap());
-static ALIGN_ITEM_PATTERN_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(ALIGN_ITEM_PATTERN).unwrap());
+// TODO
+// static FIND_SINGLE_IMAGE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&StandardParagraphModifier::Image.modifier_pattern()).unwrap());
+// static FIND_ABRIDGED_IMAGE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&StandardParagraphModifier::AbridgedImage.modifier_pattern()).unwrap());
+// static FIND_MULTI_IMAGE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(&StandardParagraphModifier::MultiImage.modifier_pattern()).unwrap());
+// static ALIGN_ITEM_PATTERN_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(ALIGN_ITEM_PATTERN).unwrap());
 
-const DEFAULT_MULTI_IMAGE_ALIGNMENT: &str = "normal";
-const DEFAULT_ALIGN_SELF: &str = "center";
-const ALIGN_ITEM_PATTERN: &str = r":([\w-]*):";
+// const DEFAULT_MULTI_IMAGE_ALIGNMENT: &str = "normal";
+// const DEFAULT_ALIGN_SELF: &str = "center";
+// const ALIGN_ITEM_PATTERN: &str = r":([\w-]*):";
 
 
 #[derive(Debug)]
@@ -21,7 +22,8 @@ pub enum ImageBlockLoadingRule {
     MultiImage,
 }
 
-
+// TODO
+/*
 impl ImageBlockLoadingRule {
 
     fn load_single_image(raw_content: &str, _codex: &Codex, configuration: &LoadConfiguration) -> Result<ImageResource, LoadError> {
@@ -328,3 +330,5 @@ mod test {
     
     }
 }
+
+    */

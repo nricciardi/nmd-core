@@ -70,7 +70,7 @@ impl ContentBlock for FocusBlock {
 #[cfg(test)]
 mod test {
 
-    use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, load::load_configuration::LoadConfiguration, output_format::OutputFormat, content::Text};
+    use crate::{base_parameter::output_format::OutputFormat, codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, load::load_configuration::LoadConfiguration, text_compiler::text::Text};
 
     fn load_and_compile_html(content: &str, expected_n: usize) -> String {
         

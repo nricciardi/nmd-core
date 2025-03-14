@@ -5,7 +5,7 @@ use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use serde::Serialize;
 use content_loader::ContentLoader;
 
-use crate::{codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, dossier::document::chapter::{content_block::ContentBlock, Chapter}, load::{load_configuration::LoadConfiguration, load_error::LoadError}, output_format::OutputFormat};
+use crate::{base_parameter::output_format::OutputFormat, codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, dossier::document::chapter::{content_block::ContentBlock, Chapter}, load::{load_configuration::LoadConfiguration, load_error::LoadError}};
 
 
 /// Structured text which represents the base of loaded text. It has a `preamble` which contains the first content blocks and a list of chapters.

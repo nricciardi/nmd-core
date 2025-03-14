@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
-use crate::{compilation::compilation_configuration::list_bullet_configuration_record::{self, ListBulletConfigurationRecord}, theme::Theme};
+use crate::{base_parameter::theme::Theme, compilation::compilation_configuration::list_bullet_configuration_record::{self, ListBulletConfigurationRecord}};
 
 use super::{dossier_configuration_path_reference::{DossierConfigurationPathReference, DossierConfigurationRawPathReference}, dossier_configuration_path_reference_manager::DOSSIER_CONFIGURATION_RAW_REFERENCE_MANAGER};
 

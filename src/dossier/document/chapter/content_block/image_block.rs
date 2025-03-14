@@ -1,7 +1,7 @@
 use build_html::{Container, Html, HtmlContainer};
 use getset::{Getters, Setters};
 
-use crate::{codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, mmo::{image::Image, nmd_unique_identifier::NmdUniqueIdentifier, source::Source, MultiMediaObjectError}, output_format::OutputFormat, utility::image_utility};
+use crate::{base_parameter::output_format::OutputFormat, codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, mmo::{image::Image, nmd_unique_identifier::NmdUniqueIdentifier, source::Source, MultiMediaObjectError}, utility::image_utility};
 
 use super::ContentBlock;
 

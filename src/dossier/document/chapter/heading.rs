@@ -1,6 +1,6 @@
 use getset::{Getters, Setters};
 use serde::Serialize;
-use crate::{codex::{modifier::ModifiersBucket, Codex}, text_compiler::{text_part::CompilableStringPart, CompilableString}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, mmo::{nmd_unique_identifier::NmdUniqueIdentifier, uri::NUri}, output_format::OutputFormat};
+use crate::{base_parameter::output_format::OutputFormat, codex::{modifier::ModifiersBucket, Codex}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, mmo::{nmd_unique_identifier::NmdUniqueIdentifier, uri::NUri}, text_compiler::text::{text_part::TextPart, Text}};
 
 
 #[derive(Debug, Clone, Serialize)]
@@ -53,7 +53,7 @@ impl Compilable for Heading {
 
         let id: NUri = NUri::of_internal_from_without_sharp(&self.title, Some(&document_name))?;
 
-        let mut compiled_title = CompilableString::from(self.title.clone());
+        let mut compiled_title = Text::from(self.title.clone());
         
         compiled_title.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
 
@@ -73,16 +73,16 @@ impl Compilable for Heading {
                     _ => return Err(CompilationError::HeadingLevelNotInferable(self.title.to_string()))
                 };
 
-                let outcome = CompilableString::new(vec![
+                let outcome = Text::new(vec![
 
-                    CompilableStringPart::Fixed(
+                    TextPart::Fixed(
                         format!(r#"<h{} class="heading-{}" id="{}" {}>"#, level, level, id.build_without_internal_sharp(), nuid_attr),
                     ),
-                    CompilableStringPart::Compilable(
+                    TextPart::Compilable(
                         compiled_title.content(),
                         ModifiersBucket::None
                     ),
-                    CompilableStringPart::Fixed(
+                    TextPart::Fixed(
                         format!(r#"</h{}>"#, level),
                     ),
                 ]);

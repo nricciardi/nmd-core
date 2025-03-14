@@ -5,15 +5,16 @@ use build_html::HtmlContainer;
 use build_html::TableCell as HtmlTableCell;
 use build_html::TableRow as HtmlTableRow;
 use getset::{Getters, Setters};
+use crate::base_parameter::output_format::OutputFormat;
 use crate::dossier::document::content::Content;
-use crate::text_compiler::CompilableString;
 use crate::compilation::compilation_outcome::CompilationOutcome;
 use crate::mmo::nmd_unique_identifier::NmdUniqueIdentifier;
 use crate::mmo::uri::NUri;
+use crate::text_compiler::text::Text;
 use crate::utility::datastruct::table::Table;
 use crate::utility::datastruct::table::TableCell;
 use crate::utility::datastruct::table::TableCellAlignment;
-use crate::{codex::Codex, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilable::Compilable}, output_format::OutputFormat};
+use crate::{codex::Codex, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilable::Compilable}};
 
 use super::ContentBlock;
 
@@ -208,7 +209,7 @@ impl TableBlock {
         // ==== CAPTION ====
         if let Some(ref c) = self.raw_caption {
 
-            let caption = CompilableString::from(c as &str).compile(
+            let caption = Text::from(c as &str).compile(
                 &OutputFormat::Html,
                 codex,
                 compilation_configuration,
@@ -254,7 +255,7 @@ impl ContentBlock for TableBlock {
 #[cfg(test)]
 mod test {
 
-    use crate::{codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, dossier::document::chapter::content_block::ContentBlock, load::{load_configuration::LoadConfiguration, loading_rule::content_block_loading_rule::table_block_loading_rule::TableBlockLoadingRule}, output_format::OutputFormat};
+    use crate::{base_parameter::output_format::OutputFormat, codex::Codex, compilation::compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, dossier::document::chapter::content_block::ContentBlock, load::{load_configuration::LoadConfiguration, loading_rule::content_block_loading_rule::table_block_loading_rule::TableBlockLoadingRule}};
 
     fn load_table(nmd_text: &str, codex: &Codex) -> Box<dyn ContentBlock> {
 

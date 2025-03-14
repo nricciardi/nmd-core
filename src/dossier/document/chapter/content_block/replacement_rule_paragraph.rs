@@ -1,6 +1,6 @@
 use getset::{Getters, Setters};
 
-use crate::{codex::Codex, text_compiler::{compilation_rule::replacement_rule::ReplacementRule, CompilableString}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, mmo::nmd_unique_identifier::NmdUniqueIdentifier, output_format::OutputFormat};
+use crate::{base_parameter::output_format::OutputFormat, codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, mmo::nmd_unique_identifier::NmdUniqueIdentifier, text_compiler::{text::Text, transformation_rule::replacement_rule::ReplacementRule}};
 
 use super::ContentBlock;
 
@@ -17,13 +17,13 @@ pub struct ReplacementRuleParagraph {
     #[getset(get = "pub", set = "pub")]
     replacement_rule: ReplacementRule,
 
-    compilable_text: CompilableString,
+    compilable_text: Text,
 
 }
 
 impl ReplacementRuleParagraph {
 
-    pub fn new(raw_content: String, compilable_text: CompilableString, replacement_rule: ReplacementRule,) -> Self {
+    pub fn new(raw_content: String, compilable_text: Text, replacement_rule: ReplacementRule,) -> Self {
         Self {
             raw_content,
             replacement_rule,

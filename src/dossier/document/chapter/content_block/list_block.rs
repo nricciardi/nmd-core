@@ -1,7 +1,7 @@
 use getset::{Getters, Setters};
 use once_cell::sync::Lazy;
 use regex::Regex;
-use crate::{codex::{modifier::{standard_paragraph_modifier::StandardParagraphModifier, ModifiersBucket}, Codex}, text_compiler::{text_part::CompilableStringPart, compilation_rule::constants::{ESCAPE_HTML, SPACE_TAB_EQUIVALENCE}, CompilableString}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, list_bullet_configuration_record::{self, ListBulletConfigurationRecord}, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, mmo::nmd_unique_identifier::NmdUniqueIdentifier, output_format::OutputFormat, utility::text_utility};
+use crate::{base_parameter::output_format::OutputFormat, codex::{modifier::{standard_paragraph_modifier::StandardParagraphModifier, ModifiersBucket}, Codex}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, list_bullet_configuration_record::{self, ListBulletConfigurationRecord}, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, mmo::nmd_unique_identifier::NmdUniqueIdentifier, text_compiler::{text::{text_part::TextPart, Text}, transformation_rule::constants::{ESCAPE_HTML, SPACE_TAB_EQUIVALENCE}}, utility::text_utility};
 
 use super::ContentBlock;
 
@@ -100,7 +100,7 @@ impl ListBlock {
                         ));
                         
                         let content = text_utility::replace(&content, &ESCAPE_HTML);
-                        let mut compilable_text = CompilableString::from(CompilableStringPart::new_compilable(content, ModifiersBucket::None));
+                        let mut compilable_text = Text::from(TextPart::new_compilable(content, ModifiersBucket::None));
 
                         outcome.push_str(&compilable_text.compile(&OutputFormat::Html, codex, compilation_configuration, compilation_configuration_overlay.clone())?.content());
                         

@@ -2,7 +2,7 @@ use std::sync::Arc;
 use getset::{Getters, Setters};
 use regex::Regex;
 
-use crate::{codex::Codex, dossier::document::chapter::content_block::{metadata_block_wrapper::MetadataBlockWrapper, ContentBlock}, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::LoadingRule}, content::Text, utility::datastruct::span::Span};
+use crate::{codex::Codex, dossier::document::chapter::content_block::{metadata_block_wrapper::MetadataBlockWrapper, ContentBlock}, load::{load_configuration::LoadConfiguration, load_error::LoadError, loading_rule::LoadingRule}, text_compiler::text::Text, utility::datastruct::span::Span};
 
 
 pub type StyleElaborationFn = Arc<dyn Sync + Send + Fn(&str, bool) -> (Option<String>, Option<String>)>;

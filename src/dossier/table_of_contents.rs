@@ -2,7 +2,7 @@ pub mod content_tree;
 
 use getset::{CopyGetters, Getters, Setters};
 use serde::Serialize;
-use crate::{codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, dossier::document::chapter::heading::HeadingLevel, output_format::OutputFormat, text_compiler::{text_part::CompilableStringPart, CompilableString}};
+use crate::{base_parameter::output_format::OutputFormat, codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, dossier::document::chapter::heading::HeadingLevel, text_compiler::text::{text_part::TextPart, Text}};
 
 use super::document::chapter::heading::Heading;
 
@@ -80,15 +80,16 @@ impl Compilable for TableOfContents {
         
         match format {
             OutputFormat::Html => {
-                let mut outcome = CompilableString::new_empty();
+                let mut outcome = Text::new_empty();
 
-                let mut compiled_title = CompilableString::from(self.title.clone());
+                let mut compiled_title = Text::from(self.title.clone());
 
                 compiled_title.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
 
-                outcome.parts_mut().push(CompilableStringPart::new_fixed(String::from(r#"<section class="toc"><div class="toc-title">"#)));
+                // TODO: remove new_fixed
+                outcome.parts_mut().push(TextPart::new_fixed(String::from(r#"<section class="toc"><div class="toc-title">"#)));
                 outcome.parts_mut().append(compiled_title.parts_mut());
-                outcome.parts_mut().push(CompilableStringPart::new_fixed(String::from(r#"</div><ul class="toc-body">"#)));
+                outcome.parts_mut().push(TextPart::new_fixed(String::from(r#"</div><ul class="toc-body">"#)));
 
                 let mut total_li = 0;
 
@@ -107,18 +108,18 @@ impl Compilable for TableOfContents {
                         continue;
                     }
 
-                    outcome.parts_mut().push(CompilableStringPart::new_fixed(String::from(r#"<li class="toc-item">"#)));
+                    outcome.parts_mut().push(TextPart::new_fixed(String::from(r#"<li class="toc-item">"#)));
 
                     if !self.plain() {
 
-                        outcome.parts_mut().push(CompilableStringPart::new_fixed(TOC_INDENTATION.repeat((heading_lv - min_heading_lv) as usize)));
+                        outcome.parts_mut().push(TextPart::new_fixed(TOC_INDENTATION.repeat((heading_lv - min_heading_lv) as usize)));
                     }
 
-                    outcome.parts_mut().push(CompilableStringPart::new_fixed(r#"<span class="toc-item-bullet"></span><span class="toc-item-content">"#.to_string()));
+                    outcome.parts_mut().push(TextPart::new_fixed(r#"<span class="toc-item-bullet"></span><span class="toc-item-content">"#.to_string()));
 
                     if let Some(id) = heading.resource_reference() {
 
-                        outcome.parts_mut().push(CompilableStringPart::new_fixed(format!(r#"<a href="{}" class="link">"#, id.build())));
+                        outcome.parts_mut().push(TextPart::new_fixed(format!(r#"<a href="{}" class="link">"#, id.build())));
                     
                     } else {
                         log::warn!("heading '{}' does not have a valid id", heading.title())
@@ -126,7 +127,7 @@ impl Compilable for TableOfContents {
 
                     let compilation_configuration_overlay = compilation_configuration_overlay.clone();
 
-                    let mut compiled_heading_title = CompilableString::from(heading.title().clone());
+                    let mut compiled_heading_title = Text::from(heading.title().clone());
                     
                     compiled_heading_title.compile(format, codex, compilation_configuration, compilation_configuration_overlay.clone())?;
 
@@ -134,16 +135,16 @@ impl Compilable for TableOfContents {
 
                     if let Some(_) = heading.resource_reference() {
 
-                        outcome.parts_mut().push(CompilableStringPart::new_fixed(String::from(r#"</a>"#)));
+                        outcome.parts_mut().push(TextPart::new_fixed(String::from(r#"</a>"#)));
                     }
 
-                    outcome.parts_mut().push(CompilableStringPart::new_fixed(String::from(r#"</span></li>"#)));
+                    outcome.parts_mut().push(TextPart::new_fixed(String::from(r#"</span></li>"#)));
 
                     total_li += 1;
                         
                 }
 
-                outcome.parts_mut().push(CompilableStringPart::new_fixed(String::from(r#"</ul></section>"#)));
+                outcome.parts_mut().push(TextPart::new_fixed(String::from(r#"</ul></section>"#)));
 
                 log::info!("compiled table of contents ({} lines, {} skipped)", total_li, self.headings().len() - total_li);
 
