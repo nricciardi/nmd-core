@@ -16,7 +16,7 @@ use theme::Theme;
 
 use crate::utility::datastruct::HashMap;
 
-pub trait BaseConfiguration: Sized + fmt::Debug + Default {
+pub trait BaseConfiguration: fmt::Debug {
 
     fn output_format(&self) -> &OutputFormat;
 
@@ -36,7 +36,7 @@ pub trait BaseConfiguration: Sized + fmt::Debug + Default {
 }
 
 
-pub trait CustomableConfiguration: Sized + fmt::Debug + Default {
+pub trait CustomableConfiguration: fmt::Debug {
     
     fn others(&self) -> &HashMap<String, Box<dyn Any>>;
 
@@ -64,22 +64,22 @@ pub struct BaseConfigurationParameters {
 impl BaseConfiguration for BaseConfigurationParameters {
     
     delegate! {
-        to self.output_format {
+        to self {
             fn output_format(&self) -> &OutputFormat;
             fn set_output_format(&mut self, value: OutputFormat);
         }
 
-        to self.output_format {
+        to self {
             fn parallelization(&self) -> &Parallelization;
             fn set_parallelization(&mut self, value: Parallelization);
         }
 
-        to self.effort {
+        to self {
             fn effort(&self) -> &Effort;
             fn set_effort(&mut self, value: Effort);
         }
 
-        to self.theme {
+        to self {
             fn theme(&self) -> &Theme;
             fn set_theme(&mut self, value: Theme);
         }

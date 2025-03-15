@@ -1,5 +1,5 @@
 use getset::{Getters, Setters};
-use crate::{codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, mmo::nmd_unique_identifier::NmdUniqueIdentifier, output_format::OutputFormat, content::Text, utility::text_utility};
+use crate::{base_parameter::output_format::OutputFormat, codex::Codex, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, mmo::nmd_unique_identifier::NmdUniqueIdentifier, text_compiler::text::Text, utility::text_utility};
 
 use super::ContentBlock;
 

@@ -2,12 +2,12 @@ use std::sync::Arc;
 
 use regex::Captures;
 
-use crate::{compilable_text::CompilableText, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError}, output_format::OutputFormat};
+use crate::{base_parameter::output_format::OutputFormat, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError}, text_compiler::text::Text};
 
 use super::ReplacementRuleReplacerPart;
 
 
-type Closure = Arc<dyn Sync + Send + Fn(&Captures, &CompilableText, &OutputFormat, &CompilationConfiguration, CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError>>;
+type Closure = Arc<dyn Sync + Send + Fn(&Captures, &Text, &OutputFormat, &CompilationConfiguration, CompilationConfigurationOverLay) -> Result<Text, CompilationError>>;
 
 
 #[derive(Clone)]
@@ -33,7 +33,7 @@ impl std::fmt::Debug for ClosureReplacementRuleReplacerPart {
 }
 
 impl ReplacementRuleReplacerPart for ClosureReplacementRuleReplacerPart {
-    fn compile(&self, captures: &Captures, compilable: &CompilableText, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableText, CompilationError> {
+    fn compile(&self, captures: &Captures, compilable: &Text, format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<Text, CompilationError> {
         (self.closure)(captures, compilable, format, compilation_configuration, compilation_configuration_overlay.clone())
     }
 }

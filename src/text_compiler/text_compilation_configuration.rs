@@ -9,10 +9,10 @@ use super::transformation_rule::{TextTransformationRule, TextTransformationRuleI
 pub trait TextCompilationConfiguration {
     
     fn dossier_name(&self) -> &Option<String>;
-    fn set_dossier_name(&mut self, value: Option<String>) -> &Option<String>;
+    fn set_dossier_name(&mut self, value: Option<String>);
 
     fn document_name(&self) -> &Option<String>;
-    fn set_document_name(&mut self, value: Option<String>) -> &Option<String>;
+    fn set_document_name(&mut self, value: Option<String>);
 
     /// Bucket of rules which will not be tested
     fn excluded_rules(&self) -> &Bucket<TextTransformationRuleIdentifier>;
@@ -79,7 +79,7 @@ impl BaseConfiguration for TextCompilationConfigurationParameters {
 
 impl CustomableConfiguration for TextCompilationConfigurationParameters {
     delegate! {
-        to self.others {
+        to self {
 
             fn others(&self) -> &HashMap<String, Box<dyn Any>>;
             fn others_mut(&mut self) -> &mut HashMap<String, Box<dyn Any>>;
@@ -90,31 +90,16 @@ impl CustomableConfiguration for TextCompilationConfigurationParameters {
 impl TextCompilationConfiguration for TextCompilationConfigurationParameters {
     
     delegate! {
-        to self.dossier_name {
+        to self {
 
             fn dossier_name(&self) -> &Option<String>;
-            fn set_dossier_name(&mut self, value: Option<String>) -> &Option<String>;
-        }
-    }
-
-    delegate! {
-        to self.document_name {
-
+            fn set_dossier_name(&mut self, value: Option<String>);
+            
             fn document_name(&self) -> &Option<String>;
-            fn set_document_name(&mut self, value: Option<String>) -> &Option<String>;
-        }
-    }
-
-    delegate! {
-        to self.excluded_rules {
+            fn set_document_name(&mut self, value: Option<String>);
 
             fn excluded_rules(&self) -> &Bucket<TextTransformationRuleIdentifier>;
             fn set_excluded_rules(&mut self, value: Bucket<TextTransformationRuleIdentifier>);
-        }
-    }
-    
-    delegate! {
-        to self.transformation_rules {
 
             fn transformation_rules(&self) -> &Vec<Box<dyn TextTransformationRule>>;
             fn set_transformation_rules(&mut self, value: Vec<Box<dyn TextTransformationRule>>);

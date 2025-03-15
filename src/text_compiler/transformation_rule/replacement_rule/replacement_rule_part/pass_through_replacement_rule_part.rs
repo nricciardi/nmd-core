@@ -1,6 +1,6 @@
 use getset::{Getters, Setters};
 use regex::Captures;
-use crate::{compilable_string::CompilableString, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError}, output_format::OutputFormat};
+use crate::{base_parameter::output_format::OutputFormat, compilation::{compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError}, text_compiler::text::Text};
 
 use super::ReplacementRuleReplacerPart;
 
@@ -21,7 +21,7 @@ impl PassThroughReplacementRuleReplacerPart {
 }
 
 impl ReplacementRuleReplacerPart for PassThroughReplacementRuleReplacerPart {
-    fn compile(&self, _captures: &Captures, compilable: &CompilableString, _format: &OutputFormat, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<CompilableString, CompilationError> {
+    fn compile(&self, _captures: &Captures, compilable: &Text, _format: &OutputFormat, _compilation_configuration: &CompilationConfiguration, _compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<Text, CompilationError> {
         Ok(compilable.clone())
     }
 }

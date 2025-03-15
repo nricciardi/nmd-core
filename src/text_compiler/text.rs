@@ -5,6 +5,8 @@ use serde::Serialize;
 use text_part::TextPart;
 use crate::{codex::{modifier::{ModifierIdentifier, ModifiersBucket}, Codex}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, utility::datastruct::bucket::Bucket};
 
+use super::transformation_rule::TextTransformationRule;
+
 
 #[derive(Debug, Clone)]
 pub enum PartsSliceElaborationPolicy {
@@ -96,6 +98,7 @@ impl Text {
         }
     }
 
+
     // pub fn new_with_nuid(parts: Vec<TextPart>, nuid: Option<NmdUniqueIdentifier>) -> Self {
     //     Self {
     //         parts,
@@ -140,6 +143,9 @@ impl Text {
         content
     }
 
+    // TODO
+
+    /*
     /// this method calls `parts_slice_with_explicit_policy` using policy `TakeLeftAndRightFixedParts`
     pub fn parts_slice(&self, start: usize, end: usize) -> Result<Vec<TextPart>, TextError> {
         self.parts_slice_with_explicit_policy(start, end, PartsSliceElaborationPolicy::TakeLeftAndRightFixedParts)
@@ -294,6 +300,8 @@ impl Text {
 
         Ok(parts_slice)
     }
+
+    */
 }
 
 impl Text {
