@@ -1,4 +1,4 @@
-use std::{any::Any, sync::Arc};
+use std::any::Any;
 
 use getset::{Getters, Setters};
 use delegate::delegate;
@@ -12,7 +12,7 @@ pub struct TextTransformationConfigurationParameters {
     base_params: BaseConfigurationParameters,
 
     #[getset(get="pub", get_mut="pub", set="pub")]
-    others: HashMap<String, Arc<dyn Any>>
+    others: HashMap<String, Box<dyn Any>>
 }
 
 
@@ -21,10 +21,10 @@ pub trait TextTransformationConfiguration: BaseConfiguration + CustomableConfigu
 
 impl CustomableConfiguration for TextTransformationConfigurationParameters {
     delegate! {
-        to self {
+        to self.others {
 
-            fn others(&self) -> &HashMap<String, Arc<dyn Any>>;
-            fn others_mut(&mut self) -> &mut HashMap<String, Arc<dyn Any>>;
+            fn others(&self) -> &HashMap<String, Box<dyn Any>>;
+            fn others_mut(&mut self) -> &mut HashMap<String, Box<dyn Any>>;
         }
     }
 }
@@ -53,13 +53,11 @@ impl TextTransformationConfiguration for TextTransformationConfigurationParamete
 }
 
 
-impl From<&dyn TextCompilationConfiguration> for TextTransformationConfigurationParameters {
-    fn from(tccp: &dyn TextCompilationConfiguration) -> Self {
-        // TODO
-        // Self {
-        //     base_params: tccp.base_params().clone(),
-        //     others: tccp.others().clone()
-        // }
-        todo!()
+impl From<TextCompilationConfigurationParameters> for TextTransformationConfigurationParameters {
+    fn from(tccp: TextCompilationConfigurationParameters) -> Self {
+        Self {
+            base_params: tccp.base_params(),
+            others: tccp.others()
+        }
     }
 }

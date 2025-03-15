@@ -34,7 +34,7 @@ impl<T> Span<T> {
 
 
 impl<'a> From<Match<'a>> for Span<&'a str> {
-    fn from(m: Match) -> Self {
+    fn from(m: Match<'a>) -> Self {
         Self::new(m.start(), m.end(), m.as_str())
     }
 }

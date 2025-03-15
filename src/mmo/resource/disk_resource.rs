@@ -1,7 +1,8 @@
 use std::{path::PathBuf, str::FromStr, fs::{self, OpenOptions}, io::Write};
 
+use crate::mmo::MultiMediaObjectError;
 
-use super::{MultiMediaObjectError, Resource};
+use super::Resource;
 
 
 
@@ -37,7 +38,7 @@ impl FromStr for DiskResource {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
 
         if s.is_empty() {
-            return Err(MultiMediaObjectError::Creation("resource cannot be an empty string".to_string()));
+            return Err(MultiMediaObjectError::CreationError("resource cannot be an empty string".to_string()));
         }
 
         Self::try_from(PathBuf::from_str(s).unwrap())
@@ -56,7 +57,7 @@ impl TryFrom<PathBuf> for DiskResource {
 
     fn try_from(location: PathBuf) -> Result<Self, Self::Error> {
         if location.is_dir() {
-            return Err(MultiMediaObjectError::InvalidResourceVerbose(format!("{} is a directory", location.to_string_lossy())))
+            return Err(MultiMediaObjectError::InvalidVerbose(format!("{} is a directory", location.to_string_lossy())))
         }
 
         if let Some(name) = location.file_name() {
@@ -65,7 +66,7 @@ impl TryFrom<PathBuf> for DiskResource {
                 location
             })
         } else {
-            Err(MultiMediaObjectError::InvalidResource)
+            Err(MultiMediaObjectError::Invalid)
         }
     }
 }

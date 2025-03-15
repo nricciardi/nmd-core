@@ -6,6 +6,7 @@ pub mod text_compilation_configuration;
 use text::{text_part::TextPart, Text};
 use text_compilation_configuration::TextCompilationConfiguration;
 use text_compilation_error::TextCompilationError;
+use transformation_rule::transformation_configuration::TextTransformationConfigurationParameters;
 
 use crate::{mmo::compilation_outcome::CompilationOutcome, mmo::bucket::Bucket};
 
@@ -255,7 +256,7 @@ impl TextCompiler {
         Ok(())
     }*/
 
-    pub fn compile(text: Text, configuration: &dyn TextCompilationConfiguration) -> Result<CompilationOutcome, TextCompilationError> {
+    pub fn compile(mut text: Text, configuration: &dyn TextCompilationConfiguration) -> Result<CompilationOutcome, TextCompilationError> {
 
         let excluded_rules = configuration.excluded_rules().clone();        // TODO: remove .clone()? 
 
@@ -275,14 +276,27 @@ impl TextCompiler {
                 continue;
             }
 
-            rule.apply(&mut text, configuration)?;
+            rule.apply(&mut text, &TextTransformationConfigurationParameters::from(configuration))?;
         }
 
-        Ok(CompilationOutcome::from(text.into()))
+        Ok(CompilationOutcome::from(text))
     }
 
-    pub fn compile_str(str: &str, configuration: &dyn TextCompilationConfiguration) -> Result<CompilationOutcome, TextCompilationError> {
+    pub fn compile_str(s: &str, configuration: &dyn TextCompilationConfiguration) -> Result<CompilationOutcome, TextCompilationError> {
 
-        Self::compile(Text::from(str), configuration)      
+        Self::compile(Text::from(s), configuration)      
     }
+}
+
+
+#[cfg(test)]
+mod test {
+    use super::{text_compilation_configuration::TextCompilationConfigurationParameters, TextCompiler};
+
+
+    #[test]
+    fn compile_str() {
+        let outcome = TextCompiler::compile_str("test string", &TextCompilationConfigurationParameters::default()).unwrap();
+    }
+
 }

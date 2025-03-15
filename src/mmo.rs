@@ -8,9 +8,12 @@ pub mod bucket;
 pub mod span;
 pub(crate) mod text_reference;
 pub(crate) mod resource;
+pub mod regex;
+pub mod constants;
 
 
 pub type HashMap<K, V> = ahash::HashMap<K, V>;
+pub type HashSet<T> = ahash::HashSet<T>;
 
 
 use std::io;
@@ -21,13 +24,13 @@ use thiserror::Error;
 pub enum MultiMediaObjectError {
 
     #[error("MMO '{0}' not found")]
-    MmoNotFound(String),
+    NotFound(String),
 
     #[error("MMO is invalid")]
-    InvalidMmo,
+    Invalid,
 
-    #[error("resource is invalid because: {0}")]
-    InvalidResourceVerbose(String),
+    #[error("MMO is invalid because: {0}")]
+    InvalidVerbose(String),
 
     #[error("MMO cannot be created: {0}")]
     CreationError(String),

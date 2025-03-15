@@ -5,7 +5,7 @@ pub mod theme;
 
 
 use core::fmt;
-use std::any::Any;
+use std::{any::Any, sync::Arc};
 
 use delegate::delegate;
 use effort::Effort;
@@ -38,9 +38,9 @@ pub trait BaseConfiguration: fmt::Debug {
 
 pub trait CustomableConfiguration: fmt::Debug {
     
-    fn others(&self) -> &HashMap<String, Box<dyn Any>>;
+    fn others(&self) -> &HashMap<String, Arc<dyn Any>>;
 
-    fn others_mut(&mut self) -> &mut HashMap<String, Box<dyn Any>>;
+    fn others_mut(&mut self) -> &mut HashMap<String, Arc<dyn Any>>;
 }
 
 

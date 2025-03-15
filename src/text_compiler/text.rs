@@ -1,8 +1,11 @@
 pub mod text_part;
 
+use ahash::HashSetExt;
 use getset::{Getters, MutGetters, Setters};
 use serde::Serialize;
 use text_part::TextPart;
+
+use crate::mmo::HashSet;
 
 use super::transformation_rule::TextTransformationRule;
 
@@ -48,7 +51,7 @@ impl From<String> for Text {
     fn from(content: String) -> Self {
         Self::from(TextPart::Compilable {
             content,
-            incompatible_modifiers: ()      // TODO
+            incompatible_rules: HashSet::new()
         })
     }
 }
@@ -117,7 +120,7 @@ impl Text {
         self.parts.iter().for_each(|part| {
             match part {
                 TextPart::Fixed { content: _ } => (),
-                TextPart::Compilable { content, incompatible_modifiers: _ } => {
+                TextPart::Compilable { content, incompatible_rules: _ } => {
 
                     ends.push(last_end + content.len());
                     last_end = *ends.last().unwrap();

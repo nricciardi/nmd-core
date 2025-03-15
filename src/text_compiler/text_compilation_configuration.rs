@@ -1,8 +1,9 @@
 use std::any::Any;
+use std::sync::Arc;
 use delegate::delegate;
 use getset::{CopyGetters, Getters, Setters};
 use crate::mmo::HashMap;
-use crate::{base_parameter::{effort::Effort, output_format::OutputFormat, parallelization::Parallelization, theme::Theme, BaseConfiguration, BaseConfigurationParameters, CustomableConfiguration}, utility::datastruct::bucket::Bucket};
+use crate::{base_parameter::{effort::Effort, output_format::OutputFormat, parallelization::Parallelization, theme::Theme, BaseConfiguration, BaseConfigurationParameters, CustomableConfiguration}, mmo::bucket::Bucket};
 use super::transformation_rule::{TextTransformationRule, TextTransformationRuleIdentifier};
 
 
@@ -19,8 +20,8 @@ pub trait TextCompilationConfiguration {
     fn set_excluded_rules(&mut self, value: Bucket<TextTransformationRuleIdentifier>);
 
     // TODO: move Vec to Iterator
-    fn transformation_rules(&self) -> &Vec<Box<dyn TextTransformationRule>>;
-    fn set_transformation_rules(&mut self, value: Vec<Box<dyn TextTransformationRule>>);
+    fn transformation_rules(&self) -> &Vec<Arc<dyn TextTransformationRule>>;
+    fn set_transformation_rules(&mut self, value: Vec<Arc<dyn TextTransformationRule>>);
 }
 
 #[derive(Debug, Getters, CopyGetters, Setters, Clone)]
@@ -36,13 +37,13 @@ pub struct TextCompilationConfigurationParameters  {
     excluded_rules: Bucket<TextTransformationRuleIdentifier>,
 
     #[getset(get = "pub", set = "pub")]
-    transformation_rules: Vec<Box<dyn TextTransformationRule>>,
+    transformation_rules: Vec<Arc<dyn TextTransformationRule>>,
     
     #[getset(get="pub", set="pub")]
     base_params: BaseConfigurationParameters,
 
     #[getset(get="pub", get_mut="pub", set="pub")]
-    others: HashMap<String, Box<dyn Any>>
+    others: HashMap<String, Arc<dyn Any>>
 }
 
 impl Default for TextCompilationConfigurationParameters {
@@ -81,8 +82,8 @@ impl CustomableConfiguration for TextCompilationConfigurationParameters {
     delegate! {
         to self {
 
-            fn others(&self) -> &HashMap<String, Box<dyn Any>>;
-            fn others_mut(&mut self) -> &mut HashMap<String, Box<dyn Any>>;
+            fn others(&self) -> &HashMap<String, Arc<dyn Any>>;
+            fn others_mut(&mut self) -> &mut HashMap<String, Arc<dyn Any>>;
         }
     }
 }
@@ -101,8 +102,8 @@ impl TextCompilationConfiguration for TextCompilationConfigurationParameters {
             fn excluded_rules(&self) -> &Bucket<TextTransformationRuleIdentifier>;
             fn set_excluded_rules(&mut self, value: Bucket<TextTransformationRuleIdentifier>);
 
-            fn transformation_rules(&self) -> &Vec<Box<dyn TextTransformationRule>>;
-            fn set_transformation_rules(&mut self, value: Vec<Box<dyn TextTransformationRule>>);
+            fn transformation_rules(&self) -> &Vec<Arc<dyn TextTransformationRule>>;
+            fn set_transformation_rules(&mut self, value: Vec<Arc<dyn TextTransformationRule>>);
         }
     }
     
