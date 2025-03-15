@@ -1,6 +1,6 @@
 
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub enum Parallelization {
 
     #[default]

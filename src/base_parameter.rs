@@ -14,7 +14,7 @@ use output_format::OutputFormat;
 use parallelization::Parallelization;
 use theme::Theme;
 
-use crate::utility::datastruct::HashMap;
+use crate::mmo::HashMap;
 
 pub trait BaseConfiguration: fmt::Debug {
 
@@ -44,7 +44,7 @@ pub trait CustomableConfiguration: fmt::Debug {
 }
 
 
-#[derive(Debug, Default, Getters, Setters)]
+#[derive(Debug, Default, Getters, Setters, Clone)]
 pub struct BaseConfigurationParameters {
 
     #[getset(get="pub", set="pub")]
@@ -67,19 +67,13 @@ impl BaseConfiguration for BaseConfigurationParameters {
         to self {
             fn output_format(&self) -> &OutputFormat;
             fn set_output_format(&mut self, value: OutputFormat);
-        }
-
-        to self {
+            
             fn parallelization(&self) -> &Parallelization;
             fn set_parallelization(&mut self, value: Parallelization);
-        }
-
-        to self {
+            
             fn effort(&self) -> &Effort;
             fn set_effort(&mut self, value: Effort);
-        }
-
-        to self {
+            
             fn theme(&self) -> &Theme;
             fn set_theme(&mut self, value: Theme);
         }

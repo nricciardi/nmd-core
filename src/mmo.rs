@@ -2,6 +2,15 @@ pub(crate) mod source;
 pub(crate) mod uri;
 pub(crate) mod image;
 pub mod nmd_unique_identifier;
+pub mod compilation_outcome;
+pub(crate) mod table;
+pub mod bucket;
+pub mod span;
+pub(crate) mod text_reference;
+pub(crate) mod resource;
+
+
+pub type HashMap<K, V> = ahash::HashMap<K, V>;
 
 
 use std::io;

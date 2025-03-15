@@ -1,7 +1,7 @@
 
 
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub enum Effort {
 
     Fast,

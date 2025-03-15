@@ -3,7 +3,6 @@ pub mod text_part;
 use getset::{Getters, MutGetters, Setters};
 use serde::Serialize;
 use text_part::TextPart;
-use crate::{codex::{modifier::{ModifierIdentifier, ModifiersBucket}, Codex}, compilation::{compilable::Compilable, compilation_configuration::{compilation_configuration_overlay::CompilationConfigurationOverLay, CompilationConfiguration}, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, utility::datastruct::bucket::Bucket};
 
 use super::transformation_rule::TextTransformationRule;
 
@@ -45,6 +44,21 @@ impl From<TextPart> for Text {
     }
 }
 
+impl From<String> for Text {
+    fn from(content: String) -> Self {
+        Self::from(TextPart::Compilable {
+            content,
+            incompatible_modifiers: ()      // TODO
+        })
+    }
+}
+
+impl From<&str> for Text {
+    fn from(s: &str) -> Self {
+        Self::from(String::from(s))
+    }
+}
+
 impl From<Vec<TextPart>> for Text {
     fn from(value: Vec<TextPart>) -> Self {
         Self::new(value)
@@ -63,23 +77,6 @@ impl Into<String> for Text {
     }
 }
 
-impl From<String> for Text {
-    fn from(value: String) -> Self {
-        Self::from(TextPart::new_compilable(
-            value,
-            ModifiersBucket::None
-        ))
-    }
-}
-
-impl From<&str> for Text {
-    fn from(value: &str) -> Self {
-        Self::from(TextPart::new_compilable(
-            value.to_string(),
-            ModifiersBucket::None
-        ))
-    }
-}
 
 impl Text {
 
@@ -306,6 +303,9 @@ impl Text {
 
 impl Text {
 
+    // TODO
+    /*
+
     /// Compile parts and return the new compiled parts or `None` if there are not matches using
     /// provided rule
     fn compile_with_compilation_rule(&mut self, (rule_identifier, rule): (&ModifierIdentifier, &Box<dyn TextTransformationRule>), format: &OutputFormat, compilation_configuration: &CompilationConfiguration, compilation_configuration_overlay: CompilationConfigurationOverLay) -> Result<(), CompilationError> {
@@ -318,8 +318,8 @@ impl Text {
         parts.iter()
                 .filter(|part| {
                     match &part.part_type() {
-                        TextPart::Fixed(_) => false,
-                        TextPart::Compilable(content, incompatible_modifiers) => {
+                        TextPart::Fixed{ content: _ } => false,
+                        TextPart::Compilable {content, incompatible_modifiers} => {
                             if incompatible_modifiers.contains(&rule_identifier) {
                                 return false
                             } else {
@@ -544,7 +544,7 @@ impl Text {
         self.set_parts(compiled_parts);
         
         Ok(())
-    }
+    }*/
 }
 
 #[cfg(test)]

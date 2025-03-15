@@ -11,7 +11,7 @@ use std::fmt::Debug;
 use regex::{Match, Regex};
 use transformation_configuration::TransformationConfiguration;
 use transformation_error::TransformationError;
-use crate::utility::datastruct::bucket::Bucket;
+use crate::mmo::bucket::Bucket;
 
 use super::Text;
 

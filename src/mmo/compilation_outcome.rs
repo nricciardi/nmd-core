@@ -1,6 +1,8 @@
 use getset::{Getters, MutGetters, Setters};
 use serde::{Deserialize, Serialize};
 
+use crate::text_compiler::text::Text;
+
 
 
 #[derive(Debug, Getters, MutGetters, Setters, Serialize, Deserialize)]
@@ -22,6 +24,14 @@ impl From<String> for CompilationOutcome {
     fn from(content: String) -> Self {
         Self {
             content
+        }
+    }
+}
+
+impl From<Text> for CompilationOutcome {
+    fn from(text: Text) -> Self {
+        Self {
+            content: text.content()
         }
     }
 }

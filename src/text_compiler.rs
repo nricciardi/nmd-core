@@ -7,7 +7,7 @@ use text::{text_part::TextPart, Text};
 use text_compilation_configuration::TextCompilationConfiguration;
 use text_compilation_error::TextCompilationError;
 
-use crate::{compilation::{compilation_configuration::CompilationConfiguration, compilation_error::CompilationError, compilation_outcome::CompilationOutcome}, utility::datastruct::bucket::Bucket};
+use crate::{mmo::compilation_outcome::CompilationOutcome, mmo::bucket::Bucket};
 
 pub struct TextCompiler {
 }

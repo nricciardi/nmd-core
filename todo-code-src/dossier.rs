@@ -129,7 +129,7 @@ impl Dossier {
         return Ok(Dossier::new(dossier_configuration.clone(), documents))
     }
 
-    fn seq_document_loading(dossier_configuration: &DossierConfiguration, codex: &Codex, configuration: LoadConfiguration) -> Result<Self, LoadError> {
+    fn seq_document_loading(dossier_configuration: &DossierConfiguration, codex: &Codex, configuration: &LoadConfiguration) -> Result<Self, LoadError> {
         
         let mut documents: Vec<Document> = Vec::new();
 

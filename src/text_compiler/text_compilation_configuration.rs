@@ -1,7 +1,7 @@
 use std::any::Any;
 use delegate::delegate;
 use getset::{CopyGetters, Getters, Setters};
-use crate::utility::datastruct::HashMap;
+use crate::mmo::HashMap;
 use crate::{base_parameter::{effort::Effort, output_format::OutputFormat, parallelization::Parallelization, theme::Theme, BaseConfiguration, BaseConfigurationParameters, CustomableConfiguration}, utility::datastruct::bucket::Bucket};
 use super::transformation_rule::{TextTransformationRule, TextTransformationRuleIdentifier};
 
