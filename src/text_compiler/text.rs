@@ -1,13 +1,19 @@
 pub mod text_part;
+pub mod text_error;
+
+use std::{ops::RangeBounds};
 
 use ahash::HashSetExt;
-use getset::{Getters, MutGetters, Setters};
+use getset::{CopyGetters, Getters, MutGetters, Setters};
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use serde::Serialize;
-use text_part::TextPart;
+use serde_json::map::Iter;
+use text_error::TextError;
+use text_part::{CompatibleTextParts, TextPart, TextPartRef};
 
-use crate::mmo::HashSet;
+use crate::{base_parameter::parallelization::{self, Parallelization}, mmo::{bucket::Bucket, HashSet}};
 
-use super::transformation_rule::TextTransformationRule;
+use super::transformation_rule::{TextTransformationRule, TextTransformationRuleIdentifier};
 
 
 #[derive(Debug, Clone)]
@@ -26,17 +32,11 @@ enum ElaborationPosition {
 }
 
 
-
-
 #[derive(Debug, Clone, Getters, MutGetters, Setters, Serialize)]
 pub struct Text {
 
     #[getset(get = "pub", get_mut = "pub", set = "pub")]
     parts: Vec<TextPart>,
-
-    // TODO: remove
-    // #[getset(get = "pub", get_mut = "pub", set = "pub")]
-    // nuid: Option<NmdUniqueIdentifier>,
 }
 
 
@@ -51,7 +51,7 @@ impl From<String> for Text {
     fn from(content: String) -> Self {
         Self::from(TextPart::Compilable {
             content,
-            incompatible_rules: HashSet::new()
+            incompatible_rules: Bucket::None
         })
     }
 }
@@ -76,7 +76,10 @@ impl Into<Vec<TextPart>> for Text {
 
 impl Into<String> for Text {
     fn into(self) -> String {
-        self.content()
+        
+        todo!()
+        // TODO
+        // self.content()
     }
 }
 
@@ -86,7 +89,6 @@ impl Text {
     pub fn new_empty() -> Self {
         Self {
             parts: Vec::new(),
-            // nuid: None,
         }
     }
 
@@ -94,44 +96,90 @@ impl Text {
 
         Self {
             parts,
-            // nuid: None,
         }
     }
 
+    pub fn parts_compatible_with_rule<'a, 'b: 'a>(&'a self, rule_id: &'b TextTransformationRuleIdentifier) -> CompatibleTextParts<'a> {
 
-    // pub fn new_with_nuid(parts: Vec<TextPart>, nuid: Option<NmdUniqueIdentifier>) -> Self {
-    //     Self {
-    //         parts,
-    //         nuid
-    //     }
+        self.parts.iter().enumerate()
+        .filter(|(_index, part)| {
+            match part {
+                TextPart::Fixed { content: _ } => false,
+                TextPart::Compilable { content: _, incompatible_rules } => incompatible_rules.contains(rule_id),
+            }
+        })
+        .map(|(index, part)| {
+            TextPartRef::new(index, part)
+        }).collect()
+    }
+
+    /// Split a part into two 
+    pub fn split_part(&mut self, index: usize, position_in_part: usize) -> Result<(), TextError> {
+
+        // TODO: check out of bound
+        let mut left_part = self.parts[index].clone();
+        let mut right_part = self.parts[index].clone();
+
+        left_part.content_mut().truncate(position_in_part);
+        right_part.content_mut().drain(..position_in_part);
+
+        self.parts.splice(index..index, [
+            left_part,
+            right_part
+        ]);
+
+        Ok(())
+    }
+
+    /// Split parts into twos
+    /// 
+    /// Offset of splitting is already considered
+    pub fn split_parts(&mut self, splits: &Vec<(usize, usize)>) -> Result<(), TextError> {
+
+        let mut offset: usize = 0;
+        for (index, position_in_part) in splits {
+            self.split_part(index + offset, *position_in_part)?;
+
+            offset += 1;
+        }
+
+        Ok(())
+    }
+
+    pub fn splice<R, I>(&mut self, range: R, replace_with: I)
+    where
+        R: RangeBounds<usize>,
+        I: IntoIterator<Item = TextPart> {
+
+        self.parts.splice(range, replace_with);
+    }
+
+    // /// content usable in regex. It's the string obtained concatenating compilable parts
+    // pub fn compilable_content(&self) -> String {
+
+    //     self.compilable_content_with_ends_positions().0
     // }
 
-    /// content usable in regex. It's the string obtained concatenating compilable parts
-    pub fn compilable_content(&self) -> String {
+    // pub fn compilable_content_with_ends_positions(&self) -> (String, Vec<usize>) {
+    //     let mut compilable_content = String::new();
+    //     let mut ends: Vec<usize> = Vec::new();
+    //     let mut last_end: usize = 0;
 
-        self.compilable_content_with_ends_positions().0
-    }
+    //     self.parts.iter().for_each(|part| {
+    //         match part {
+    //             TextPart::Fixed { content: _ } => (),
+    //             TextPart::Compilable { content, incompatible_rules: _ } => {
 
-    pub fn compilable_content_with_ends_positions(&self) -> (String, Vec<usize>) {
-        let mut compilable_content = String::new();
-        let mut ends: Vec<usize> = Vec::new();
-        let mut last_end: usize = 0;
+    //                 ends.push(last_end + content.len());
+    //                 last_end = *ends.last().unwrap();
 
-        self.parts.iter().for_each(|part| {
-            match part {
-                TextPart::Fixed { content: _ } => (),
-                TextPart::Compilable { content, incompatible_rules: _ } => {
+    //                 compilable_content.push_str(&content);
+    //             },
+    //         }
+    //     });
 
-                    ends.push(last_end + content.len());
-                    last_end = *ends.last().unwrap();
-
-                    compilable_content.push_str(&content);
-                },
-            }
-        });
-
-        (compilable_content, ends)
-    }
+    //     (compilable_content, ends)
+    // }
 
     /// string generated using all parts contents
     pub fn content(&self) -> String {

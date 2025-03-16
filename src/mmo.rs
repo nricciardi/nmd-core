@@ -13,7 +13,7 @@ pub mod constants;
 
 
 pub type HashMap<K, V> = ahash::HashMap<K, V>;
-pub type HashSet<T> = ahash::HashSet<T>;
+pub type HashSet<T> = std::collections::HashSet<T>;
 
 
 use std::io;

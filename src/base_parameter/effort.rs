@@ -1,7 +1,9 @@
+use serde::Serialize;
 
 
 
-#[derive(Debug, Default, Clone)]
+
+#[derive(Debug, Default, Clone, Serialize)]
 pub enum Effort {
 
     Fast,

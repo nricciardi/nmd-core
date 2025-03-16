@@ -1,22 +1,24 @@
-use std::ops::Add;
+use std::hash::Hash;
 
 use serde::Serialize;
 
+use super::HashSet;
 
-#[derive(Debug, PartialEq, Clone, Default, Serialize)]
+
+#[derive(Debug, Clone, Default, Serialize)]
 pub enum Bucket<T> {
     All,
-    List(Vec<T>),
+    Set(HashSet<T>),
 
     #[default]
     None
 }
 
-impl<T: PartialEq> Bucket<T> {
+impl<T: Eq + Hash> Bucket<T> {
     pub fn contains(&self, item: &T) -> bool {
         match self {
             Self::All => true,
-            Self::List(list) => list.contains(item),
+            Self::Set(set) => set.contains(item),
             Self::None => false,
         }
     }
@@ -24,22 +26,22 @@ impl<T: PartialEq> Bucket<T> {
     pub fn insert(mut self, item: T) -> Self {
         match self {
             Self::All => Self::All,
-            Self::List(ref mut list) => {
-                list.push(item);
+            Self::Set(ref mut set) => {
+                set.insert(item);
 
                 self
             },
-            Self::None => Self::List(vec![item]),
+            Self::None => Self::Set(HashSet::from([item])),
         }
     }    
 }
 
-impl<T: PartialEq + Clone> Bucket<T> {
+impl<T: Eq + Hash + Clone> Bucket<T> {
     pub fn extend(mut self, b: &Bucket<T>) -> Self {
         match b {
             Self::All => Self::All,
-            Self::List(ref list) => {
-                for item in list {
+            Self::Set(ref set) => {
+                for item in set {
                     self = self.insert(item.clone());
                 }
 
@@ -50,30 +52,9 @@ impl<T: PartialEq + Clone> Bucket<T> {
     }
 }
 
-impl<T: Clone> Add for Bucket<T> {
-    type Output = Self;
-
-    fn add(self, new_modifiers_excluded: Self) -> Self::Output {
-        match new_modifiers_excluded.clone() {
-            Self::All => Self::All,
-            Self::List(mut modifiers_to_add) => {
-                match self {
-                    Self::All => return Self::All,
-                    Self::List(mut modifiers_already_excluded) => {
-                        modifiers_already_excluded.append(&mut modifiers_to_add);
-
-                        return Self::List(modifiers_already_excluded)
-                    },
-                    Self::None => return new_modifiers_excluded.clone(),
-                }
-            },
-            Self::None => return self
-        }
-    }
-}
-
-impl<T> From<T> for Bucket<T> {
+impl<T: Eq + Hash> From<T> for Bucket<T> {
     fn from(value: T) -> Self {
-        Self::List(vec![value])
+        
+        Self::Set(HashSet::from([value]))
     }
 }

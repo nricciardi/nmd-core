@@ -1,4 +1,5 @@
 use std::str::FromStr;
+use serde::Serialize;
 use thiserror::Error;
 
 
@@ -9,7 +10,7 @@ pub enum OutputFormatError {
 }
 
 /// Set of supported formats
-#[derive(PartialEq, Debug, Default, Clone)]
+#[derive(PartialEq, Debug, Default, Clone, Serialize)]
 pub enum OutputFormat {
     #[default]
     Html

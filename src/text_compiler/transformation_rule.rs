@@ -38,12 +38,12 @@ pub trait TextRegexTransformationRule: TextTransformationRule {
     fn apply(&self, text: &mut Text, configuration: &dyn TextTransformationConfiguration) -> Result<(), TransformationError> {
 
         // TODO: parallelize
-        for captures in self.search_regex().captures_iter(&text.compilable_content()) {
+        // for captures in self.search_regex().captures_iter(&text.compilable_content()) {
 
-            let parts = self.captures_transform(captures, configuration)?;
+        //     let parts = self.captures_transform(captures, configuration)?;
 
-            // TODO: replace `parts` in `text`
-        }
+        //     // TODO: replace `parts` in `text`
+        // }
 
         Ok(())
     }

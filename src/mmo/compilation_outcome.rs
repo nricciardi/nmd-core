@@ -30,9 +30,12 @@ impl From<String> for CompilationOutcome {
 
 impl From<Text> for CompilationOutcome {
     fn from(text: Text) -> Self {
-        Self {
-            content: text.content()
-        }
+        
+        // TODO
+        todo!()
+        // Self {
+        //     content: text.content()
+        // }
     }
 }
 
