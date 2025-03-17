@@ -114,19 +114,20 @@ impl Text {
     }
 
     /// Split a part into two 
-    pub fn split_part(&mut self, index: usize, position_in_part: usize) -> Result<(), TextError> {
+    pub fn split_part(&mut self, index: usize, cut_positions: impl Iterator<Item = usize>) -> Result<(), TextError> {
 
-        // TODO: check out of bound
-        let mut left_part = self.parts[index].clone();
-        let mut right_part = self.parts[index].clone();
+        let mut new_parts: Vec<TextPart> = Vec::new();
+        let mut last_pos: usize = 0;
+        for cut_pos in cut_positions {
+           let mut part = match &self.parts[index] {
+            TextPart::Fixed { content: c } => TextPart::Fixed { content: c. },
+            TextPart::Compilable { content, incompatible_rules } => todo!(),
+                   };
 
-        left_part.content_mut().truncate(position_in_part);
-        right_part.content_mut().drain(..position_in_part);
+            new_parts.push(part);
+        }
 
-        self.parts.splice(index..index, [
-            left_part,
-            right_part
-        ]);
+        self.parts.splice(index..index, new_parts);
 
         Ok(())
     }

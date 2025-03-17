@@ -258,28 +258,31 @@ impl TextCompiler {
 
     pub fn compile(mut text: Text, configuration: &dyn TextCompilationConfiguration) -> Result<CompilationOutcome, TextCompilationError> {
 
-        let excluded_rules = configuration.excluded_rules().clone();        // TODO: remove .clone()? 
+        // TODO
+        todo!()
 
-        log::debug!("start to compile content:\n{:?}\nexcluding: {:?}", text, excluded_rules);
+        // let excluded_rules = configuration.excluded_rules().clone();        // TODO: remove .clone()? 
 
-        if excluded_rules == Bucket::All {
-            log::debug!("compilation of content:\n{:?} is skipped because are excluded all transformation rules", text);
+        // log::debug!("start to compile content:\n{:?}\nexcluding: {:?}", text, excluded_rules);
+
+        // if excluded_rules == Bucket::All {
+        //     log::debug!("compilation of content:\n{:?} is skipped because are excluded all transformation rules", text);
             
-            return Ok(CompilationOutcome::from(text))
-        }
+        //     return Ok(CompilationOutcome::from(text))
+        // }
 
-        for rule in configuration.transformation_rules() {
+        // for rule in configuration.transformation_rules() {
 
-            if excluded_rules.contains(rule.identifier()) {
+        //     if excluded_rules.contains(rule.identifier()) {
 
-                log::debug!("{:?} is skipped", rule.identifier());
-                continue;
-            }
+        //         log::debug!("{:?} is skipped", rule.identifier());
+        //         continue;
+        //     }
 
-            rule.apply(&mut text, &TextTransformationConfigurationParameters::from(configuration))?;
-        }
+        //     rule.apply(&mut text, &TextTransformationConfigurationParameters::from(configuration))?;
+        // }
 
-        Ok(CompilationOutcome::from(text))
+        // Ok(CompilationOutcome::from(text))
     }
 
     pub fn compile_str(s: &str, configuration: &dyn TextCompilationConfiguration) -> Result<CompilationOutcome, TextCompilationError> {
