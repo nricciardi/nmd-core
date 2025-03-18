@@ -1,5 +1,6 @@
 pub mod transformation_configuration;
 pub mod transformation_error;
+pub mod text_regex_transformation_rule;
 // pub mod replacement_rule;
 pub mod greek_letter_rule;
 // pub mod reference_rule;
@@ -27,24 +28,3 @@ pub trait TextTransformationRule: Send + Sync + Debug {
 
     fn apply(&self, text: &mut Text, configuration: &dyn TextTransformationConfiguration) -> Result<(), TransformationError>;
 }
-
-pub trait TextRegexTransformationRule: TextTransformationRule {
-
-    fn search_regex(&self) -> &Regex;
-
-    // TODO: iterable instead vec
-    fn captures_transform(&self, captures: Captures, configuration: &dyn TextTransformationConfiguration) -> Result<Vec<TextPart>, TransformationError>;
-
-    fn apply(&self, text: &mut Text, configuration: &dyn TextTransformationConfiguration) -> Result<(), TransformationError> {
-
-        // TODO: parallelize
-        // for captures in self.search_regex().captures_iter(&text.compilable_content()) {
-
-        //     let parts = self.captures_transform(captures, configuration)?;
-
-        //     // TODO: replace `parts` in `text`
-        // }
-
-        Ok(())
-    }
-} 

@@ -69,11 +69,9 @@ impl<'a> FromIterator<TextPartRef<'a>> for CompatibleTextParts<'a> {
 
 impl<'a> ToString for CompatibleTextParts<'a> {
     fn to_string(&self) -> String {
-        let mut s = String::new();
-
-        self.parts.iter().for_each(|part_ref| s.push_str(&part_ref.part.content()));
-
-        s
+        self.parts.iter()
+            .map(|part_ref| part_ref.part().content().as_str())
+            .collect()
     }
 }
 

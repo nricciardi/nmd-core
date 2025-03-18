@@ -3,7 +3,7 @@ use regex::Regex;
 
 use crate::{mmo::bucket::Bucket, text_compiler::text::{text_part::TextPart, Text}};
 
-use super::{transformation_configuration::TextTransformationConfiguration, transformation_error::TransformationError, TextRegexTransformationRule, TextTransformationRule, TextTransformationRuleIdentifier};
+use super::{text_regex_transformation_rule::TextRegexTransformationRule, transformation_configuration::TextTransformationConfiguration, transformation_error::TransformationError, TextTransformationRule, TextTransformationRuleIdentifier};
 
 
 pub struct GreekLettersRule {

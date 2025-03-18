@@ -102,32 +102,49 @@ impl Text {
     pub fn parts_compatible_with_rule<'a, 'b: 'a>(&'a self, rule_id: &'b TextTransformationRuleIdentifier) -> CompatibleTextParts<'a> {
 
         self.parts.iter().enumerate()
-        .filter(|(_index, part)| {
-            match part {
-                TextPart::Fixed { content: _ } => false,
-                TextPart::Compilable { content: _, incompatible_rules } => incompatible_rules.contains(rule_id),
-            }
-        })
-        .map(|(index, part)| {
-            TextPartRef::new(index, part)
-        }).collect()
+            .filter(|(_index, part)| {
+                match part {
+                    TextPart::Fixed { content: _ } => false,
+                    TextPart::Compilable { content: _, incompatible_rules } => incompatible_rules.contains(rule_id),
+                }
+            })
+            .map(|(index, part)| {
+                TextPartRef::new(index, part)
+            })
+            .collect()
     }
 
     /// Split a part into two 
     pub fn split_part(&mut self, index: usize, cut_positions: impl Iterator<Item = usize>) -> Result<(), TextError> {
 
+        let base_part = &self.parts[index];
         let mut new_parts: Vec<TextPart> = Vec::new();
         let mut last_pos: usize = 0;
-        for cut_pos in cut_positions {
-           let mut part = match &self.parts[index] {
-            TextPart::Fixed { content: c } => TextPart::Fixed { content: c. },
-            TextPart::Compilable { content, incompatible_rules } => todo!(),
-                   };
 
-            new_parts.push(part);
+        let mut push_part = |range| {
+            let part = match base_part {
+                TextPart::Fixed { content: c } => TextPart::Fixed {
+                        content: String::from(&c[range])
+                    },
+                TextPart::Compilable { content: c, incompatible_rules: ir } => TextPart::Compilable {
+                        content: String::from(&c[range]),
+                        incompatible_rules: ir.clone()
+                    },
+                };
+    
+                new_parts.push(part);
+        };
+
+
+        for cut_pos in cut_positions {
+           
+            push_part(last_pos..cut_pos);
+            last_pos += cut_pos;
         }
 
-        self.parts.splice(index..index, new_parts);
+        push_part(last_pos..base_part.content().len());
+
+        self.parts.splice(index..index, new_parts);     // TODO: check index..index
 
         Ok(())
     }
@@ -135,17 +152,17 @@ impl Text {
     /// Split parts into twos
     /// 
     /// Offset of splitting is already considered
-    pub fn split_parts(&mut self, splits: &Vec<(usize, usize)>) -> Result<(), TextError> {
+    // pub fn split_parts(&mut self, splits: &Vec<(usize, usize)>) -> Result<(), TextError> {
 
-        let mut offset: usize = 0;
-        for (index, position_in_part) in splits {
-            self.split_part(index + offset, *position_in_part)?;
+    //     let mut offset: usize = 0;
+    //     for (index, position_in_part) in splits {
+    //         self.split_part(index + offset, *position_in_part)?;
 
-            offset += 1;
-        }
+    //         offset += 1;
+    //     }
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
     pub fn splice<R, I>(&mut self, range: R, replace_with: I)
     where
