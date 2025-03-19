@@ -21,7 +21,6 @@ pub trait TextRegexTransformationRule: TextTransformationRule {
         let captures = self.search_regex().captures_iter(&compilable_string);
 
 
-
         // TODO: parallelize
         // for captures in self.search_regex().captures_iter(&text.compilable_content()) {
 

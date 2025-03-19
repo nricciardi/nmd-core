@@ -40,7 +40,7 @@ impl<T: Eq + Hash + Clone> Bucket<T> {
     pub fn extend(mut self, b: &Bucket<T>) -> Self {
         match b {
             Self::All => Self::All,
-            Self::Set(ref set) => {
+            Self::Set(set) => {
                 for item in set {
                     self = self.insert(item.clone());
                 }
