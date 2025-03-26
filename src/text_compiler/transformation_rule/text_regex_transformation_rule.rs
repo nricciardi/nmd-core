@@ -8,7 +8,7 @@ pub trait TextRegexTransformationRule: TextTransformationRule {
     fn search_regex(&self) -> &Regex;
 
     // TODO: iterable instead vec
-    fn captures_transform(&self, captures: Captures, configuration: &dyn TextTransformationConfiguration) -> Result<Vec<TextPart>, TransformationError>;
+    fn transform(&self, slice: [&TextPart], configuration: &dyn TextTransformationConfiguration) -> Result<Vec<TextPart>, TransformationError>;
 
     fn apply(&self, text: &mut Text, configuration: &dyn TextTransformationConfiguration) -> Result<(), TransformationError> {
 
